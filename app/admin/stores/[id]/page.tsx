@@ -7,6 +7,7 @@ import {
   updateStore,
   Store,
 } from '@/lib/services/storeService';
+import { getCategories, Category } from '@/lib/services/categoryService';
 import { extractOriginalCloudinaryUrl, isCloudinaryUrl } from '@/lib/utils/cloudinary';
 
 export default function EditStorePage() {
@@ -15,6 +16,7 @@ export default function EditStorePage() {
   const storeId = params.id as string;
 
   const [store, setStore] = useState<Store | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<Partial<Store>>({});
@@ -22,21 +24,25 @@ export default function EditStorePage() {
   const [extractedLogoUrl, setExtractedLogoUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchStore = async () => {
-      const data = await getStoreById(storeId);
-      if (data) {
-        setStore(data);
-        setFormData(data);
-        if (data.logoUrl) {
-          setLogoUrl(data.logoUrl);
-          if (isCloudinaryUrl(data.logoUrl)) {
-            setExtractedLogoUrl(extractOriginalCloudinaryUrl(data.logoUrl));
+    const fetchData = async () => {
+      const [storeData, categoriesData] = await Promise.all([
+        getStoreById(storeId),
+        getCategories()
+      ]);
+      if (storeData) {
+        setStore(storeData);
+        setFormData(storeData);
+        if (storeData.logoUrl) {
+          setLogoUrl(storeData.logoUrl);
+          if (isCloudinaryUrl(storeData.logoUrl)) {
+            setExtractedLogoUrl(extractOriginalCloudinaryUrl(storeData.logoUrl));
           }
         }
       }
+      setCategories(categoriesData);
       setLoading(false);
     };
-    fetchStore();
+    fetchData();
   }, [storeId]);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -141,6 +147,32 @@ export default function EditStorePage() {
               rows={4}
               required
             />
+          </div>
+
+          <div>
+            <label htmlFor="categoryId" className="block text-sm font-semibold text-gray-700 mb-1">
+              Category
+            </label>
+            <select
+              id="categoryId"
+              name="categoryId"
+              value={formData.categoryId || ''}
+              onChange={(e) => {
+                const categoryId = e.target.value || null;
+                setFormData({ ...formData, categoryId });
+              }}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">No Category</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-500">
+              Assign this store to a category
+            </p>
           </div>
 
           <div>

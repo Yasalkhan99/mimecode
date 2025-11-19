@@ -7,6 +7,7 @@ import {
   updateCoupon,
   Coupon,
 } from '@/lib/services/couponService';
+import { getCategories, Category } from '@/lib/services/categoryService';
 import { extractOriginalCloudinaryUrl, isCloudinaryUrl } from '@/lib/utils/cloudinary';
 
 export default function EditCouponPage() {
@@ -15,6 +16,7 @@ export default function EditCouponPage() {
   const couponId = params.id as string;
 
   const [coupon, setCoupon] = useState<Coupon | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<Partial<Coupon>>({});
@@ -22,21 +24,25 @@ export default function EditCouponPage() {
   const [extractedLogoUrl, setExtractedLogoUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchCoupon = async () => {
-      const data = await getCouponById(couponId);
-      if (data) {
-        setCoupon(data);
-        setFormData(data);
-        if (data.logoUrl) {
-          setLogoUrl(data.logoUrl);
-          if (isCloudinaryUrl(data.logoUrl)) {
-            setExtractedLogoUrl(extractOriginalCloudinaryUrl(data.logoUrl));
+    const fetchData = async () => {
+      const [couponData, categoriesData] = await Promise.all([
+        getCouponById(couponId),
+        getCategories()
+      ]);
+      if (couponData) {
+        setCoupon(couponData);
+        setFormData(couponData);
+        if (couponData.logoUrl) {
+          setLogoUrl(couponData.logoUrl);
+          if (isCloudinaryUrl(couponData.logoUrl)) {
+            setExtractedLogoUrl(extractOriginalCloudinaryUrl(couponData.logoUrl));
           }
         }
       }
+      setCategories(categoriesData);
       setLoading(false);
     };
-    fetchCoupon();
+    fetchData();
   }, [couponId]);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -243,6 +249,32 @@ export default function EditCouponPage() {
             />
             <p className="mt-1 text-xs text-gray-500">
               When user clicks "Get Deal", they will be redirected to this URL and the coupon code will be revealed.
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="categoryId" className="block text-sm font-semibold text-gray-700 mb-1">
+              Category
+            </label>
+            <select
+              id="categoryId"
+              name="categoryId"
+              value={formData.categoryId || ''}
+              onChange={(e) => {
+                const categoryId = e.target.value || null;
+                setFormData({ ...formData, categoryId });
+              }}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">No Category</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-500">
+              Assign this coupon to a category
             </p>
           </div>
 

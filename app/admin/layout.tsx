@@ -163,6 +163,13 @@ export default function AdminLayout({
             Manage Coupons
           </Link>
           <Link
+            href="/admin/categories"
+            onClick={() => setSidebarOpen(false)}
+            className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
+          >
+            Manage Categories
+          </Link>
+          <Link
             href="/admin/banners"
             onClick={() => setSidebarOpen(false)}
             className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"

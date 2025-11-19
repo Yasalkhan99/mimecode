@@ -16,6 +16,7 @@ export default function BannersPage() {
   const [imageUrl, setImageUrl] = useState('');
   const [extractedUrl, setExtractedUrl] = useState<string | null>(null);
   const [layoutPosition, setLayoutPosition] = useState<number | null>(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
 
   const fetchBanners = async () => {
     setLoading(true);
@@ -57,6 +58,7 @@ export default function BannersPage() {
         setImageFile(null);
         setImagePreview(null);
         setLayoutPosition(null);
+        setFileInputKey(prev => prev + 1);
       }
     } else {
       if (!imageUrl.trim()) return;
@@ -68,6 +70,7 @@ export default function BannersPage() {
         setImageUrl('');
         setExtractedUrl(null);
         setLayoutPosition(null);
+        setFileInputKey(prev => prev + 1);
       }
     }
   };
@@ -159,7 +162,7 @@ export default function BannersPage() {
 
             <div>
               <label htmlFor="layoutPosition" className="block text-gray-700 text-sm font-semibold mb-2">
-                Assign to Layout Position (1-5)
+                Assign to Layout Position (1-6)
               </label>
               <select
                 id="layoutPosition"
@@ -172,7 +175,7 @@ export default function BannersPage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Not Assigned</option>
-                {[1, 2, 3, 4, 5].map((pos) => {
+                {[1, 2, 3, 4, 5, 6].map((pos) => {
                   const isTaken = banners.some(
                     b => b.layoutPosition === pos && b.id
                   );
@@ -187,7 +190,7 @@ export default function BannersPage() {
                 })}
               </select>
               <p className="mt-1 text-xs text-gray-500">
-                Layout 1-4: Hero Section | Layout 5: Spotlight Section (below Popular Coupons, 618×568px recommended)
+                Layout 1-4: Hero Section | Layout 5: Spotlight Section (below Popular Coupons, 618×568px recommended) | Layout 6: Categories Page Banner (1728×547px)
               </p>
             </div>
 
@@ -210,6 +213,7 @@ export default function BannersPage() {
                   }}
                   className="w-full"
                   required={uploadMethod === 'file'}
+                  key={`file-input-${fileInputKey}`}
                 />
                 {imagePreview && (
                   <div className="mt-2">
@@ -226,7 +230,7 @@ export default function BannersPage() {
                   id="imageUrl"
                   name="imageUrl"
                   type="url"
-                  value={imageUrl}
+                  value={imageUrl || ''}
                   onChange={(e) => handleUrlChange(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="https://res.cloudinary.com/..."

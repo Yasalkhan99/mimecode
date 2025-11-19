@@ -31,6 +31,7 @@ export interface Coupon {
   layoutPosition?: number | null; // Position in popular coupons layout (1-8)
   isLatest?: boolean;
   latestLayoutPosition?: number | null; // Position in latest coupons layout (1-8)
+  categoryId?: string | null; // Category ID for this coupon
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -131,6 +132,25 @@ export async function deleteCoupon(id: string) {
   } catch (error) {
     console.error('Error deleting coupon:', error);
     return { success: false, error };
+  }
+}
+
+// Get coupons by category ID
+export async function getCouponsByCategoryId(categoryId: string): Promise<Coupon[]> {
+  try {
+    const q = query(
+      collection(db, coupons),
+      where('categoryId', '==', categoryId),
+      where('isActive', '==', true)
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    } as Coupon));
+  } catch (error) {
+    console.error('Error getting coupons by category:', error);
+    return [];
   }
 }
 

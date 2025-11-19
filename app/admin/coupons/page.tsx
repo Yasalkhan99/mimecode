@@ -9,11 +9,13 @@ import {
   deleteCoupon,
   Coupon,
 } from '@/lib/services/couponService';
+import { getCategories, Category } from '@/lib/services/categoryService';
 import Link from 'next/link';
 import { extractOriginalCloudinaryUrl, isCloudinaryUrl } from '@/lib/utils/cloudinary';
 
 export default function CouponsPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<Partial<Coupon>>({
@@ -30,6 +32,7 @@ export default function CouponsPage() {
     layoutPosition: null,
     isLatest: false,
     latestLayoutPosition: null,
+    categoryId: null,
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -49,8 +52,12 @@ export default function CouponsPage() {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      const data = await getCoupons();
-      setCoupons(data);
+      const [couponsData, categoriesData] = await Promise.all([
+        getCoupons(),
+        getCategories()
+      ]);
+      setCoupons(couponsData);
+      setCategories(categoriesData);
       setLoading(false);
     };
     load();
@@ -122,6 +129,7 @@ export default function CouponsPage() {
         layoutPosition: null,
         isLatest: false,
         latestLayoutPosition: null,
+        categoryId: null,
       });
       setLogoFile(null);
       setLogoPreview(null);
@@ -531,6 +539,32 @@ export default function CouponsPage() {
               />
               <p className="mt-1 text-xs text-gray-500">
                 When user clicks "Get Deal", they will be redirected to this URL and the coupon code will be revealed.
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="categoryId" className="block text-gray-700 text-sm font-semibold mb-2">
+                Category
+              </label>
+              <select
+                id="categoryId"
+                name="categoryId"
+                value={formData.categoryId || ''}
+                onChange={(e) => {
+                  const categoryId = e.target.value || null;
+                  setFormData({ ...formData, categoryId });
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">No Category</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-gray-500">
+                Assign this coupon to a category
               </p>
             </div>
 
