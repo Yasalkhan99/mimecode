@@ -9,10 +9,12 @@ import {
   deleteStore,
   Store,
 } from '@/lib/services/storeService';
+import { getCategories, Category } from '@/lib/services/categoryService';
 import { extractOriginalCloudinaryUrl, isCloudinaryUrl } from '@/lib/utils/cloudinary';
 
 export default function StoresPage() {
   const [stores, setStores] = useState<Store[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<Partial<Store>>({
@@ -22,6 +24,7 @@ export default function StoresPage() {
     voucherText: '',
     isTrending: false,
     layoutPosition: null,
+    categoryId: null,
   });
   const [logoUrl, setLogoUrl] = useState('');
   const [extractedLogoUrl, setExtractedLogoUrl] = useState<string | null>(null);
@@ -38,8 +41,12 @@ export default function StoresPage() {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      const data = await getStores();
-      setStores(data);
+      const [storesData, categoriesData] = await Promise.all([
+        getStores(),
+        getCategories()
+      ]);
+      setStores(storesData);
+      setCategories(categoriesData);
       setLoading(false);
     };
     load();
@@ -75,6 +82,7 @@ export default function StoresPage() {
       voucherText: formData.voucherText || '',
       isTrending: formData.isTrending || false,
       layoutPosition: layoutPositionToSave,
+      categoryId: formData.categoryId || null,
     };
     
     const result = await createStore(storeData);
@@ -89,6 +97,7 @@ export default function StoresPage() {
         voucherText: '',
         isTrending: false,
         layoutPosition: null,
+        categoryId: null,
       });
       setLogoUrl('');
       setExtractedLogoUrl(null);
@@ -319,6 +328,32 @@ export default function StoresPage() {
                 rows={3}
                 required
               />
+            </div>
+
+            <div>
+              <label htmlFor="categoryId" className="block text-gray-700 text-sm font-semibold mb-2">
+                Category
+              </label>
+              <select
+                id="categoryId"
+                name="categoryId"
+                value={formData.categoryId || ''}
+                onChange={(e) => {
+                  const categoryId = e.target.value || null;
+                  setFormData({ ...formData, categoryId });
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">No Category</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-gray-500">
+                Assign this store to a category
+              </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

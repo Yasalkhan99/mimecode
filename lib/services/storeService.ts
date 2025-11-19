@@ -1,5 +1,5 @@
 import { db } from '@/lib/firebase';
-import { collection, getDocs, deleteDoc, doc, Timestamp, addDoc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, deleteDoc, doc, Timestamp, addDoc, updateDoc, getDoc, query, where } from 'firebase/firestore';
 import { extractOriginalCloudinaryUrl } from '@/lib/utils/cloudinary';
 
 export interface Store {
@@ -10,6 +10,7 @@ export interface Store {
   voucherText?: string; // e.g., "Upto 58% Voucher"
   isTrending?: boolean;
   layoutPosition?: number | null; // Position in trending stores layout (1-8)
+  categoryId?: string | null; // Category ID for this store
   createdAt?: Timestamp;
 }
 
@@ -99,6 +100,24 @@ export async function deleteStore(id: string) {
   } catch (error) {
     console.error('Error deleting store:', error);
     return { success: false, error };
+  }
+}
+
+// Get stores by category ID
+export async function getStoresByCategoryId(categoryId: string): Promise<Store[]> {
+  try {
+    const q = query(
+      collection(db, stores),
+      where('categoryId', '==', categoryId)
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    } as Store));
+  } catch (error) {
+    console.error('Error getting stores by category:', error);
+    return [];
   }
 }
 

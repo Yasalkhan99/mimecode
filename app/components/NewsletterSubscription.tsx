@@ -58,7 +58,7 @@ export default function NewsletterSubscription() {
 
         <div className="w-full h-full px-4 sm:px-6 md:px-8 lg:px-12 relative z-10 flex flex-col md:flex-row items-center justify-center gap-4 sm:gap-6 md:gap-8">
           {/* Text Content - Mobile: centered, Desktop: left aligned */}
-          <div className="flex flex-col justify-center text-center md:text-left animate-slide-in-left w-full md:w-auto">
+          <div className="flex flex-col justify-center text-center md:text-left animate-slide-in-left w-full md:w-auto pt-6 sm:pt-0">
             <h2 
               className="mb-1"
               style={{

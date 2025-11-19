@@ -2,12 +2,21 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 
 export default function Navbar() {
-  const [categoryOpen, setCategoryOpen] = useState(false);
+  const pathname = usePathname();
   const [storeOpen, setStoreOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchCategoryOpen, setSearchCategoryOpen] = useState(false);
+  
+  const isActive = (path: string) => {
+    if (path === '/categories') {
+      // Match /categories and /categories/[id]
+      return pathname === '/categories' || pathname?.startsWith('/categories/');
+    }
+    return pathname === path;
+  };
 
   return (
     <header className="w-full">
@@ -63,25 +72,26 @@ export default function Navbar() {
         <div className="flex items-center justify-between px-2 sm:px-4 max-w-7xl mx-auto">
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-6 xl:gap-8">
-            <Link href="/" className="text-pink-600 font-semibold border-b-2 border-pink-600 py-4">Home</Link>
-            <div className="relative">
-              <button
-                type="button"
-                className="text-gray-700 font-semibold py-4 flex items-center hover:text-pink-600 transition-colors"
-                onClick={() => setCategoryOpen((v) => !v)}
-              >
-                Categories
-                <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {categoryOpen && (
-                <div className="absolute left-0 top-full bg-white border rounded shadow z-20 min-w-[150px]">
-                  <div className="px-4 py-2 text-gray-700 hover:bg-gray-100 cursor-pointer">Category 1</div>
-                  <div className="px-4 py-2 text-gray-700 hover:bg-gray-100 cursor-pointer">Category 2</div>
-                </div>
-              )}
-            </div>
+            <Link 
+              href="/" 
+              className={`font-semibold py-4 transition-colors ${
+                isActive('/') 
+                  ? 'text-pink-600 border-b-2 border-pink-600' 
+                  : 'text-gray-700 hover:text-pink-600'
+              }`}
+            >
+              Home
+            </Link>
+            <Link 
+              href="/categories" 
+              className={`font-semibold py-4 transition-colors ${
+                isActive('/categories') 
+                  ? 'text-pink-600 border-b-2 border-pink-600' 
+                  : 'text-gray-700 hover:text-pink-600'
+              }`}
+            >
+              Categories
+            </Link>
             <div className="relative">
               <button
                 type="button"
@@ -106,7 +116,28 @@ export default function Navbar() {
 
           {/* Mobile Navigation Toggle */}
           <div className="lg:hidden flex items-center justify-between w-full">
-            <Link href="/" className="text-pink-600 font-semibold border-b-2 border-pink-600 py-3 px-2 text-sm">Home</Link>
+            <div className="flex items-center gap-4">
+              <Link 
+                href="/" 
+                className={`font-semibold py-3 px-2 text-sm transition-colors ${
+                  isActive('/') 
+                    ? 'text-pink-600 border-b-2 border-pink-600' 
+                    : 'text-gray-700 hover:text-pink-600'
+                }`}
+              >
+                Home
+              </Link>
+              <Link 
+                href="/categories" 
+                className={`font-semibold py-3 px-2 text-sm transition-colors ${
+                  isActive('/categories') 
+                    ? 'text-pink-600 border-b-2 border-pink-600' 
+                    : 'text-gray-700 hover:text-pink-600'
+                }`}
+              >
+                Categories
+              </Link>
+            </div>
             <button
               type="button"
               className="p-2 text-gray-700 hover:text-pink-600 transition-colors"
@@ -143,24 +174,17 @@ export default function Navbar() {
         {mobileMenuOpen && (
           <div className="lg:hidden border-t border-gray-200 bg-white">
             <div className="px-4 py-3 space-y-3">
-              <div className="relative">
-                <button
-                  type="button"
-                  className="w-full text-left text-gray-700 font-semibold py-2 flex items-center justify-between hover:text-pink-600 transition-colors"
-                  onClick={() => setCategoryOpen((v) => !v)}
-                >
-                  Categories
-                  <svg className={`w-4 h-4 transition-transform ${categoryOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {categoryOpen && (
-                  <div className="mt-2 pl-4 space-y-2">
-                    <div className="px-4 py-2 text-gray-600 hover:text-pink-600 cursor-pointer">Category 1</div>
-                    <div className="px-4 py-2 text-gray-600 hover:text-pink-600 cursor-pointer">Category 2</div>
-                  </div>
-                )}
-              </div>
+              <Link 
+                href="/categories" 
+                className={`block font-semibold py-2 transition-colors ${
+                  isActive('/categories') 
+                    ? 'text-pink-600 border-b-2 border-pink-600' 
+                    : 'text-gray-700 hover:text-pink-600'
+                }`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Categories
+              </Link>
               <div className="relative">
                 <button
                   type="button"
