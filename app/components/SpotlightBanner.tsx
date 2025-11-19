@@ -60,7 +60,7 @@ export default function SpotlightBanner() {
               </div>
               <div className="ml-8">
                 <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
-                  The Ultimate Guide to Smart Shopping with <span className="text-orange-600">[Brand Name]</span>
+                  The Ultimate Guide to Smart Shopping with <span className="text-orange-600">Avail Coupon Code</span>
                 </h3>
                 <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
                   In a time when the digital marketplace overflows with money-saving opportunities, Avail Coupon Code stands out as the ultimate destination for smart shoppers.
@@ -77,7 +77,7 @@ export default function SpotlightBanner() {
               </div>
               <div className="ml-8">
                 <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
-                  The Ultimate Guide to Smart Shopping with <span className="text-orange-600">[Brand Name]</span>
+                  The Ultimate Guide to Smart Shopping with <span className="text-orange-600">Avail Coupon Code</span>
                 </h3>
                 <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
                   Avail Coupon Code is more than just another name in the crowded world of online shopping — it's a haven for those who love the excitement of finding premium products without the heavy price tag.
