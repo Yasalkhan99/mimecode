@@ -34,30 +34,48 @@ NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 
 Go to Firestore Database → Rules and replace with:
 
+**Important:** The homepage needs public read access to display stores, banners, logos, coupons, and news. Only writes require authentication.
+
 ```firestore
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Only authenticated users can read/write
-    match /coupons/{document=**} {
-      allow read, write: if request.auth != null && hasAdminRole();
+    
+    // Public read access for homepage collections
+    // Anyone can read these collections (required for homepage display)
+    match /stores/{document=**} {
+      allow read: if true; // Public read
+      allow write: if request.auth != null; // Only authenticated users can write
     }
-  }
-}
-
-function hasAdminRole() {
-  return request.auth.token.admin == true;
-}
-```
-
-Or for development (not secure):
-
-```firestore
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /{document=**} {
+    
+    match /banners/{document=**} {
+      allow read: if true; // Public read
+      allow write: if request.auth != null; // Only authenticated users can write
+    }
+    
+    match /logos/{document=**} {
+      allow read: if true; // Public read
+      allow write: if request.auth != null; // Only authenticated users can write
+    }
+    
+    match /coupons/{document=**} {
+      allow read: if true; // Public read
+      allow write: if request.auth != null; // Only authenticated users can write
+    }
+    
+    match /news/{document=**} {
+      allow read: if true; // Public read
+      allow write: if request.auth != null; // Only authenticated users can write
+    }
+    
+    // Admin panel collections - require authentication for both read and write
+    match /users/{document=**} {
       allow read, write: if request.auth != null;
+    }
+    
+    // Default: deny all other collections
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

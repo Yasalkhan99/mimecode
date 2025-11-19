@@ -19,8 +19,11 @@ const barlow = Barlow({
 }); 
 
 export const metadata: Metadata = {
-  title: "AvailCoupon - Admin Panel",
+  title: "AvailCoupon",
   description: "Manage coupons and discounts with Firebase backend",
+  icons: {
+    icon: '/Asset 2@2x 1 (1).svg',
+  },
 };
 
 export default function RootLayout({
