@@ -37,84 +37,84 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-800 mb-8">Dashboard</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4 sm:mb-8">Dashboard</h1>
 
       {loading ? (
         <div className="text-center py-12">Loading...</div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
-              <div className="text-gray-600 text-sm font-semibold">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 sm:mb-8">
+            <div className="bg-blue-50 p-4 sm:p-6 rounded-lg border border-blue-200">
+              <div className="text-gray-600 text-xs sm:text-sm font-semibold">
                 Total Coupons
               </div>
-              <div className="text-3xl font-bold text-blue-600 mt-2">
+              <div className="text-2xl sm:text-3xl font-bold text-blue-600 mt-2">
                 {stats.totalCoupons}
               </div>
             </div>
 
-            <div className="bg-green-50 p-6 rounded-lg border border-green-200">
-              <div className="text-gray-600 text-sm font-semibold">
+            <div className="bg-green-50 p-4 sm:p-6 rounded-lg border border-green-200">
+              <div className="text-gray-600 text-xs sm:text-sm font-semibold">
                 Active Coupons
               </div>
-              <div className="text-3xl font-bold text-green-600 mt-2">
+              <div className="text-2xl sm:text-3xl font-bold text-green-600 mt-2">
                 {stats.activeCoupons}
               </div>
             </div>
 
-            <div className="bg-purple-50 p-6 rounded-lg border border-purple-200">
-              <div className="text-gray-600 text-sm font-semibold">
+            <div className="bg-purple-50 p-4 sm:p-6 rounded-lg border border-purple-200">
+              <div className="text-gray-600 text-xs sm:text-sm font-semibold">
                 Total Uses
               </div>
-              <div className="text-3xl font-bold text-purple-600 mt-2">
+              <div className="text-2xl sm:text-3xl font-bold text-purple-600 mt-2">
                 {stats.totalUses}
               </div>
             </div>
 
-            <div className="bg-orange-50 p-6 rounded-lg border border-orange-200">
-              <div className="text-gray-600 text-sm font-semibold">
+            <div className="bg-orange-50 p-4 sm:p-6 rounded-lg border border-orange-200">
+              <div className="text-gray-600 text-xs sm:text-sm font-semibold">
                 Avg Discount
               </div>
-              <div className="text-3xl font-bold text-orange-600 mt-2">
+              <div className="text-2xl sm:text-3xl font-bold text-orange-600 mt-2">
                 {stats.averageDiscount}%
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">
+          <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">
               Recent Coupons
             </h2>
             {coupons.length === 0 ? (
               <p className="text-gray-500">No coupons yet</p>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <table className="w-full text-xs sm:text-sm min-w-[500px]">
                   <thead className="bg-gray-50 border-b">
                     <tr>
-                      <th className="px-4 py-2 text-left font-semibold">
+                      <th className="px-2 sm:px-4 py-2 text-left font-semibold">
                         Code
                       </th>
-                      <th className="px-4 py-2 text-left font-semibold">
+                      <th className="px-2 sm:px-4 py-2 text-left font-semibold">
                         Discount
                       </th>
-                      <th className="px-4 py-2 text-left font-semibold">
+                      <th className="px-2 sm:px-4 py-2 text-left font-semibold">
                         Status
                       </th>
-                      <th className="px-4 py-2 text-left font-semibold">Uses</th>
+                      <th className="px-2 sm:px-4 py-2 text-left font-semibold">Uses</th>
                     </tr>
                   </thead>
                   <tbody>
                     {coupons.slice(0, 5).map((coupon) => (
                       <tr key={coupon.id} className="border-b hover:bg-gray-50">
-                        <td className="px-4 py-2 font-mono font-semibold">
+                        <td className="px-2 sm:px-4 py-2 font-mono font-semibold">
                           {coupon.code}
                         </td>
-                        <td className="px-4 py-2">
+                        <td className="px-2 sm:px-4 py-2">
                           {coupon.discount}
                           {coupon.discountType === 'percentage' ? '%' : ' AED'}
                         </td>
-                        <td className="px-4 py-2">
+                        <td className="px-2 sm:px-4 py-2">
                           <span
                             className={`px-2 py-1 rounded text-xs font-semibold ${
                               coupon.isActive
@@ -125,7 +125,7 @@ export default function DashboardPage() {
                             {coupon.isActive ? 'Active' : 'Inactive'}
                           </span>
                         </td>
-                        <td className="px-4 py-2">
+                        <td className="px-2 sm:px-4 py-2">
                           {coupon.currentUses} / {coupon.maxUses}
                         </td>
                       </tr>

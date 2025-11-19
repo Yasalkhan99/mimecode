@@ -21,6 +21,7 @@ export default function AdminLayout({
   const [password, setPassword] = useState('');
   const [authLoadingLocal, setAuthLoadingLocal] = useState(false);
   const [authErrorLocal, setAuthErrorLocal] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     // Avoid redirecting to login if we're already on the login page
@@ -120,58 +121,85 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-100 relative">
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 bg-gray-900 text-white shadow-lg">
-        <div className="p-6">
-          <h1 className="text-2xl font-bold">Admin Panel</h1>
+      <aside
+        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-gray-900 text-white shadow-lg transform transition-transform duration-300 ease-in-out ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}
+      >
+        <div className="p-4 lg:p-6 flex items-center justify-between">
+          <h1 className="text-xl lg:text-2xl font-bold">Admin Panel</h1>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden text-white hover:text-gray-300"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
         <nav className="mt-6">
           <Link
             href="/admin/dashboard"
-            className="block px-6 py-3 hover:bg-gray-800 transition"
+            onClick={() => setSidebarOpen(false)}
+            className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
           >
             Dashboard
           </Link>
           <Link
             href="/admin/coupons"
-            className="block px-6 py-3 hover:bg-gray-800 transition"
+            onClick={() => setSidebarOpen(false)}
+            className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
           >
             Manage Coupons
           </Link>
           <Link
             href="/admin/banners"
-            className="block px-6 py-3 hover:bg-gray-800 transition"
+            onClick={() => setSidebarOpen(false)}
+            className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
           >
             Manage Banners
           </Link>
           <Link
             href="/admin/stores"
-            className="block px-6 py-3 hover:bg-gray-800 transition"
+            onClick={() => setSidebarOpen(false)}
+            className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
           >
             Manage Stores
           </Link>
           <Link
             href="/admin/logos"
-            className="block px-6 py-3 hover:bg-gray-800 transition"
+            onClick={() => setSidebarOpen(false)}
+            className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
           >
             Manage Logos
           </Link>
           <Link
             href="/admin/news"
-            className="block px-6 py-3 hover:bg-gray-800 transition"
+            onClick={() => setSidebarOpen(false)}
+            className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
           >
             Manage News & Articles
           </Link>
           <Link
             href="/admin/analytics"
-            className="block px-6 py-3 hover:bg-gray-800 transition"
+            onClick={() => setSidebarOpen(false)}
+            className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
           >
             Analytics
           </Link>
           <button
             onClick={handleLogout}
-            className="w-full text-left px-6 py-3 hover:bg-red-600 transition mt-auto"
+            className="w-full text-left px-4 lg:px-6 py-3 hover:bg-red-600 transition mt-auto text-sm lg:text-base"
           >
             Logout
           </button>
@@ -179,11 +207,27 @@ export default function AdminLayout({
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto">
-        <div className="p-8">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-gray-800">Welcome, {user.email}</h2>
+      <main className="flex-1 overflow-auto w-full lg:w-auto">
+        {/* Mobile Header */}
+        <div className="lg:hidden bg-gray-900 text-white p-4 flex items-center justify-between sticky top-0 z-30">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="text-white hover:text-gray-300"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <h1 className="text-lg font-bold">Admin Panel</h1>
+          <div className="w-6"></div>
+        </div>
+
+        <div className="p-4 sm:p-6 lg:p-8">
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-2">
+              <h2 className="text-base sm:text-lg lg:text-xl text-gray-800 break-words">
+                Welcome, {user.email}
+              </h2>
             </div>
             {children}
           </div>
