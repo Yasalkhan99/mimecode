@@ -1,0 +1,521 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import {
+  getStores,
+  createStore,
+  updateStore,
+  deleteStore,
+  Store,
+} from '@/lib/services/storeService';
+import { extractOriginalCloudinaryUrl, isCloudinaryUrl } from '@/lib/utils/cloudinary';
+
+export default function StoresPage() {
+  const [stores, setStores] = useState<Store[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState<Partial<Store>>({
+    name: '',
+    description: '',
+    logoUrl: '',
+    voucherText: '',
+    isTrending: false,
+    layoutPosition: null,
+  });
+  const [logoUrl, setLogoUrl] = useState('');
+  const [extractedLogoUrl, setExtractedLogoUrl] = useState<string | null>(null);
+  const [storeUrl, setStoreUrl] = useState('');
+  const [extracting, setExtracting] = useState(false);
+
+  const fetchStores = async () => {
+    setLoading(true);
+    const data = await getStores();
+    setStores(data);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const data = await getStores();
+      setStores(data);
+      setLoading(false);
+    };
+    load();
+  }, []);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Check if layout position is already taken
+    if (formData.layoutPosition && formData.isTrending) {
+      const storesAtPosition = stores.filter(
+        s => s.layoutPosition === formData.layoutPosition && s.isTrending
+      );
+      if (storesAtPosition.length > 0) {
+        if (!confirm(`Layout ${formData.layoutPosition} is already assigned to "${storesAtPosition[0].name}". Replace it?`)) {
+          return;
+        }
+        // Clear position from other store
+        await updateStore(storesAtPosition[0].id!, { layoutPosition: null });
+      }
+    }
+    
+    // Extract original URL if it's a Cloudinary URL
+    const logoUrlToSave = logoUrl ? extractOriginalCloudinaryUrl(logoUrl) : undefined;
+    
+    // Only set layoutPosition if store is trending
+    const layoutPositionToSave = formData.isTrending ? formData.layoutPosition : null;
+    
+    const storeData: Omit<Store, 'id'> = {
+      name: formData.name || '',
+      description: formData.description || '',
+      logoUrl: logoUrlToSave,
+      voucherText: formData.voucherText || '',
+      isTrending: formData.isTrending || false,
+      layoutPosition: layoutPositionToSave,
+    };
+    
+    const result = await createStore(storeData);
+    
+    if (result.success) {
+      fetchStores();
+      setShowForm(false);
+      setFormData({
+        name: '',
+        description: '',
+        logoUrl: '',
+        voucherText: '',
+        isTrending: false,
+        layoutPosition: null,
+      });
+      setLogoUrl('');
+      setExtractedLogoUrl(null);
+      setStoreUrl('');
+    }
+  };
+
+  const handleLogoUrlChange = (url: string) => {
+    setLogoUrl(url);
+    if (isCloudinaryUrl(url)) {
+      const extracted = extractOriginalCloudinaryUrl(url);
+      setExtractedLogoUrl(extracted);
+    } else {
+      setExtractedLogoUrl(null);
+    }
+  };
+
+  const handleDelete = async (id: string | undefined) => {
+    if (!id) return;
+    if (confirm('Are you sure you want to delete this store?')) {
+      await deleteStore(id);
+      fetchStores();
+    }
+  };
+
+  const handleToggleTrending = async (store: Store) => {
+    if (store.id) {
+      const newTrendingStatus = !store.isTrending;
+      // If removing from trending, also clear layout position
+      const updates: Partial<Store> = { 
+        isTrending: newTrendingStatus,
+        ...(newTrendingStatus ? {} : { layoutPosition: null })
+      };
+      await updateStore(store.id, updates);
+      fetchStores();
+    }
+  };
+
+  const handleAssignLayoutPosition = async (store: Store, position: number | null) => {
+    if (!store.id) return;
+    
+    // Check if position is already taken by another store
+    if (position !== null) {
+      const storesAtPosition = stores.filter(
+        s => s.id !== store.id && s.layoutPosition === position && s.isTrending
+      );
+      if (storesAtPosition.length > 0) {
+        if (!confirm(`Layout ${position} is already assigned to "${storesAtPosition[0].name}". Replace it?`)) {
+          return;
+        }
+        // Clear position from other store
+        await updateStore(storesAtPosition[0].id!, { layoutPosition: null });
+      }
+    }
+    
+    await updateStore(store.id, { layoutPosition: position });
+    fetchStores();
+  };
+
+  const handleExtractFromUrl = async () => {
+    if (!storeUrl.trim()) {
+      alert('Please enter a URL');
+      return;
+    }
+
+    setExtracting(true);
+    try {
+      const response = await fetch('/api/stores/extract-metadata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: storeUrl }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Auto-populate form fields
+        setFormData({
+          name: data.name || formData.name || '',
+          description: data.description || formData.description || '',
+          voucherText: formData.voucherText || '',
+          isTrending: formData.isTrending || false,
+          layoutPosition: formData.layoutPosition || null,
+        });
+        
+        if (data.logoUrl) {
+          setLogoUrl(data.logoUrl);
+          handleLogoUrlChange(data.logoUrl);
+        }
+
+        // Show success message
+        alert(`Successfully extracted data from ${data.name || 'the website'}!`);
+      } else {
+        alert(`Failed to extract metadata: ${data.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error extracting metadata:', error);
+      alert('Failed to extract metadata. Please check the URL and try again.');
+    } finally {
+      setExtracting(false);
+    }
+  };
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-800">Manage Stores</h1>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+        >
+          {showForm ? 'Cancel' : 'Create New Store'}
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
+          <h2 className="text-xl font-bold text-gray-800 mb-4">
+            Create New Store
+          </h2>
+          
+          {/* URL Extraction Section */}
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <label htmlFor="storeUrl" className="block text-gray-700 text-sm font-semibold mb-2">
+              Extract Store Info from URL (e.g., nike.com, amazon.com)
+            </label>
+            <div className="flex gap-2">
+              <input
+                id="storeUrl"
+                name="storeUrl"
+                type="text"
+                value={storeUrl}
+                onChange={(e) => setStoreUrl(e.target.value)}
+                placeholder="Enter website URL (e.g., nike.com or https://nike.com)"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="button"
+                onClick={handleExtractFromUrl}
+                disabled={extracting || !storeUrl.trim()}
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {extracting ? 'Extracting...' : 'Extract Info'}
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-gray-600">
+              This will automatically extract store name, logo, description, and other information from the website.
+            </p>
+          </div>
+
+          <form onSubmit={handleCreate} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="name" className="sr-only">Store Name</label>
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  placeholder="Store Name"
+                  value={formData.name || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="voucherText" className="sr-only">Voucher Text</label>
+                <input
+                  id="voucherText"
+                  name="voucherText"
+                  type="text"
+                  placeholder="Voucher Text (e.g., Upto 58% Voucher)"
+                  value={formData.voucherText || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, voucherText: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="logoUrl" className="block text-gray-700 text-sm font-semibold mb-2">
+                Logo URL (Cloudinary URL or direct URL)
+              </label>
+              <input
+                id="logoUrl"
+                name="logoUrl"
+                type="url"
+                value={logoUrl}
+                onChange={(e) => handleLogoUrlChange(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="https://res.cloudinary.com/... or https://example.com/logo.png"
+              />
+              {extractedLogoUrl && extractedLogoUrl !== logoUrl && (
+                <div className="mt-2 p-2 bg-blue-50 rounded text-sm text-blue-700">
+                  <strong>Extracted Original URL:</strong>
+                  <div className="mt-1 break-all text-xs">{extractedLogoUrl}</div>
+                </div>
+              )}
+              {logoUrl && (
+                <div className="mt-2">
+                  <img 
+                    src={extractedLogoUrl || logoUrl} 
+                    alt="Logo preview" 
+                    className="h-16 object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="description" className="sr-only">Description</label>
+              <textarea
+                id="description"
+                name="description"
+                placeholder="Store Description"
+                value={formData.description || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={3}
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center">
+                <input
+                  id="isTrending"
+                  name="isTrending"
+                  type="checkbox"
+                  checked={formData.isTrending || false}
+                  onChange={(e) => {
+                    const isTrending = e.target.checked;
+                    setFormData({ 
+                      ...formData, 
+                      isTrending,
+                      // Clear layout position if trending is disabled
+                      layoutPosition: isTrending ? formData.layoutPosition : null
+                    });
+                  }}
+                  className="mr-2"
+                />
+                <label htmlFor="isTrending" className="text-gray-700">Mark as Trending</label>
+              </div>
+
+              <div>
+                <label htmlFor="layoutPosition" className="block text-gray-700 text-sm font-semibold mb-2">
+                  Assign to Layout Position (1-8)
+                </label>
+                <select
+                  id="layoutPosition"
+                  name="layoutPosition"
+                  value={formData.layoutPosition || ''}
+                  onChange={(e) => {
+                    const position = e.target.value ? parseInt(e.target.value) : null;
+                    setFormData({ 
+                      ...formData, 
+                      layoutPosition: position,
+                      // Auto-enable trending if layout position is assigned
+                      isTrending: position !== null ? true : formData.isTrending
+                    });
+                  }}
+                  disabled={!formData.isTrending && !formData.layoutPosition}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Not Assigned</option>
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((pos) => {
+                    const isTaken = stores.some(
+                      s => s.layoutPosition === pos && s.isTrending && s.id
+                    );
+                    const takenBy = stores.find(
+                      s => s.layoutPosition === pos && s.isTrending && s.id
+                    );
+                    return (
+                      <option key={pos} value={pos}>
+                        Layout {pos} {isTaken ? `(Currently: ${takenBy?.name})` : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+                {!formData.isTrending && !formData.layoutPosition && (
+                  <p className="mt-1 text-xs text-gray-400">Enable "Mark as Trending" or select a layout position</p>
+                )}
+                {formData.layoutPosition && (
+                  <p className="mt-1 text-xs text-blue-600">
+                    Store will be placed at Layout {formData.layoutPosition} in Trending Stores section
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold"
+            >
+              Create Store
+            </button>
+          </form>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="text-center py-12">Loading stores...</div>
+      ) : stores.length === 0 ? (
+        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+          <p className="text-gray-500">No stores created yet</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">
+                    Logo
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">
+                    Store Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">
+                    Description
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">
+                    Voucher Text
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">
+                    Trending
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">
+                    Layout Position
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {stores.map((store) => (
+                  <tr key={store.id} className="border-b hover:bg-gray-50">
+                    <td className="px-6 py-4">
+                      {store.logoUrl ? (
+                        <img
+                          src={store.logoUrl}
+                          alt={store.name}
+                          className="h-12 w-12 object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="h-12 w-12 bg-gray-200 rounded flex items-center justify-center text-gray-400 text-xs">
+                          No Logo
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 font-semibold">
+                      {store.name}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600 max-w-md truncate">
+                      {store.description}
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      {store.voucherText || '-'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => handleToggleTrending(store)}
+                        className={`px-2 py-1 rounded text-xs font-semibold cursor-pointer ${
+                          store.isTrending
+                            ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {store.isTrending ? 'Trending' : 'Not Trending'}
+                      </button>
+                    </td>
+                    <td className="px-6 py-4">
+                      <select
+                        value={store.layoutPosition || ''}
+                        onChange={(e) => {
+                          const position = e.target.value ? parseInt(e.target.value) : null;
+                          handleAssignLayoutPosition(store, position);
+                        }}
+                        className="px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={!store.isTrending}
+                      >
+                        <option value="">Not Assigned</option>
+                        {[1, 2, 3, 4, 5, 6, 7, 8].map((pos) => (
+                          <option key={pos} value={pos}>
+                            Layout {pos}
+                          </option>
+                        ))}
+                      </select>
+                      {!store.isTrending && (
+                        <p className="text-xs text-gray-400 mt-1">Enable Trending first</p>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 space-x-2">
+                      <Link
+                        href={`/admin/stores/${store.id}`}
+                        className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded text-sm hover:bg-blue-200"
+                      >
+                        Edit
+                      </Link>
+                      <button
+                        onClick={() => handleDelete(store.id)}
+                        className="bg-red-100 text-red-700 px-3 py-1 rounded text-sm hover:bg-red-200"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
