@@ -15,6 +15,9 @@ export default function Navbar() {
       // Match /categories and /categories/[id]
       return pathname === '/categories' || pathname?.startsWith('/categories/');
     }
+    if (path === '/about-us') {
+      return pathname === '/about-us';
+    }
     return pathname === path;
   };
 
@@ -99,9 +102,6 @@ export default function Navbar() {
                 onClick={() => setStoreOpen((v) => !v)}
               >
                 Stores
-                <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
               </button>
               {storeOpen && (
                 <div className="absolute left-0 top-full bg-white border rounded shadow z-20 min-w-[150px]">
@@ -111,7 +111,16 @@ export default function Navbar() {
               )}
             </div>
             <Link href="#" className="text-gray-700 font-semibold py-4 hover:text-pink-600 transition-colors">FAQs</Link>
-            <Link href="#" className="text-gray-700 font-semibold py-4 hover:text-pink-600 transition-colors">About Us</Link>
+            <Link 
+              href="/about-us" 
+              className={`font-semibold py-4 transition-colors ${
+                isActive('/about-us') 
+                  ? 'text-pink-600 border-b-2 border-pink-600' 
+                  : 'text-gray-700 hover:text-pink-600'
+              }`}
+            >
+              About Us
+            </Link>
           </div>
 
           {/* Mobile Navigation Toggle */}
@@ -192,9 +201,6 @@ export default function Navbar() {
                   onClick={() => setStoreOpen((v) => !v)}
                 >
                   Stores
-                  <svg className={`w-4 h-4 transition-transform ${storeOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
                 </button>
                 {storeOpen && (
                   <div className="mt-2 pl-4 space-y-2">
@@ -204,7 +210,17 @@ export default function Navbar() {
                 )}
               </div>
               <Link href="#" className="block text-gray-700 font-semibold py-2 hover:text-pink-600 transition-colors" onClick={() => setMobileMenuOpen(false)}>FAQs</Link>
-              <Link href="#" className="block text-gray-700 font-semibold py-2 hover:text-pink-600 transition-colors" onClick={() => setMobileMenuOpen(false)}>About Us</Link>
+              <Link 
+                href="/about-us" 
+                className={`block font-semibold py-2 transition-colors ${
+                  isActive('/about-us') 
+                    ? 'text-pink-600 border-b-2 border-pink-600' 
+                    : 'text-gray-700 hover:text-pink-600'
+                }`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                About Us
+              </Link>
               <div className="flex items-center gap-4 pt-3 border-t border-gray-200">
                 <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
