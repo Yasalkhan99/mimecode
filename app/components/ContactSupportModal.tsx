@@ -116,7 +116,7 @@ export default function ContactSupportModal({ isOpen, onClose }: ContactSupportM
       scale: 1,
       y: 0,
       transition: { 
-        type: "spring",
+        type: "spring" as const,
         damping: 25,
         stiffness: 300,
         duration: 0.4
@@ -147,7 +147,7 @@ export default function ContactSupportModal({ isOpen, onClose }: ContactSupportM
       opacity: 1, 
       y: 0,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         stiffness: 100,
         damping: 10
       }
