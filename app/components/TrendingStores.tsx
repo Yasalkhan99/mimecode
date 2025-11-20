@@ -88,8 +88,9 @@ export default function TrendingStores() {
               <div className="flex gap-3 min-w-max">
                 {stores.map((store, index) => (
                   store ? (
-                    <div
+                    <Link
                       key={store.id}
+                      href={`/stores/${store.slug || store.id}`}
                       className={`bg-white rounded-lg p-3 w-[280px] flex-shrink-0 shadow-sm hover:shadow-md transition-shadow border flex flex-col animate-scale-in ${index > 0 ? 'animate-delay-' + (index % 4 + 1) : ''}`}
                       style={{ borderColor: 'rgba(244, 117, 79, 0.3)' }}
                     >
@@ -131,7 +132,7 @@ export default function TrendingStores() {
                           {store.voucherText || 'Upto 58% Voucher'}
                         </span>
                       </button>
-                    </div>
+                    </Link>
                   ) : (
                     <div
                       key={`empty-${index}`}
@@ -154,8 +155,9 @@ export default function TrendingStores() {
             <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {stores.map((store, index) => (
               store ? (
-                <div
+                <Link
                   key={store.id}
+                  href={`/stores/${store.slug || store.id}`}
                   className="bg-white rounded-lg p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow border flex flex-col"
                   style={{ borderColor: 'rgba(244, 117, 79, 0.3)' }}
                 >
@@ -203,7 +205,7 @@ export default function TrendingStores() {
                       {store.voucherText || 'Upto 58% Voucher'}
                     </span>
                   </button>
-                </div>
+                </Link>
               ) : (
                 <div
                   key={`empty-${index}`}

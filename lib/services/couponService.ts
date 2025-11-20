@@ -18,6 +18,7 @@ export interface Coupon {
   id?: string;
   code: string;
   storeName?: string; // Name of the store/brand for this coupon
+  storeIds?: string[]; // Array of store IDs this coupon is associated with
   discount: number;
   discountType: 'percentage' | 'fixed';
   description: string;
@@ -27,6 +28,7 @@ export interface Coupon {
   expiryDate: Timestamp | null;
   logoUrl?: string;
   url?: string; // Coupon URL where user should be redirected
+  couponType?: 'code' | 'deal'; // Type of coupon: 'code' for coupon codes, 'deal' for deals
   isPopular?: boolean;
   layoutPosition?: number | null; // Position in popular coupons layout (1-8)
   isLatest?: boolean;
@@ -169,6 +171,20 @@ export async function getCouponsByStoreName(storeName: string): Promise<Coupon[]
     } as Coupon));
   } catch (error) {
     console.error('Error getting coupons by store name:', error);
+    return [];
+  }
+}
+
+// Get coupons by store ID
+export async function getCouponsByStoreId(storeId: string): Promise<Coupon[]> {
+  try {
+    const allCoupons = await getCoupons();
+    // Filter coupons that have this storeId in their storeIds array
+    return allCoupons.filter(
+      coupon => coupon.storeIds && coupon.storeIds.includes(storeId)
+    );
+  } catch (error) {
+    console.error('Error getting coupons by store ID:', error);
     return [];
   }
 }

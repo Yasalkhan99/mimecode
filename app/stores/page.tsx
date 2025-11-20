@@ -250,7 +250,7 @@ export default function StoresPage() {
                       {[...filteredStores.slice(0, 6), ...filteredStores.slice(0, 6), ...filteredStores.slice(0, 6)].map((store, index) => (
                         <Link
                           key={`${store.id}-${index}`}
-                          href={`/stores/${store.id}`}
+                          href={`/stores/${store.slug || store.id}`}
                           className="flex-shrink-0 w-[240px] sm:w-[280px] md:w-[320px] bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:scale-105 block"
                           style={{
                             animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`
@@ -320,7 +320,7 @@ export default function StoresPage() {
                       {filteredStores.map((store, index) => (
                         <Link
                           key={store.id}
-                          href={`/stores/${store.id}`}
+                          href={`/stores/${store.slug || store.id}`}
                           className="group bg-white rounded-2xl border border-gray-200 hover:border-orange-400 transition-all duration-500 shadow-lg hover:shadow-2xl overflow-hidden cursor-pointer transform active:scale-95 relative block flex-shrink-0 w-[160px] snap-start"
                           style={{
                             animation: `fadeInUp 0.6s ease-out ${(index % 12) * 0.05}s both`
@@ -389,7 +389,7 @@ export default function StoresPage() {
                   {filteredStores.map((store, index) => (
                     <Link
                       key={store.id}
-                      href={`/stores/${store.id}`}
+                      href={`/stores/${store.slug || store.id}`}
                       className="group bg-white rounded-2xl border border-gray-200 hover:border-orange-400 transition-all duration-500 shadow-md hover:shadow-2xl overflow-hidden cursor-pointer transform hover:-translate-y-2 hover:scale-105 relative block"
                       style={{
                         animation: `fadeInUp 0.6s ease-out ${(index % 12) * 0.05}s both`

@@ -182,7 +182,7 @@ function SearchContent() {
                     {filteredStores.map((store) => (
                       <Link
                         key={store.id}
-                        href={`/stores/${store.id}`}
+                        href={`/stores/${store.slug || store.id}`}
                         className="group bg-white border border-gray-200 rounded-lg p-4 hover:border-orange-400 hover:shadow-lg transition-all duration-300 text-center"
                       >
                         {store.logoUrl ? (

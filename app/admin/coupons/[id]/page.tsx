@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   getCouponById,
@@ -9,6 +9,7 @@ import {
 } from '@/lib/services/couponService';
 import { getCategories, Category } from '@/lib/services/categoryService';
 import { extractOriginalCloudinaryUrl, isCloudinaryUrl } from '@/lib/utils/cloudinary';
+import { getStores, Store } from '@/lib/services/storeService';
 
 export default function EditCouponPage() {
   const params = useParams();
@@ -22,16 +23,42 @@ export default function EditCouponPage() {
   const [formData, setFormData] = useState<Partial<Coupon>>({});
   const [logoUrl, setLogoUrl] = useState('');
   const [extractedLogoUrl, setExtractedLogoUrl] = useState<string | null>(null);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
+  const [isStoreDropdownOpen, setIsStoreDropdownOpen] = useState(false);
+  const storeDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (storeDropdownRef.current && !storeDropdownRef.current.contains(event.target as Node)) {
+        setIsStoreDropdownOpen(false);
+      }
+    };
+
+    if (isStoreDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isStoreDropdownOpen]);
 
   useEffect(() => {
     const fetchData = async () => {
-      const [couponData, categoriesData] = await Promise.all([
+      const [couponData, categoriesData, storesData] = await Promise.all([
         getCouponById(couponId),
-        getCategories()
+        getCategories(),
+        getStores()
       ]);
       if (couponData) {
         setCoupon(couponData);
-        setFormData(couponData);
+        setFormData({
+          ...couponData,
+          couponType: couponData.couponType || 'code', // Default to 'code' if not set
+        });
+        setSelectedStoreIds(couponData.storeIds || []);
         if (couponData.logoUrl) {
           setLogoUrl(couponData.logoUrl);
           if (isCloudinaryUrl(couponData.logoUrl)) {
@@ -40,6 +67,7 @@ export default function EditCouponPage() {
         }
       }
       setCategories(categoriesData);
+      setStores(storesData);
       setLoading(false);
     };
     fetchData();
@@ -53,6 +81,8 @@ export default function EditCouponPage() {
     const logoUrlToSave = logoUrl ? extractOriginalCloudinaryUrl(logoUrl) : undefined;
     const updates = {
       ...formData,
+      storeIds: selectedStoreIds.length > 0 ? selectedStoreIds : undefined,
+      couponType: formData.couponType || 'code',
       ...(logoUrlToSave ? { logoUrl: logoUrlToSave } : {}),
     };
     
@@ -96,6 +126,160 @@ export default function EditCouponPage() {
         <h1 className="text-2xl font-bold text-gray-800 mb-6">Edit Coupon</h1>
 
         <form onSubmit={handleSave} className="space-y-4">
+          {/* Add the same store selection section as in create form */}
+          <div>
+            <label className="block text-gray-700 text-sm font-semibold mb-2">
+              Add to Stores (Select one or more existing stores)
+            </label>
+            {stores.length > 0 ? (
+              <div className="relative" ref={storeDropdownRef}>
+                {/* Dropdown Button */}
+                <button
+                  type="button"
+                  onClick={() => setIsStoreDropdownOpen(!isStoreDropdownOpen)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-left focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-between"
+                >
+                  <span className="text-gray-700">
+                    {selectedStoreIds.length > 0 
+                      ? `${selectedStoreIds.length} store${selectedStoreIds.length > 1 ? 's' : ''} selected`
+                      : 'Select stores...'}
+                  </span>
+                  <svg
+                    className={`w-5 h-5 text-gray-400 transition-transform ${isStoreDropdownOpen ? 'transform rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {/* Dropdown Menu */}
+                {isStoreDropdownOpen && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    <div className="p-2">
+                      {stores.map((store) => {
+                        const isSelected = selectedStoreIds.includes(store.id || '');
+                        return (
+                          <label
+                            key={store.id}
+                            className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer rounded"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                let newSelected: string[];
+                                if (e.target.checked) {
+                                  newSelected = [...selectedStoreIds, store.id!];
+                                } else {
+                                  newSelected = selectedStoreIds.filter(id => id !== store.id);
+                                }
+                                setSelectedStoreIds(newSelected);
+                                
+                                // Auto-populate storeName from first selected store
+                                if (newSelected.length > 0) {
+                                  const firstStore = stores.find(s => s.id === newSelected[0]);
+                                  if (firstStore) {
+                                    setFormData({ ...formData, storeName: firstStore.name });
+                                  }
+                                } else {
+                                  setFormData({ ...formData, storeName: '' });
+                                }
+                              }}
+                              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            />
+                            <span className="ml-3 text-sm text-gray-700">{store.name}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 flex items-center justify-center">
+                <p className="text-sm text-gray-500">No stores available. Please create stores first.</p>
+              </div>
+            )}
+            
+            {/* Selected Stores Tags */}
+            {selectedStoreIds.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {selectedStoreIds.map((storeId) => {
+                  const store = stores.find(s => s.id === storeId);
+                  return store ? (
+                    <span
+                      key={storeId}
+                      className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs"
+                    >
+                      {store.name}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newSelected = selectedStoreIds.filter(id => id !== storeId);
+                          setSelectedStoreIds(newSelected);
+                          if (newSelected.length > 0) {
+                            const firstStore = stores.find(s => s.id === newSelected[0]);
+                            if (firstStore) {
+                              setFormData({ ...formData, storeName: firstStore.name });
+                            }
+                          } else {
+                            setFormData({ ...formData, storeName: '' });
+                          }
+                        }}
+                        className="text-blue-700 hover:text-blue-900 font-bold"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ) : null;
+                })}
+              </div>
+            )}
+            <p className="mt-1 text-xs text-gray-500">
+              Click to open dropdown and select stores. Store name will auto-populate from first selection.
+            </p>
+          </div>
+
+          {/* Coupon Type Selection */}
+          <div>
+            <label className="block text-gray-700 text-sm font-semibold mb-2">
+              Coupon Type
+            </label>
+            <div className="flex gap-4">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="couponType"
+                  value="code"
+                  checked={formData.couponType === 'code'}
+                  onChange={(e) =>
+                    setFormData({ ...formData, couponType: 'code' as const })
+                  }
+                  className="mr-2"
+                />
+                Code
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="couponType"
+                  value="deal"
+                  checked={formData.couponType === 'deal'}
+                  onChange={(e) =>
+                    setFormData({ ...formData, couponType: 'deal' as const })
+                  }
+                  className="mr-2"
+                />
+                Deal
+              </label>
+            </div>
+            <p className="mt-1 text-xs text-gray-500">
+              Select whether this is a coupon code or a deal. Frontend will show "Get Code" for codes and "Get Deal" for deals.
+            </p>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="code" className="block text-sm font-semibold text-gray-700 mb-1">

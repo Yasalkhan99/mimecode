@@ -56,6 +56,19 @@ export default function CategoryDetailPage() {
     }
   };
 
+  // Get last 2 digits of code for code type coupons
+  const getCodePreview = (coupon: Coupon): string => {
+    if ((coupon.couponType || 'deal') === 'code' && coupon.code) {
+      const code = coupon.code.trim();
+      if (code.length >= 2) {
+        const lastTwo = code.slice(-2);
+        return `Get Code ...${lastTwo}`;
+      }
+      return 'Get Code';
+    }
+    return 'Get Deal';
+  };
+
   const handleGetDeal = (coupon: Coupon, e?: React.MouseEvent) => {
     if (e) {
       e.preventDefault();
@@ -222,7 +235,7 @@ export default function CategoryDetailPage() {
               {stores.map((store) => (
                 <Link
                   key={store.id}
-                  href={`/stores/${store.id}`}
+                  href={`/stores/${store.slug || store.id}`}
                   className="bg-white rounded-lg border border-gray-200 p-2 sm:p-3 md:p-4 lg:p-6 hover:shadow-lg transition-shadow group"
                 >
                   <div className="flex flex-col items-center text-center">
@@ -309,7 +322,7 @@ export default function CategoryDetailPage() {
                           onClick={(e) => handleGetDeal(coupon, e)}
                           className="w-full bg-pink-600 text-white font-semibold py-1.5 sm:py-2 px-3 sm:px-4 rounded-lg hover:bg-pink-700 transition-colors text-xs sm:text-sm md:text-base"
                         >
-                          {isRevealed ? (coupon.url ? 'Visit Store' : 'Get Deal') : 'Reveal Code'}
+                          {isRevealed ? (coupon.url ? 'Visit Store' : getCodePreview(coupon)) : 'Reveal Code'}
                         </button>
                       )}
                       {isRevealed && coupon.code && (

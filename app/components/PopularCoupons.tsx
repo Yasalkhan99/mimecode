@@ -55,6 +55,19 @@ export default function PopularCoupons() {
     }
   };
 
+  // Get last 2 digits of code for code type coupons
+  const getCodePreview = (coupon: Coupon): string => {
+    if ((coupon.couponType || 'deal') === 'code' && coupon.code) {
+      const code = coupon.code.trim();
+      if (code.length >= 2) {
+        const lastTwo = code.slice(-2);
+        return `Get Code ...${lastTwo}`;
+      }
+      return 'Get Code';
+    }
+    return 'Get Deal';
+  };
+
   const handleGetDeal = (coupon: Coupon, e?: React.MouseEvent) => {
     if (e) {
       e.preventDefault();
@@ -420,7 +433,7 @@ export default function PopularCoupons() {
                             </span>
                           ) : (
                             <span className="font-semibold text-gray-900">
-                              Get Deal
+                              {getCodePreview(coupon)}
                             </span>
                           )}
                         </button>
@@ -543,7 +556,7 @@ export default function PopularCoupons() {
                         </span>
                       ) : (
                         <span className="text-xs sm:text-sm font-semibold text-gray-900">
-                          Get Deal
+                          {getCodePreview(coupon)}
                         </span>
                       )}
                     </button>
