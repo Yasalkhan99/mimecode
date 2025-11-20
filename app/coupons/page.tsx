@@ -89,14 +89,20 @@ function CouponsContent() {
   // Get last 2 digits of code for code type coupons
   const getCodePreview = (coupon: Coupon): string => {
     if ((coupon.couponType || 'deal') === 'code' && coupon.code) {
-      const code = coupon.code.trim();
-      if (code.length >= 2) {
-        const lastTwo = code.slice(-2);
-        return `Get Code ...${lastTwo}`;
-      }
-      return 'Get Code';
+      return 'Get Coupon';
     }
     return 'Get Deal';
+  };
+
+  // Get last 2 digits for hover display
+  const getLastTwoDigits = (coupon: Coupon): string | null => {
+    if ((coupon.couponType || 'deal') === 'code' && coupon.code) {
+      const code = coupon.code.trim();
+      if (code.length >= 2) {
+        return code.slice(-2);
+      }
+    }
+    return null;
   };
 
   const handleGetDeal = (coupon: Coupon, e?: React.MouseEvent) => {
@@ -298,6 +304,7 @@ function CouponsContent() {
                   <div
                     key={coupon.id}
                     className="bg-white rounded-lg border border-gray-200 p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col"
+                    style={{ overflow: 'visible' }}
                   >
                     {/* Logo and Brand Name */}
                     <div className="flex items-center gap-3 mb-3">
@@ -361,16 +368,24 @@ function CouponsContent() {
                     ) : (
                       <button
                         onClick={(e) => handleGetDeal(coupon, e)}
-                        className="w-full bg-white border-2 border-dashed border-gray-300 rounded-lg px-3 py-2.5 flex items-center justify-center gap-2 hover:bg-gray-50 hover:border-orange-500 transition-colors group"
+                        className="w-full bg-gradient-to-r from-pink-500 via-pink-400 to-orange-500 border-2 border-dashed border-white/60 rounded-lg px-3 py-2.5 flex items-center justify-between text-white font-semibold hover:from-pink-600 hover:via-pink-500 hover:to-orange-600 hover:border-white/80 transition-all duration-300 group relative overflow-hidden shadow-md hover:shadow-lg"
+                        style={{ borderStyle: 'dashed', borderWidth: '2px' }}
                       >
-                        {isRevealed ? (
-                          <span className="text-xs sm:text-sm font-bold text-orange-600">
-                            {coupon.code}
-                          </span>
-                        ) : (
-                          <span className="text-xs sm:text-sm font-semibold text-gray-900">
-                            {getCodePreview(coupon)}
-                          </span>
+                        <span className="flex-1 flex items-center justify-center">
+                          {isRevealed ? (
+                            <span className="text-xs sm:text-sm font-bold drop-shadow-sm">
+                              {coupon.code}
+                            </span>
+                          ) : (
+                            <span className="text-xs sm:text-sm drop-shadow-sm">
+                              {getCodePreview(coupon)}
+                            </span>
+                          )}
+                        </span>
+                        {getLastTwoDigits(coupon) && !isRevealed && (
+                          <div className="w-0 opacity-0 group-hover:w-20 group-hover:opacity-100 transition-all duration-300 ease-out flex items-center justify-center border-l-2 border-dashed border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-gradient-to-r from-transparent to-orange-600/20" style={{ borderStyle: 'dashed' }}>
+                            <span className="text-white font-bold text-xs drop-shadow-md">...{getLastTwoDigits(coupon)}</span>
+                          </div>
                         )}
                       </button>
                     )}
