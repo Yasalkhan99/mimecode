@@ -137,7 +137,7 @@ export default function TrendingStores() {
                             {store.voucherText || 'Upto 58% Voucher'}
                           </span>
                         </span>
-                        <div className="w-0 opacity-0 group-hover:w-20 group-hover:opacity-100 transition-all duration-300 ease-out flex items-center justify-center border-l-2 border-dashed border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-gradient-to-r from-transparent to-orange-600/20" style={{ borderStyle: 'dashed' }}>
+                        <div className="w-20 flex items-center justify-center border-l-2 border-dashed border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-gradient-to-r from-transparent to-orange-600/20" style={{ borderStyle: 'dashed' }}>
                           <span className="text-white font-bold text-xs drop-shadow-md">Visit Store</span>
                         </div>
                       </button>
@@ -205,7 +205,7 @@ export default function TrendingStores() {
                     {store.description || `${store.name} Promo Code - Time limited promotion Enjoy a 10% off your order.`}
                   </p>
 
-                  {/* Voucher Button with Visit Store hover */}
+                  {/* Voucher Button with Visit Store always visible */}
                   <button 
                     onClick={(e) => {
                       e.preventDefault();
@@ -219,7 +219,7 @@ export default function TrendingStores() {
                         {store.voucherText || 'Upto 58% Voucher'}
                       </span>
                     </span>
-                    <div className="w-0 opacity-0 group-hover:w-24 group-hover:opacity-100 transition-all duration-300 ease-out flex items-center justify-center border-l-2 border-dashed border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-gradient-to-r from-transparent to-orange-600/20" style={{ borderStyle: 'dashed' }}>
+                    <div className="w-24 flex items-center justify-center border-l-2 border-dashed border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-gradient-to-r from-transparent to-orange-600/20" style={{ borderStyle: 'dashed' }}>
                       <span className="text-white font-bold text-xs sm:text-sm drop-shadow-md">Visit Store</span>
                     </div>
                   </button>
