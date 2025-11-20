@@ -31,6 +31,39 @@ export default function StoresPage() {
   const [slugError, setSlugError] = useState<string>('');
   const [autoGenerateSlug, setAutoGenerateSlug] = useState<boolean>(true);
   const [logoUrl, setLogoUrl] = useState('');
+
+  // Generate slug from name
+  const generateSlug = (name: string): string => {
+    return name
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '') // Remove special characters
+      .replace(/[\s_-]+/g, '-') // Replace spaces and underscores with hyphens
+      .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+  };
+
+  // Validate slug uniqueness
+  const validateSlug = async (slug: string): Promise<boolean> => {
+    if (!slug || slug.trim() === '') {
+      setSlugError('Slug is required');
+      return false;
+    }
+    
+    // Check slug format (only lowercase letters, numbers, and hyphens)
+    if (!/^[a-z0-9-]+$/.test(slug)) {
+      setSlugError('Slug can only contain lowercase letters, numbers, and hyphens');
+      return false;
+    }
+    
+    const isUnique = await isSlugUnique(slug);
+    if (!isUnique) {
+      setSlugError('This slug is already taken. Please use a different one.');
+      return false;
+    }
+    
+    setSlugError('');
+    return true;
+  };
   const [extractedLogoUrl, setExtractedLogoUrl] = useState<string | null>(null);
   const [storeUrl, setStoreUrl] = useState('');
   const [extracting, setExtracting] = useState(false);
