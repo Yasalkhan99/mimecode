@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { getPopularCoupons, getLatestCoupons, Coupon } from '@/lib/services/couponService';
+import { addToFavorites, removeFromFavorites, isFavorite } from '@/lib/services/favoritesService';
+import { addToCart, removeFromCart, isInCart } from '@/lib/services/cartService';
+import { addNotification } from '@/lib/services/notificationsService';
 import Link from 'next/link';
 
 export default function PopularCoupons() {
@@ -9,6 +12,7 @@ export default function PopularCoupons() {
   const [coupons, setCoupons] = useState<(Coupon | null)[]>(Array(8).fill(null));
   const [loading, setLoading] = useState(true);
   const [revealedCoupons, setRevealedCoupons] = useState<Set<string>>(new Set());
+  const [updateTrigger, setUpdateTrigger] = useState(0);
 
   useEffect(() => {
     const fetchCoupons = async () => {
@@ -26,6 +30,20 @@ export default function PopularCoupons() {
     };
     fetchCoupons();
   }, [activeTab]);
+
+  // Listen for favorites and cart updates
+  useEffect(() => {
+    const handleFavoritesUpdate = () => setUpdateTrigger(prev => prev + 1);
+    const handleCartUpdate = () => setUpdateTrigger(prev => prev + 1);
+    
+    window.addEventListener('favoritesUpdated', handleFavoritesUpdate);
+    window.addEventListener('cartUpdated', handleCartUpdate);
+    
+    return () => {
+      window.removeEventListener('favoritesUpdated', handleFavoritesUpdate);
+      window.removeEventListener('cartUpdated', handleCartUpdate);
+    };
+  }, []);
 
   const formatDate = (timestamp: any) => {
     if (!timestamp) return null;
@@ -212,20 +230,48 @@ export default function PopularCoupons() {
                           <span className="text-[10px]">Verified</span>
                         </div>
                       </div>
-                      <button 
-                        onClick={() => handleGetDeal(coupon)}
-                        className="w-full bg-white border-2 border-dashed border-gray-300 rounded-lg px-3 py-2 flex items-center justify-center gap-2 hover:bg-gray-50 hover:border-orange-500 transition-colors group mt-auto text-xs"
-                      >
-                        {coupon.id && revealedCoupons.has(coupon.id) ? (
-                          <span className="font-bold text-orange-600">
-                            {coupon.code}
-                          </span>
-                        ) : (
-                          <span className="font-semibold text-gray-900">
-                            Get Deal
-                          </span>
-                        )}
-                      </button>
+                      <div className="flex gap-2 mt-auto">
+                        <button
+                          onClick={(e) => handleToggleFavorite(e, coupon)}
+                          className={`p-2 rounded-lg transition-colors ${
+                            coupon.id && isFavorite(coupon.id)
+                              ? 'bg-pink-100 text-pink-600'
+                              : 'bg-gray-100 text-gray-600 hover:bg-pink-100 hover:text-pink-600'
+                          }`}
+                          title={coupon.id && isFavorite(coupon.id) ? 'Remove from favorites' : 'Add to favorites'}
+                        >
+                          <svg className="w-4 h-4" fill={coupon.id && isFavorite(coupon.id) ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={(e) => handleToggleCart(e, coupon)}
+                          className={`p-2 rounded-lg transition-colors ${
+                            coupon.id && isInCart(coupon.id)
+                              ? 'bg-orange-100 text-orange-600'
+                              : 'bg-gray-100 text-gray-600 hover:bg-orange-100 hover:text-orange-600'
+                          }`}
+                          title={coupon.id && isInCart(coupon.id) ? 'Remove from cart' : 'Add to cart'}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                        </button>
+                        <button 
+                          onClick={() => handleGetDeal(coupon)}
+                          className="flex-1 bg-white border-2 border-dashed border-gray-300 rounded-lg px-3 py-2 flex items-center justify-center gap-2 hover:bg-gray-50 hover:border-orange-500 transition-colors group text-xs"
+                        >
+                          {coupon.id && revealedCoupons.has(coupon.id) ? (
+                            <span className="font-bold text-orange-600">
+                              {coupon.code}
+                            </span>
+                          ) : (
+                            <span className="font-semibold text-gray-900">
+                              Get Deal
+                            </span>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <div
@@ -306,21 +352,49 @@ export default function PopularCoupons() {
                     </div>
                   </div>
 
-                  {/* Get Deal Button */}
-                  <button 
-                    onClick={() => handleGetDeal(coupon)}
-                    className="w-full bg-white border-2 border-dashed border-gray-300 rounded-lg px-3 py-2.5 flex items-center justify-center gap-2 hover:bg-gray-50 hover:border-orange-500 transition-colors group mt-auto"
-                  >
-                    {coupon.id && revealedCoupons.has(coupon.id) ? (
-                      <span className="text-xs sm:text-sm font-bold text-orange-600">
-                        {coupon.code}
-                      </span>
-                    ) : (
-                      <span className="text-xs sm:text-sm font-semibold text-gray-900">
-                        Get Deal
-                      </span>
-                    )}
-                  </button>
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 mt-auto">
+                    <button
+                      onClick={(e) => handleToggleFavorite(e, coupon)}
+                      className={`p-2.5 rounded-lg transition-colors ${
+                        coupon.id && isFavorite(coupon.id)
+                          ? 'bg-pink-100 text-pink-600'
+                          : 'bg-gray-100 text-gray-600 hover:bg-pink-100 hover:text-pink-600'
+                      }`}
+                      title={coupon.id && isFavorite(coupon.id) ? 'Remove from favorites' : 'Add to favorites'}
+                    >
+                      <svg className="w-5 h-5" fill={coupon.id && isFavorite(coupon.id) ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={(e) => handleToggleCart(e, coupon)}
+                      className={`p-2.5 rounded-lg transition-colors ${
+                        coupon.id && isInCart(coupon.id)
+                          ? 'bg-orange-100 text-orange-600'
+                          : 'bg-gray-100 text-gray-600 hover:bg-orange-100 hover:text-orange-600'
+                      }`}
+                      title={coupon.id && isInCart(coupon.id) ? 'Remove from cart' : 'Add to cart'}
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                    </button>
+                    <button 
+                      onClick={() => handleGetDeal(coupon)}
+                      className="flex-1 bg-white border-2 border-dashed border-gray-300 rounded-lg px-3 py-2.5 flex items-center justify-center gap-2 hover:bg-gray-50 hover:border-orange-500 transition-colors group"
+                    >
+                      {coupon.id && revealedCoupons.has(coupon.id) ? (
+                        <span className="text-xs sm:text-sm font-bold text-orange-600">
+                          {coupon.code}
+                        </span>
+                      ) : (
+                        <span className="text-xs sm:text-sm font-semibold text-gray-900">
+                          Get Deal
+                        </span>
+                      )}
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div
