@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getStoreById, Store } from '@/lib/services/storeService';
-import { getCouponsByStoreName, Coupon } from '@/lib/services/couponService';
+import { getStoreById, getStoreBySlug, Store } from '@/lib/services/storeService';
+import { getCouponsByStoreId, getCouponsByStoreName, Coupon } from '@/lib/services/couponService';
 import { addNotification } from '@/lib/services/notificationsService';
 import Navbar from '@/app/components/Navbar';
 import NewsletterSubscription from '@/app/components/NewsletterSubscription';
@@ -12,7 +12,7 @@ import Footer from '@/app/components/Footer';
 export default function StoreDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const storeId = params.id as string;
+  const slugOrId = params.id as string;
   
   const [store, setStore] = useState<Store | null>(null);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -23,14 +23,33 @@ export default function StoreDetailPage() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const storeData = await getStoreById(storeId);
+        // Try to get store by slug first, then by ID (for backward compatibility)
+        let storeData = await getStoreBySlug(slugOrId);
+        if (!storeData) {
+          // Fallback to ID for backward compatibility
+          storeData = await getStoreById(slugOrId);
+        }
+        
         if (storeData) {
           setStore(storeData);
           document.title = `${storeData.name} - Coupons - AvailCoupon`;
           
-          // Fetch coupons by store name
-          const couponsData = await getCouponsByStoreName(storeData.name);
-          setCoupons(couponsData);
+          // Try to get coupons by store ID first, fallback to store name
+          const storeId = storeData.id;
+          if (storeId) {
+            const couponsById = await getCouponsByStoreId(storeId);
+            const couponsByName = await getCouponsByStoreName(storeData.name);
+            
+            // Combine and deduplicate
+            const allCoupons = [...couponsById];
+            couponsByName.forEach(coupon => {
+              if (!allCoupons.find(c => c.id === coupon.id)) {
+                allCoupons.push(coupon);
+              }
+            });
+            
+            setCoupons(allCoupons);
+          }
         } else {
           document.title = 'Store Not Found - AvailCoupon';
         }
@@ -41,10 +60,10 @@ export default function StoreDetailPage() {
       }
     };
     
-    if (storeId) {
+    if (slugOrId) {
       fetchData();
     }
-  }, [storeId]);
+  }, [slugOrId]);
 
   const formatDate = (timestamp: any) => {
     if (!timestamp) return null;
@@ -54,6 +73,19 @@ export default function StoreDetailPage() {
     } catch {
       return null;
     }
+  };
+
+  // Get last 2 digits of code for code type coupons
+  const getCodePreview = (coupon: Coupon): string => {
+    if ((coupon.couponType || 'deal') === 'code' && coupon.code) {
+      const code = coupon.code.trim();
+      if (code.length >= 2) {
+        const lastTwo = code.slice(-2);
+        return `Get Code ...${lastTwo}`;
+      }
+      return 'Get Code';
+    }
+    return 'Get Deal';
   };
 
   const handleGetDeal = (coupon: Coupon, e?: React.MouseEvent) => {
@@ -342,7 +374,7 @@ export default function StoreDetailPage() {
                       </span>
                     ) : (
                       <>
-                        <span className="text-gray-900">Get Deal</span>
+                        <span className="text-gray-900">{getCodePreview(coupon)}</span>
                         <svg className="w-4 h-4 text-gray-400 group-hover:text-orange-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>

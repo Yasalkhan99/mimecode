@@ -5,6 +5,7 @@ import { extractOriginalCloudinaryUrl } from '@/lib/utils/cloudinary';
 export interface Store {
   id?: string;
   name: string;
+  slug?: string; // URL-friendly slug (e.g., "nike", "amazon")
   description: string;
   logoUrl?: string;
   voucherText?: string; // e.g., "Upto 58% Voucher"
@@ -78,6 +79,51 @@ export async function getStoreById(id: string): Promise<Store | null> {
   } catch (error) {
     console.error('Error getting store:', error);
     return null;
+  }
+}
+
+// Get store by slug
+export async function getStoreBySlug(slug: string): Promise<Store | null> {
+  try {
+    const q = query(
+      collection(db, stores),
+      where('slug', '==', slug)
+    );
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+      const doc = querySnapshot.docs[0];
+      return { id: doc.id, ...doc.data() } as Store;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting store by slug:', error);
+    return null;
+  }
+}
+
+// Check if slug is unique (excluding current store ID if editing)
+export async function isSlugUnique(slug: string, excludeStoreId?: string): Promise<boolean> {
+  try {
+    const q = query(
+      collection(db, stores),
+      where('slug', '==', slug)
+    );
+    const querySnapshot = await getDocs(q);
+    
+    if (querySnapshot.empty) {
+      return true; // Slug is unique
+    }
+    
+    // If editing, check if the slug belongs to the current store
+    if (excludeStoreId) {
+      const existingStore = querySnapshot.docs.find(doc => doc.id === excludeStoreId);
+      return !!existingStore; // Return true if slug belongs to current store (it's valid to keep your own slug)
+    }
+    
+    return false; // Slug already exists for another store
+  } catch (error) {
+    console.error('Error checking slug uniqueness:', error);
+    return false;
   }
 }
 

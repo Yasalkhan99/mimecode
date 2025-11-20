@@ -8,6 +8,7 @@ import {
   updateStore,
   deleteStore,
   Store,
+  isSlugUnique,
 } from '@/lib/services/storeService';
 import { getCategories, Category } from '@/lib/services/categoryService';
 import { extractOriginalCloudinaryUrl, isCloudinaryUrl } from '@/lib/utils/cloudinary';
@@ -19,6 +20,7 @@ export default function StoresPage() {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<Partial<Store>>({
     name: '',
+    slug: '',
     description: '',
     logoUrl: '',
     voucherText: '',
@@ -26,6 +28,8 @@ export default function StoresPage() {
     layoutPosition: null,
     categoryId: null,
   });
+  const [slugError, setSlugError] = useState<string>('');
+  const [autoGenerateSlug, setAutoGenerateSlug] = useState<boolean>(true);
   const [logoUrl, setLogoUrl] = useState('');
   const [extractedLogoUrl, setExtractedLogoUrl] = useState<string | null>(null);
   const [storeUrl, setStoreUrl] = useState('');
@@ -55,6 +59,17 @@ export default function StoresPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate slug
+    if (!formData.slug || formData.slug.trim() === '') {
+      alert('Please enter a slug for the store');
+      return;
+    }
+    
+    const slugValid = await validateSlug(formData.slug);
+    if (!slugValid) {
+      return;
+    }
+    
     // Check if layout position is already taken
     if (formData.layoutPosition && formData.isTrending) {
       const storesAtPosition = stores.filter(
@@ -77,6 +92,7 @@ export default function StoresPage() {
     
     const storeData: Omit<Store, 'id'> = {
       name: formData.name || '',
+      slug: formData.slug || '',
       description: formData.description || '',
       logoUrl: logoUrlToSave,
       voucherText: formData.voucherText || '',
@@ -92,6 +108,7 @@ export default function StoresPage() {
       setShowForm(false);
       setFormData({
         name: '',
+        slug: '',
         description: '',
         logoUrl: '',
         voucherText: '',
@@ -99,6 +116,8 @@ export default function StoresPage() {
         layoutPosition: null,
         categoryId: null,
       });
+      setSlugError('');
+      setAutoGenerateSlug(true);
       setLogoUrl('');
       setExtractedLogoUrl(null);
       setStoreUrl('');
@@ -251,19 +270,81 @@ export default function StoresPage() {
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="name" className="sr-only">Store Name</label>
+                <label htmlFor="name" className="block text-gray-700 text-sm font-semibold mb-2">
+                  Store Name
+                </label>
                 <input
                   id="name"
                   name="name"
                   type="text"
-                  placeholder="Store Name"
+                  placeholder="Store Name (e.g., Nike)"
                   value={formData.name || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const name = e.target.value;
+                    setFormData({ 
+                      ...formData, 
+                      name,
+                      // Auto-generate slug from name only if auto-generate is enabled
+                      slug: autoGenerateSlug ? generateSlug(name) : formData.slug
+                    });
+                  }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label htmlFor="slug" className="block text-gray-700 text-sm font-semibold">
+                    Slug (URL-friendly name)
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={autoGenerateSlug}
+                      onChange={(e) => {
+                        const isAuto = e.target.checked;
+                        setAutoGenerateSlug(isAuto);
+                        // If enabling auto-generate, update slug from name
+                        if (isAuto && formData.name) {
+                          setFormData({ ...formData, slug: generateSlug(formData.name) });
+                        }
+                      }}
+                      className="w-4 h-4"
+                    />
+                    <span>Auto-generate from name</span>
+                  </label>
+                </div>
+                <input
+                  id="slug"
+                  name="slug"
+                  type="text"
+                  placeholder={autoGenerateSlug ? "Auto-generated from name" : "Enter custom slug (e.g., nike-store)"}
+                  value={formData.slug || ''}
+                  onChange={async (e) => {
+                    // If auto-generate is enabled, don't allow manual editing
+                    if (autoGenerateSlug) return;
+                    
+                    const slug = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+                    setFormData({ ...formData, slug });
+                    if (slug) {
+                      await validateSlug(slug);
+                    } else {
+                      setSlugError('');
+                    }
+                  }}
+                  disabled={autoGenerateSlug}
+                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                    slugError ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                  } ${autoGenerateSlug ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                  required
+                />
+                {slugError && (
+                  <p className="mt-1 text-xs text-red-600">{slugError}</p>
+                )}
+                <p className="mt-1 text-xs text-gray-500">
+                  URL will be: /stores/{formData.slug || 'slug'}
+                  {autoGenerateSlug && <span className="text-blue-600 ml-2">(Auto-generated)</span>}
+                </p>
               </div>
               <div>
                 <label htmlFor="voucherText" className="sr-only">Voucher Text</label>
