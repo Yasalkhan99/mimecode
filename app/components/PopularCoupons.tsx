@@ -55,15 +55,105 @@ export default function PopularCoupons() {
     }
   };
 
-  const handleGetDeal = (coupon: Coupon) => {
+  const handleGetDeal = (coupon: Coupon, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    // Copy code to clipboard FIRST (before revealing)
+    if (coupon.code) {
+      const codeToCopy = coupon.code.trim();
+      copyToClipboard(codeToCopy);
+    }
+    
     // Mark coupon as revealed
     if (coupon.id) {
       setRevealedCoupons(prev => new Set(prev).add(coupon.id!));
     }
     
-    // Redirect to coupon URL if available
+    // Redirect to coupon URL if available (with small delay to ensure copy happens first)
     if (coupon.url) {
-      window.open(coupon.url, '_blank', 'noopener,noreferrer');
+      setTimeout(() => {
+        window.open(coupon.url, '_blank', 'noopener,noreferrer');
+      }, 200);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    console.log('Attempting to copy:', text);
+    
+    // Method 1: Try modern clipboard API
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(() => {
+        console.log('Clipboard API success');
+        addNotification({
+          title: 'Code Copied!',
+          message: `Coupon code "${text}" has been copied to clipboard.`,
+          type: 'success'
+        });
+      }).catch((err) => {
+        console.error('Clipboard API failed:', err);
+        // Fallback to execCommand
+        copyToClipboardFallback(text);
+      });
+    } else {
+      console.log('Using fallback method');
+      // Use fallback for browsers without clipboard API or non-secure contexts
+      copyToClipboardFallback(text);
+    }
+  };
+
+  const copyToClipboardFallback = (text: string) => {
+    try {
+      console.log('Using fallback copy method');
+      // Create a temporary textarea element
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      
+      // Make it invisible but still selectable
+      textArea.style.position = 'fixed';
+      textArea.style.left = '0';
+      textArea.style.top = '0';
+      textArea.style.width = '2px';
+      textArea.style.height = '2px';
+      textArea.style.opacity = '0';
+      textArea.style.pointerEvents = 'none';
+      textArea.style.zIndex = '-1';
+      
+      document.body.appendChild(textArea);
+      
+      // Select and copy
+      textArea.focus();
+      textArea.select();
+      textArea.setSelectionRange(0, 99999); // For mobile devices
+      
+      const successful = document.execCommand('copy');
+      console.log('execCommand result:', successful);
+      
+      document.body.removeChild(textArea);
+      
+      if (successful) {
+        addNotification({
+          title: 'Code Copied!',
+          message: `Coupon code "${text}" has been copied to clipboard.`,
+          type: 'success'
+        });
+      } else {
+        // If execCommand fails, show the code to user
+        addNotification({
+          title: 'Copy Manually',
+          message: `Code: ${text} (Please copy manually)`,
+          type: 'info'
+        });
+      }
+    } catch (err) {
+      console.error('Fallback copy failed:', err);
+      addNotification({
+        title: 'Copy Manually',
+        message: `Code: ${text} (Please copy manually)`,
+        type: 'info'
+      });
     }
   };
 
@@ -321,7 +411,7 @@ export default function PopularCoupons() {
                           </svg>
                         </button>
                         <button 
-                          onClick={() => handleGetDeal(coupon)}
+                          onClick={(e) => handleGetDeal(coupon, e)}
                           className="flex-1 bg-white border-2 border-dashed border-gray-300 rounded-lg px-3 py-2 flex items-center justify-center gap-2 hover:bg-gray-50 hover:border-orange-500 transition-colors group text-xs"
                         >
                           {coupon.id && revealedCoupons.has(coupon.id) ? (
@@ -444,7 +534,7 @@ export default function PopularCoupons() {
                       </svg>
                     </button>
                     <button 
-                      onClick={() => handleGetDeal(coupon)}
+                      onClick={(e) => handleGetDeal(coupon, e)}
                       className="flex-1 bg-white border-2 border-dashed border-gray-300 rounded-lg px-3 py-2.5 flex items-center justify-center gap-2 hover:bg-gray-50 hover:border-orange-500 transition-colors group"
                     >
                       {coupon.id && revealedCoupons.has(coupon.id) ? (

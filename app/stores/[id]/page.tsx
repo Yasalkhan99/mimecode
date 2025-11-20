@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getStoreById, Store } from '@/lib/services/storeService';
 import { getCouponsByStoreName, Coupon } from '@/lib/services/couponService';
+import { addNotification } from '@/lib/services/notificationsService';
 import Navbar from '@/app/components/Navbar';
 import NewsletterSubscription from '@/app/components/NewsletterSubscription';
 import Footer from '@/app/components/Footer';
@@ -55,7 +56,18 @@ export default function StoreDetailPage() {
     }
   };
 
-  const handleGetDeal = (coupon: Coupon) => {
+  const handleGetDeal = (coupon: Coupon, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    // Copy code to clipboard FIRST (before revealing)
+    if (coupon.code) {
+      const codeToCopy = coupon.code.trim();
+      copyToClipboard(codeToCopy);
+    }
+    
     // Mark coupon as revealed
     if (coupon.id) {
       setRevealedCoupons(prev => new Set(prev).add(coupon.id!));
@@ -63,7 +75,68 @@ export default function StoreDetailPage() {
     
     // Redirect to coupon URL if available
     if (coupon.url) {
-      window.open(coupon.url, '_blank', 'noopener,noreferrer');
+      setTimeout(() => {
+        window.open(coupon.url, '_blank', 'noopener,noreferrer');
+      }, 200);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    // Method 1: Try modern clipboard API
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(() => {
+        addNotification({
+          title: 'Code Copied!',
+          message: `Coupon code "${text}" has been copied to clipboard.`,
+          type: 'success'
+        });
+      }).catch((err) => {
+        console.error('Clipboard API failed:', err);
+        copyToClipboardFallback(text);
+      });
+    } else {
+      copyToClipboardFallback(text);
+    }
+  };
+
+  const copyToClipboardFallback = (text: string) => {
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '0';
+      textArea.style.opacity = '0';
+      textArea.style.pointerEvents = 'none';
+      
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      textArea.setSelectionRange(0, 99999);
+      
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      
+      if (successful) {
+        addNotification({
+          title: 'Code Copied!',
+          message: `Coupon code "${text}" has been copied to clipboard.`,
+          type: 'success'
+        });
+      } else {
+        addNotification({
+          title: 'Copy Manually',
+          message: `Code: ${text} (Please copy manually)`,
+          type: 'info'
+        });
+      }
+    } catch (err) {
+      console.error('Fallback copy failed:', err);
+      addNotification({
+        title: 'Copy Manually',
+        message: `Code: ${text} (Please copy manually)`,
+        type: 'info'
+      });
     }
   };
 
@@ -260,7 +333,7 @@ export default function StoreDetailPage() {
                   </div>
                   
                   <button 
-                    onClick={() => handleGetDeal(coupon)}
+                    onClick={(e) => handleGetDeal(coupon, e)}
                     className="w-full bg-white border-2 border-dashed border-gray-300 rounded-lg px-4 py-3 flex items-center justify-center gap-2 hover:bg-orange-50 hover:border-orange-500 transition-all group font-semibold text-sm"
                   >
                     {coupon.id && revealedCoupons.has(coupon.id) ? (
