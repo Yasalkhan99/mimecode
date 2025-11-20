@@ -124,13 +124,22 @@ export default function TrendingStores() {
                       <p className="text-xs text-gray-600 mb-3 line-clamp-2 leading-relaxed flex-grow">
                         {store.description || `${store.name} Promo Code - Time limited promotion Enjoy a 10% off your order.`}
                       </p>
-                      <button className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 flex items-center gap-2 hover:bg-gray-50 transition-colors group mt-auto text-xs">
-                        <svg className="w-3 h-3 text-gray-600 group-hover:text-orange-600 transition-colors flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                        </svg>
-                        <span className="font-semibold text-gray-900 truncate">
-                          {store.voucherText || 'Upto 58% Voucher'}
+                      <button 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          window.location.href = `/stores/${store.slug || store.id}`;
+                        }}
+                        className="w-full bg-gradient-to-r from-pink-500 via-pink-400 to-orange-500 border-2 border-dashed border-white/60 rounded-lg px-3 py-2 flex items-center justify-between text-white font-semibold hover:from-pink-600 hover:via-pink-500 hover:to-orange-600 hover:border-white/80 transition-all duration-300 group mt-auto text-xs relative overflow-hidden shadow-md hover:shadow-lg"
+                        style={{ borderStyle: 'dashed', borderWidth: '2px' }}
+                      >
+                        <span className="flex-1 flex items-center justify-center truncate">
+                          <span className="drop-shadow-sm truncate">
+                            {store.voucherText || 'Upto 58% Voucher'}
+                          </span>
                         </span>
+                        <div className="w-0 opacity-0 group-hover:w-20 group-hover:opacity-100 transition-all duration-300 ease-out flex items-center justify-center border-l-2 border-dashed border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-gradient-to-r from-transparent to-orange-600/20" style={{ borderStyle: 'dashed' }}>
+                          <span className="text-white font-bold text-xs drop-shadow-md">Visit Store</span>
+                        </div>
                       </button>
                     </Link>
                   ) : (
@@ -196,14 +205,23 @@ export default function TrendingStores() {
                     {store.description || `${store.name} Promo Code - Time limited promotion Enjoy a 10% off your order.`}
                   </p>
 
-                  {/* Voucher Button - Arrow on Left */}
-                  <button className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 flex items-center gap-2 hover:bg-gray-50 transition-colors group mt-auto">
-                    <svg className="w-4 h-4 text-gray-600 group-hover:text-orange-600 transition-colors flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                    <span className="text-xs sm:text-sm font-semibold text-gray-900">
-                      {store.voucherText || 'Upto 58% Voucher'}
+                  {/* Voucher Button with Visit Store hover */}
+                  <button 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      window.location.href = `/stores/${store.slug || store.id}`;
+                    }}
+                    className="w-full bg-gradient-to-r from-pink-500 via-pink-400 to-orange-500 border-2 border-dashed border-white/60 rounded-lg px-3 py-2.5 flex items-center justify-between text-white font-semibold hover:from-pink-600 hover:via-pink-500 hover:to-orange-600 hover:border-white/80 transition-all duration-300 group mt-auto relative overflow-hidden shadow-md hover:shadow-lg"
+                    style={{ borderStyle: 'dashed', borderWidth: '2px' }}
+                  >
+                    <span className="flex-1 flex items-center justify-center">
+                      <span className="text-xs sm:text-sm drop-shadow-sm">
+                        {store.voucherText || 'Upto 58% Voucher'}
+                      </span>
                     </span>
+                    <div className="w-0 opacity-0 group-hover:w-24 group-hover:opacity-100 transition-all duration-300 ease-out flex items-center justify-center border-l-2 border-dashed border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-gradient-to-r from-transparent to-orange-600/20" style={{ borderStyle: 'dashed' }}>
+                      <span className="text-white font-bold text-xs sm:text-sm drop-shadow-md">Visit Store</span>
+                    </div>
                   </button>
                 </Link>
               ) : (
