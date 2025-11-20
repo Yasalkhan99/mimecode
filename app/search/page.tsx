@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getCoupons, Coupon } from '@/lib/services/couponService';
@@ -10,7 +10,7 @@ import Navbar from '@/app/components/Navbar';
 import NewsletterSubscription from '@/app/components/NewsletterSubscription';
 import Footer from '@/app/components/Footer';
 
-export default function SearchPage() {
+function SearchContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || '';
   const categoryId = searchParams.get('category') || '';
@@ -88,9 +88,7 @@ export default function SearchPage() {
   const selectedCategory = categories.find(c => c.id === categoryId);
 
   return (
-    <div className="min-h-screen bg-white overflow-x-hidden w-full">
-      <Navbar />
-      
+    <>
       {/* Search Results Section */}
       <div className="w-full px-4 sm:px-6 md:px-8 py-8 sm:py-12 md:py-16 bg-white overflow-x-hidden">
         <div className="max-w-7xl mx-auto w-full">
@@ -224,11 +222,26 @@ export default function SearchPage() {
           )}
         </div>
       </div>
-      
-      {/* Newsletter Subscription Section */}
+    </>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <div className="min-h-screen bg-white overflow-x-hidden w-full">
+      <Navbar />
+      <Suspense fallback={
+        <div className="w-full px-4 sm:px-6 md:px-8 py-8 sm:py-12 md:py-16 bg-white overflow-x-hidden">
+          <div className="max-w-7xl mx-auto w-full">
+            <div className="text-center py-12">
+              <p className="text-gray-500">Loading search results...</p>
+            </div>
+          </div>
+        </div>
+      }>
+        <SearchContent />
+      </Suspense>
       <NewsletterSubscription />
-      
-      {/* Footer */}
       <Footer />
     </div>
   );
