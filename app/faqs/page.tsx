@@ -7,12 +7,14 @@ import { getActiveFAQs, FAQ } from '@/lib/services/faqService';
 import Navbar from '@/app/components/Navbar';
 import NewsletterSubscription from '@/app/components/NewsletterSubscription';
 import Footer from '@/app/components/Footer';
+import ContactSupportModal from '@/app/components/ContactSupportModal';
 
 export default function FAQsPage() {
   const [banner11, setBanner11] = useState<Banner | null>(null);
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [loading, setLoading] = useState(true);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
   useEffect(() => {
     // Set page title
@@ -159,12 +161,12 @@ export default function FAQsPage() {
             <p className="text-gray-600 text-sm sm:text-base mb-4 sm:mb-6">
               Can't find the answer you're looking for? Please contact our support team.
             </p>
-            <a
-              href="/contact"
+            <button
+              onClick={() => setIsContactModalOpen(true)}
               className="inline-block px-6 sm:px-8 py-3 bg-gradient-to-r from-orange-500 to-pink-500 text-white font-semibold rounded-lg hover:from-orange-600 hover:to-pink-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
             >
               Contact Support
-            </a>
+            </button>
           </div>
         </div>
       </div>
@@ -174,6 +176,12 @@ export default function FAQsPage() {
       
       {/* Footer */}
       <Footer />
+
+      {/* Contact Support Modal */}
+      <ContactSupportModal 
+        isOpen={isContactModalOpen} 
+        onClose={() => setIsContactModalOpen(false)} 
+      />
     </div>
   );
 }
