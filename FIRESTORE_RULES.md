@@ -51,6 +51,18 @@ service cloud.firestore {
       allow write: if request.auth != null; // Only authenticated users can write
     }
     
+    // Email settings - public read (for newsletter form), authenticated write (admin only)
+    match /emailSettings/{document=**} {
+      allow read: if true; // Public read (needed for newsletter subscription form)
+      allow write: if request.auth != null; // Only authenticated admin users can write
+    }
+    
+    // Newsletter subscriptions - public write (anyone can subscribe), authenticated read (admin only)
+    match /newsletterSubscriptions/{document=**} {
+      allow read: if request.auth != null; // Only authenticated admin users can read
+      allow write: if true; // Anyone can subscribe (public write)
+    }
+    
     // Admin panel collections - require authentication for both read and write
     match /users/{document=**} {
       allow read, write: if request.auth != null;

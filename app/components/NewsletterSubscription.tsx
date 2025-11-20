@@ -14,12 +14,31 @@ export default function NewsletterSubscription() {
     }
     
     setIsSubmitting(true);
-    // TODO: Add newsletter subscription API call here
-    setTimeout(() => {
-      alert('Thank you for subscribing!');
-      setEmail('');
+    
+    try {
+      // Save subscription to Firestore and send email via Resend (API route handles both)
+      const response = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert('Thank you for subscribing! Your email has been saved successfully.');
+        setEmail('');
+      } else {
+        alert(data.error || 'Failed to subscribe. Please try again.');
+      }
+    } catch (error: any) {
+      console.error('Error submitting newsletter:', error);
+      alert('An error occurred. Please try again later.');
+    } finally {
       setIsSubmitting(false);
-    }, 1000);
+    }
   };
 
   return (
