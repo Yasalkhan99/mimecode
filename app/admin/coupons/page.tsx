@@ -41,6 +41,7 @@ export default function CouponsPage() {
   const [extractedLogoUrl, setExtractedLogoUrl] = useState<string | null>(null);
   const [couponUrl, setCouponUrl] = useState('');
   const [extracting, setExtracting] = useState(false);
+  const [fileInputKey, setFileInputKey] = useState(0);
 
   const fetchCoupons = async () => {
     setLoading(true);
@@ -136,6 +137,7 @@ export default function CouponsPage() {
       setLogoUrl('');
       setExtractedLogoUrl(null);
       setCouponUrl('');
+      setFileInputKey(prev => prev + 1);
     }
   };
 
@@ -307,7 +309,7 @@ export default function CouponsPage() {
                 id="couponUrl"
                 name="couponUrl"
                 type="text"
-                value={couponUrl}
+                value={couponUrl || ''}
                 onChange={(e) => setCouponUrl(e.target.value)}
                 placeholder="Enter website URL (e.g., nike.com or https://nike.com)"
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -418,6 +420,7 @@ export default function CouponsPage() {
                           }
                         }}
                         className="w-full"
+                        key={`file-input-${fileInputKey}`}
                       />
                     </>
                   ) : (
@@ -429,7 +432,7 @@ export default function CouponsPage() {
                         id="logoUrl"
                         name="logoUrl"
                         type="url"
-                        value={logoUrl}
+                        value={logoUrl || ''}
                         onChange={(e) => handleLogoUrlChange(e.target.value)}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="https://res.cloudinary.com/..."
