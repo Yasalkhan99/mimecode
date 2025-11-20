@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getEmailSettings } from '@/lib/services/emailService';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
 export async function POST(req: NextRequest) {
   try {
@@ -42,26 +42,60 @@ export async function POST(req: NextRequest) {
       status: 'pending',
     });
 
-    // Send email using Resend (if API key is configured)
+    // Send email using SMTP (Nodemailer)
     let emailSent = false;
     let emailError: any = null;
     
-    const resendApiKey = process.env.RESEND_API_KEY;
-    if (resendApiKey) {
+    // SMTP Configuration from environment variables
+    const smtpHost = process.env.SMTP_HOST;
+    const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587;
+    const smtpUser = process.env.SMTP_USER;
+    const smtpPassword = process.env.SMTP_PASSWORD;
+    const smtpFrom = process.env.SMTP_FROM || smtpUser || 'AvailCoupon <noreply@availcoupon.com>';
+    
+    if (smtpHost && smtpUser && smtpPassword) {
       try {
-        const resend = new Resend(resendApiKey);
-        
-        // Use your verified domain or default Resend domain
-        const fromEmail = process.env.RESEND_FROM_EMAIL || 'AvailCoupon <onboarding@resend.dev>';
-        
-        console.log('📤 Attempting to send email via Resend:', {
-          from: fromEmail,
+        console.log('📤 Attempting to send email via SMTP:', {
+          host: smtpHost,
+          port: smtpPort,
+          user: smtpUser,
           to: recipientEmail,
-          hasApiKey: !!resendApiKey
+          from: smtpFrom
         });
         
-        const emailResult = await resend.emails.send({
-          from: fromEmail,
+        // Create transporter with timeout and connection settings
+        const transporter = nodemailer.createTransport({
+          host: smtpHost,
+          port: smtpPort,
+          secure: smtpPort === 465, // true for 465 (SSL), false for 587 (TLS)
+          auth: {
+            user: smtpUser,
+            pass: smtpPassword,
+          },
+          connectionTimeout: 10000, // 10 seconds
+          socketTimeout: 10000, // 10 seconds
+          greetingTimeout: 10000, // 10 seconds
+          // For Gmail, try alternative connection method
+          requireTLS: smtpPort === 587,
+          tls: {
+            rejectUnauthorized: false, // Allow self-signed certificates (if needed)
+            ciphers: 'SSLv3'
+          }
+        });
+        
+        // Verify connection with timeout
+        console.log('🔌 Verifying SMTP connection...');
+        await Promise.race([
+          transporter.verify(),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Connection verification timeout')), 10000)
+          )
+        ]);
+        console.log('✅ SMTP connection verified');
+        
+        // Send email
+        const mailOptions = {
+          from: smtpFrom,
           to: recipientEmail,
           subject: 'New Newsletter Subscription Request',
           html: `
@@ -69,32 +103,100 @@ export async function POST(req: NextRequest) {
               <h2 style="color: #ea580c; margin-bottom: 20px;">New Newsletter Subscription</h2>
               <p style="color: #333; font-size: 16px; line-height: 1.6;">A new user has subscribed to your newsletter:</p>
               <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ea580c;">
-                <p style="margin: 0; color: #333;"><strong>Email:</strong> ${email.trim()}</p>
+                <p style="margin: 0; color: #333;"><strong>Subscriber Email:</strong> ${email.trim()}</p>
                 <p style="margin: 10px 0 0 0; color: #333;"><strong>Date:</strong> ${new Date().toLocaleString()}</p>
               </div>
               <p style="color: #333; font-size: 16px; line-height: 1.6;">Please add this email to your newsletter list.</p>
             </div>
           `,
-          text: `New Newsletter Subscription\n\nEmail: ${email.trim()}\nDate: ${new Date().toLocaleString()}\n\nPlease add this email to your newsletter list.`,
-        });
+          text: `New Newsletter Subscription\n\nSubscriber Email: ${email.trim()}\nDate: ${new Date().toLocaleString()}\n\nPlease add this email to your newsletter list.`,
+        };
+        
+        const info = await transporter.sendMail(mailOptions);
         
         emailSent = true;
-        console.log('✅ Email sent successfully via Resend:', {
+        console.log('✅ Email sent successfully via SMTP:', {
           recipientEmail,
-          result: emailResult
+          messageId: info.messageId
         });
       } catch (err: any) {
         emailError = err;
-        console.error('❌ Error sending email via Resend:', {
+        console.error('❌ Error sending email via SMTP:', {
           error: err,
           message: err?.message,
+          code: err?.code,
           recipientEmail,
-          hasApiKey: !!resendApiKey
+          host: smtpHost,
+          port: smtpPort
         });
+        
+        // Try port 465 if 587 fails (for Gmail)
+        if (err?.code === 'ETIMEDOUT' || err?.code === 'ESOCKET' || err?.code === 'ECONNREFUSED') {
+          if (smtpHost === 'smtp.gmail.com' && smtpPort === 587) {
+            console.log('🔄 Port 587 failed, trying port 465 with SSL...');
+            try {
+              const transporterSSL = nodemailer.createTransport({
+                host: smtpHost,
+                port: 465,
+                secure: true, // SSL
+                auth: {
+                  user: smtpUser,
+                  pass: smtpPassword,
+                },
+                connectionTimeout: 15000,
+                socketTimeout: 15000,
+                tls: {
+                  rejectUnauthorized: false
+                }
+              });
+              
+              await transporterSSL.verify();
+              console.log('✅ SMTP connection verified on port 465');
+              
+              const mailOptions = {
+                from: smtpFrom,
+                to: recipientEmail,
+                subject: 'New Newsletter Subscription Request',
+                html: `
+                  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h2 style="color: #ea580c; margin-bottom: 20px;">New Newsletter Subscription</h2>
+                    <p style="color: #333; font-size: 16px; line-height: 1.6;">A new user has subscribed to your newsletter:</p>
+                    <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ea580c;">
+                      <p style="margin: 0; color: #333;"><strong>Subscriber Email:</strong> ${email.trim()}</p>
+                      <p style="margin: 10px 0 0 0; color: #333;"><strong>Date:</strong> ${new Date().toLocaleString()}</p>
+                    </div>
+                    <p style="color: #333; font-size: 16px; line-height: 1.6;">Please add this email to your newsletter list.</p>
+                  </div>
+                `,
+                text: `New Newsletter Subscription\n\nSubscriber Email: ${email.trim()}\nDate: ${new Date().toLocaleString()}\n\nPlease add this email to your newsletter list.`,
+              };
+              
+              const info = await transporterSSL.sendMail(mailOptions);
+              emailSent = true;
+              emailError = null;
+              console.log('✅ Email sent successfully via SMTP (port 465):', {
+                recipientEmail,
+                messageId: info.messageId
+              });
+            } catch (sslErr: any) {
+              console.error('❌ Port 465 also failed:', sslErr);
+              emailError = {
+                ...err,
+                retryError: sslErr,
+                suggestion: 'Please check your SMTP settings, firewall, or try a different email provider.'
+              };
+            }
+          }
+        }
         // Continue - subscription is saved in Firestore even if email fails
       }
     } else {
-      console.warn('⚠️ RESEND_API_KEY is not set. Email will not be sent via Resend.');
+      console.warn('⚠️ SMTP configuration is incomplete. Email will not be sent.');
+      console.warn('⚠️ Required: SMTP_HOST, SMTP_USER, SMTP_PASSWORD');
+      emailError = {
+        message: 'SMTP configuration is incomplete. Please check your environment variables.',
+        code: 'SMTP_CONFIG_MISSING'
+      };
     }
 
     // Return success with email status
