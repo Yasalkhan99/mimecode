@@ -67,6 +67,69 @@ export default function PopularCoupons() {
     }
   };
 
+  const handleToggleFavorite = (e: React.MouseEvent, coupon: Coupon) => {
+    e.stopPropagation();
+    if (!coupon.id) return;
+    
+    if (isFavorite(coupon.id)) {
+      removeFromFavorites(coupon.id);
+      addNotification({
+        title: 'Removed from Favorites',
+        message: `${coupon.code} has been removed from your favorites.`,
+        type: 'info'
+      });
+    } else {
+      addToFavorites({
+        couponId: coupon.id,
+        code: coupon.code,
+        storeName: coupon.storeName,
+        discount: coupon.discount,
+        discountType: coupon.discountType,
+        description: coupon.description,
+        logoUrl: coupon.logoUrl,
+        url: coupon.url,
+        addedAt: Date.now()
+      });
+      addNotification({
+        title: 'Added to Favorites',
+        message: `${coupon.code} has been added to your favorites!`,
+        type: 'success'
+      });
+    }
+    window.dispatchEvent(new CustomEvent('favoritesUpdated'));
+  };
+
+  const handleToggleCart = (e: React.MouseEvent, coupon: Coupon) => {
+    e.stopPropagation();
+    if (!coupon.id) return;
+    
+    if (isInCart(coupon.id)) {
+      removeFromCart(coupon.id);
+      addNotification({
+        title: 'Removed from Cart',
+        message: `${coupon.code} has been removed from your cart.`,
+        type: 'info'
+      });
+    } else {
+      addToCart({
+        couponId: coupon.id,
+        code: coupon.code,
+        storeName: coupon.storeName,
+        discount: coupon.discount,
+        discountType: coupon.discountType,
+        description: coupon.description,
+        logoUrl: coupon.logoUrl,
+        url: coupon.url,
+        addedAt: Date.now()
+      });
+      addNotification({
+        title: 'Added to Cart',
+        message: `${coupon.code} has been added to your cart!`,
+        type: 'success'
+      });
+    }
+  };
+
   return (
     <div className="w-full px-2 sm:px-4 md:px-6 py-6 sm:py-8 md:py-12 lg:py-16 bg-white animate-fade-in-up">
       <div className="max-w-7xl mx-auto">

@@ -252,58 +252,109 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Mobile Navigation - Horizontal Scrollable */}
-          <div className="lg:hidden flex items-center w-full overflow-x-auto scrollbar-hide">
-            <div className="flex items-center gap-2 sm:gap-3 min-w-max px-2">
-              <Link 
-                href="/" 
-                className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${
-                  isActive('/') 
-                    ? 'text-pink-600 bg-pink-50 border-b-2 border-pink-600' 
-                    : 'text-gray-700 hover:text-pink-600 hover:bg-pink-50'
-                }`}
+          {/* Mobile Navigation - Horizontal Scrollable with Icons */}
+          <div className="lg:hidden flex items-center justify-between w-full gap-2">
+            {/* Navigation Links - Scrollable */}
+            <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto scrollbar-hide flex-1 min-w-0">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-max">
+                <Link 
+                  href="/" 
+                  className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${
+                    isActive('/') 
+                      ? 'text-pink-600 bg-pink-50 border-b-2 border-pink-600' 
+                      : 'text-gray-700 hover:text-pink-600 hover:bg-pink-50'
+                  }`}
+                >
+                  Home
+                </Link>
+                <Link 
+                  href="/categories" 
+                  className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${
+                    isActive('/categories') 
+                      ? 'text-pink-600 bg-pink-50 border-b-2 border-pink-600' 
+                      : 'text-gray-700 hover:text-pink-600 hover:bg-pink-50'
+                  }`}
+                >
+                  Categories
+                </Link>
+                <Link 
+                  href="/stores" 
+                  className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${
+                    isActive('/stores') 
+                      ? 'text-pink-600 bg-pink-50 border-b-2 border-pink-600' 
+                      : 'text-gray-700 hover:text-pink-600 hover:bg-pink-50'
+                  }`}
+                >
+                  Stores
+                </Link>
+                <Link 
+                  href="/faqs" 
+                  className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${
+                    isActive('/faqs') 
+                      ? 'text-pink-600 bg-pink-50 border-b-2 border-pink-600' 
+                      : 'text-gray-700 hover:text-pink-600 hover:bg-pink-50'
+                  }`}
+                >
+                  FAQs
+                </Link>
+                <Link 
+                  href="/about-us" 
+                  className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${
+                    isActive('/about-us') 
+                      ? 'text-pink-600 bg-pink-50 border-b-2 border-pink-600' 
+                      : 'text-gray-700 hover:text-pink-600 hover:bg-pink-50'
+                  }`}
+                >
+                  About Us
+                </Link>
+              </div>
+            </div>
+            
+            {/* Mobile Icons - Fixed on Right */}
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+              {/* Notifications */}
+              <Link
+                href="/notifications"
+                className="relative flex items-center justify-center w-9 h-9 text-gray-700 hover:text-pink-600 hover:bg-pink-50 rounded-full transition-colors"
               >
-                Home
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                {notificationsCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                    {notificationsCount > 9 ? '9+' : notificationsCount}
+                  </span>
+                )}
               </Link>
-              <Link 
-                href="/categories" 
-                className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${
-                  isActive('/categories') 
-                    ? 'text-pink-600 bg-pink-50 border-b-2 border-pink-600' 
-                    : 'text-gray-700 hover:text-pink-600 hover:bg-pink-50'
-                }`}
+              
+              {/* Favorites */}
+              <Link
+                href="/favorites"
+                className="relative flex items-center justify-center w-9 h-9 text-gray-700 hover:text-pink-600 hover:bg-pink-50 rounded-full transition-colors"
               >
-                Categories
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                {favoritesCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-pink-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                    {favoritesCount > 9 ? '9+' : favoritesCount}
+                  </span>
+                )}
               </Link>
-              <Link 
-                href="/stores" 
-                className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${
-                  isActive('/stores') 
-                    ? 'text-pink-600 bg-pink-50 border-b-2 border-pink-600' 
-                    : 'text-gray-700 hover:text-pink-600 hover:bg-pink-50'
-                }`}
+              
+              {/* Cart */}
+              <Link
+                href="/cart"
+                className="relative flex items-center justify-center w-9 h-9 text-gray-700 hover:text-pink-600 hover:bg-pink-50 rounded-full transition-colors"
               >
-                Stores
-              </Link>
-              <Link 
-                href="/faqs" 
-                className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${
-                  isActive('/faqs') 
-                    ? 'text-pink-600 bg-pink-50 border-b-2 border-pink-600' 
-                    : 'text-gray-700 hover:text-pink-600 hover:bg-pink-50'
-                }`}
-              >
-                FAQs
-              </Link>
-              <Link 
-                href="/about-us" 
-                className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${
-                  isActive('/about-us') 
-                    ? 'text-pink-600 bg-pink-50 border-b-2 border-pink-600' 
-                    : 'text-gray-700 hover:text-pink-600 hover:bg-pink-50'
-                }`}
-              >
-                About Us
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                {cartCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-orange-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                    {cartCount > 9 ? '9+' : cartCount}
+                  </span>
+                )}
               </Link>
             </div>
           </div>
@@ -362,54 +413,6 @@ export default function Navbar() {
             </div>
           </div>
         </div>
-
-          {/* Mobile Icons */}
-          <div className="lg:hidden flex items-center gap-3 sm:gap-4 ml-auto">
-            {/* Notifications */}
-            <Link
-              href="/notifications"
-              className="relative block text-gray-700 hover:text-pink-600 transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-              {notificationsCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                  {notificationsCount > 9 ? '9+' : notificationsCount}
-                </span>
-              )}
-            </Link>
-            
-            {/* Favorites */}
-            <Link
-              href="/favorites"
-              className="relative block text-gray-700 hover:text-pink-600 transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-              {favoritesCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-pink-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                  {favoritesCount > 9 ? '9+' : favoritesCount}
-                </span>
-              )}
-            </Link>
-            
-            {/* Cart */}
-            <Link
-              href="/cart"
-              className="relative block text-gray-700 hover:text-pink-600 transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              {cartCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-orange-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                  {cartCount > 9 ? '9+' : cartCount}
-                </span>
-              )}
-            </Link>
-          </div>
       </nav>
     </header>
   );
