@@ -247,7 +247,7 @@ export default function BannersPage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Not Assigned</option>
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((pos) => {
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((pos) => {
                   const isTaken = banners.some(
                     b => b.layoutPosition === pos && b.id
                   );
@@ -262,7 +262,7 @@ export default function BannersPage() {
                 })}
               </select>
               <p className="mt-1 text-xs text-gray-500">
-                Layout 1-4: Hero Section | Layout 5: Spotlight Section (below Popular Coupons, 618×568px recommended) | Layout 6: Categories Page Banner (1728×547px) | Layout 7: About Us Page Banner (1728×547px) | Layout 8-9: About Us Page Images (618×588px recommended)
+                Layout 1-4: Hero Section | Layout 5: Spotlight Section (below Popular Coupons, 618×568px recommended) | Layout 6: Categories Page Banner (1728×547px) | Layout 7: About Us Page Banner (1728×547px) | Layout 8-9: About Us Page Images (618×588px recommended) | Layout 10: Stores Page Banner (1728×547px) | Layout 11: FAQs Page Banner (1728×547px)
               </p>
             </div>
 
@@ -420,7 +420,7 @@ export default function BannersPage() {
                         className="px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         <option value="">Not Assigned</option>
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((pos) => (
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((pos) => (
                           <option key={pos} value={pos}>
                             Layout {pos}
                           </option>

@@ -2,7 +2,7 @@
 
 export default function Footer() {
   return (
-    <footer className="relative w-full bg-[#1a1a1a] text-white overflow-hidden mt-0 sm:-mt-20 md:-mt-8 animate-fade-in-up">
+    <footer className="relative w-full bg-[#1a1a1a] text-white overflow-x-hidden mt-0 sm:-mt-20 md:-mt-8 animate-fade-in-up">
       {/* Background Pattern SVG */}
       <div className="absolute inset-0 opacity-50">
         <img 
@@ -13,7 +13,7 @@ export default function Footer() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 md:py-12">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 md:py-12 w-full">
         {/* Logo */}
         <div className="flex justify-center mb-6 sm:mb-8 md:mb-10 animate-scale-in">
           <img 

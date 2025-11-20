@@ -6,8 +6,6 @@ import { usePathname } from "next/navigation";
 
 export default function Navbar() {
   const pathname = usePathname();
-  const [storeOpen, setStoreOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchCategoryOpen, setSearchCategoryOpen] = useState(false);
   
   const isActive = (path: string) => {
@@ -17,6 +15,9 @@ export default function Navbar() {
     }
     if (path === '/about-us') {
       return pathname === '/about-us';
+    }
+    if (path === '/stores') {
+      return pathname === '/stores';
     }
     return pathname === path;
   };
@@ -72,6 +73,15 @@ export default function Navbar() {
       
       {/* White nav bar with links and icons */}
       <nav className="bg-white border-b border-gray-200">
+        <style jsx>{`
+          .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+          .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+          }
+        `}</style>
         <div className="flex items-center justify-between px-2 sm:px-4 max-w-7xl mx-auto">
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-6 xl:gap-8">
@@ -95,22 +105,26 @@ export default function Navbar() {
             >
               Categories
             </Link>
-            <div className="relative">
-              <button
-                type="button"
-                className="text-gray-700 font-semibold py-4 flex items-center hover:text-pink-600 transition-colors"
-                onClick={() => setStoreOpen((v) => !v)}
-              >
-                Stores
-              </button>
-              {storeOpen && (
-                <div className="absolute left-0 top-full bg-white border rounded shadow z-20 min-w-[150px]">
-                  <div className="px-4 py-2 text-gray-700 hover:bg-gray-100 cursor-pointer">Store 1</div>
-                  <div className="px-4 py-2 text-gray-700 hover:bg-gray-100 cursor-pointer">Store 2</div>
-                </div>
-              )}
-            </div>
-            <Link href="#" className="text-gray-700 font-semibold py-4 hover:text-pink-600 transition-colors">FAQs</Link>
+            <Link 
+              href="/stores" 
+              className={`font-semibold py-4 transition-colors ${
+                isActive('/stores') 
+                  ? 'text-pink-600 border-b-2 border-pink-600' 
+                  : 'text-gray-700 hover:text-pink-600'
+              }`}
+            >
+              Stores
+            </Link>
+            <Link 
+              href="/faqs" 
+              className={`font-semibold py-4 transition-colors ${
+                isActive('/faqs') 
+                  ? 'text-pink-600 border-b-2 border-pink-600' 
+                  : 'text-gray-700 hover:text-pink-600'
+              }`}
+            >
+              FAQs
+            </Link>
             <Link 
               href="/about-us" 
               className={`font-semibold py-4 transition-colors ${
@@ -123,46 +137,60 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Mobile Navigation Toggle */}
-          <div className="lg:hidden flex items-center justify-between w-full">
-            <div className="flex items-center gap-4">
+          {/* Mobile Navigation - Horizontal Scrollable */}
+          <div className="lg:hidden flex items-center w-full overflow-x-auto scrollbar-hide">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-max px-2">
               <Link 
                 href="/" 
-                className={`font-semibold py-3 px-2 text-sm transition-colors ${
+                className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${
                   isActive('/') 
-                    ? 'text-pink-600 border-b-2 border-pink-600' 
-                    : 'text-gray-700 hover:text-pink-600'
+                    ? 'text-pink-600 bg-pink-50 border-b-2 border-pink-600' 
+                    : 'text-gray-700 hover:text-pink-600 hover:bg-pink-50'
                 }`}
               >
                 Home
               </Link>
               <Link 
                 href="/categories" 
-                className={`font-semibold py-3 px-2 text-sm transition-colors ${
+                className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${
                   isActive('/categories') 
-                    ? 'text-pink-600 border-b-2 border-pink-600' 
-                    : 'text-gray-700 hover:text-pink-600'
+                    ? 'text-pink-600 bg-pink-50 border-b-2 border-pink-600' 
+                    : 'text-gray-700 hover:text-pink-600 hover:bg-pink-50'
                 }`}
               >
                 Categories
               </Link>
+              <Link 
+                href="/stores" 
+                className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${
+                  isActive('/stores') 
+                    ? 'text-pink-600 bg-pink-50 border-b-2 border-pink-600' 
+                    : 'text-gray-700 hover:text-pink-600 hover:bg-pink-50'
+                }`}
+              >
+                Stores
+              </Link>
+              <Link 
+                href="/faqs" 
+                className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${
+                  isActive('/faqs') 
+                    ? 'text-pink-600 bg-pink-50 border-b-2 border-pink-600' 
+                    : 'text-gray-700 hover:text-pink-600 hover:bg-pink-50'
+                }`}
+              >
+                FAQs
+              </Link>
+              <Link 
+                href="/about-us" 
+                className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${
+                  isActive('/about-us') 
+                    ? 'text-pink-600 bg-pink-50 border-b-2 border-pink-600' 
+                    : 'text-gray-700 hover:text-pink-600 hover:bg-pink-50'
+                }`}
+              >
+                About Us
+              </Link>
             </div>
-            <button
-              type="button"
-              className="p-2 text-gray-700 hover:text-pink-600 transition-colors"
-              onClick={() => setMobileMenuOpen((v) => !v)}
-              aria-label="Toggle menu"
-            >
-              {mobileMenuOpen ? (
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              ) : (
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              )}
-            </button>
           </div>
 
           {/* Desktop Icons */}
@@ -179,62 +207,18 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-gray-200 bg-white">
-            <div className="px-4 py-3 space-y-3">
-              <Link 
-                href="/categories" 
-                className={`block font-semibold py-2 transition-colors ${
-                  isActive('/categories') 
-                    ? 'text-pink-600 border-b-2 border-pink-600' 
-                    : 'text-gray-700 hover:text-pink-600'
-                }`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Categories
-              </Link>
-              <div className="relative">
-                <button
-                  type="button"
-                  className="w-full text-left text-gray-700 font-semibold py-2 flex items-center justify-between hover:text-pink-600 transition-colors"
-                  onClick={() => setStoreOpen((v) => !v)}
-                >
-                  Stores
-                </button>
-                {storeOpen && (
-                  <div className="mt-2 pl-4 space-y-2">
-                    <div className="px-4 py-2 text-gray-600 hover:text-pink-600 cursor-pointer">Store 1</div>
-                    <div className="px-4 py-2 text-gray-600 hover:text-pink-600 cursor-pointer">Store 2</div>
-                  </div>
-                )}
-              </div>
-              <Link href="#" className="block text-gray-700 font-semibold py-2 hover:text-pink-600 transition-colors" onClick={() => setMobileMenuOpen(false)}>FAQs</Link>
-              <Link 
-                href="/about-us" 
-                className={`block font-semibold py-2 transition-colors ${
-                  isActive('/about-us') 
-                    ? 'text-pink-600 border-b-2 border-pink-600' 
-                    : 'text-gray-700 hover:text-pink-600'
-                }`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                About Us
-              </Link>
-              <div className="flex items-center gap-4 pt-3 border-t border-gray-200">
-                <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-                <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-                <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-            </div>
+          {/* Mobile Icons */}
+          <div className="lg:hidden flex items-center gap-3 sm:gap-4 ml-auto">
+            <svg className="w-5 h-5 text-gray-700 hover:text-pink-600 cursor-pointer transition-colors" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            <svg className="w-5 h-5 text-gray-700 hover:text-pink-600 cursor-pointer transition-colors" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+            <svg className="w-5 h-5 text-gray-700 hover:text-pink-600 cursor-pointer transition-colors" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
           </div>
-        )}
       </nav>
     </header>
   );

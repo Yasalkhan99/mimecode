@@ -154,6 +154,25 @@ export async function getCouponsByCategoryId(categoryId: string): Promise<Coupon
   }
 }
 
+// Get coupons by store name
+export async function getCouponsByStoreName(storeName: string): Promise<Coupon[]> {
+  try {
+    const q = query(
+      collection(db, coupons),
+      where('storeName', '==', storeName),
+      where('isActive', '==', true)
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    } as Coupon));
+  } catch (error) {
+    console.error('Error getting coupons by store name:', error);
+    return [];
+  }
+}
+
 // Validate and apply coupon
 export async function applyCoupon(code: string) {
   try {

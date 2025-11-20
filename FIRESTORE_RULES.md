@@ -46,6 +46,11 @@ service cloud.firestore {
       allow write: if request.auth != null; // Only authenticated users can write
     }
     
+    match /faqs/{document=**} {
+      allow read: if true; // Public read
+      allow write: if request.auth != null; // Only authenticated users can write
+    }
+    
     // Admin panel collections - require authentication for both read and write
     match /users/{document=**} {
       allow read, write: if request.auth != null;
