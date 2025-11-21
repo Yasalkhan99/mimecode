@@ -83,7 +83,7 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
       y: 0,
       rotateX: 0,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         damping: 20,
         stiffness: 300,
         mass: 0.8
@@ -108,7 +108,7 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
       transition: {
         delay: i * 0.1 + 0.2,
         duration: 0.4,
-        type: "spring",
+        type: "spring" as const,
         stiffness: 200
       }
     })
@@ -216,19 +216,19 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                       >
                         <img
                           src={coupon.logoUrl}
-                          alt={coupon.storeName}
+                          alt={coupon.storeName || 'Store logo'}
                           className="w-full h-full object-contain p-2"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
                             target.style.display = 'none';
-                            if (target.parentElement) {
+                            if (target.parentElement && coupon.storeName) {
                               target.parentElement.innerHTML = `<span class="text-4xl font-bold text-gray-400">${coupon.storeName.charAt(0)}</span>`;
                             }
                           }}
                         />
                       </motion.div>
                       <p className="text-gray-800 text-sm font-bold text-center">
-                        {coupon.storeName}
+                        {coupon.storeName || 'Store'}
                       </p>
                       {coupon.url && (
                         <p className="text-gray-500 text-xs mt-0.5 text-center">
@@ -243,11 +243,11 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                         className="w-28 h-28 mb-2 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center shadow-inner border border-gray-300"
                       >
                         <span className="text-4xl font-bold text-gray-400">
-                          {coupon.storeName.charAt(0)}
+                          {coupon.storeName?.charAt(0) || '?'}
                         </span>
                       </motion.div>
                       <p className="text-gray-800 text-sm font-bold text-center">
-                        {coupon.storeName}
+                        {coupon.storeName || 'Store'}
                       </p>
                     </div>
                   )}
