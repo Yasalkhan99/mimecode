@@ -432,22 +432,22 @@ export default function PopularCoupons() {
                         </button>
                         <button 
                           onClick={(e) => handleGetDeal(coupon, e)}
-                          className="flex-1 bg-gradient-to-r from-pink-500 via-pink-400 to-orange-500 border-2 border-dashed border-white/60 rounded-lg px-3 py-2 flex items-center justify-between text-white font-semibold hover:from-pink-600 hover:via-pink-500 hover:to-orange-600 hover:border-white/80 transition-all duration-300 group text-xs relative overflow-hidden shadow-md hover:shadow-lg"
+                          className="flex-1 bg-gradient-to-r from-pink-500 via-pink-400 to-orange-500 border-2 border-dashed border-white/60 rounded-lg px-3 py-2 flex items-center text-white font-semibold hover:from-pink-600 hover:via-pink-500 hover:to-orange-600 hover:border-white/80 transition-all duration-300 group text-xs relative overflow-hidden shadow-md hover:shadow-lg whitespace-nowrap"
                           style={{ borderStyle: 'dashed', borderWidth: '2px' }}
                         >
-                          <span className="flex-1 flex items-center justify-center">
+                          <span className="flex-1 flex items-center justify-center group-hover:justify-start transition-all duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)]">
                             {coupon.id && revealedCoupons.has(coupon.id) ? (
-                              <span className="font-bold drop-shadow-sm">
+                              <span className="font-bold drop-shadow-sm whitespace-nowrap">
                                 {coupon.code}
                               </span>
                             ) : (
-                              <span className="drop-shadow-sm">
+                              <span className="drop-shadow-sm whitespace-nowrap">
                                 {getCodePreview(coupon)}
                               </span>
                             )}
                           </span>
                           {getLastTwoDigits(coupon) && !(coupon.id && revealedCoupons.has(coupon.id)) && (
-                            <div className="w-0 opacity-0 group-hover:w-20 group-hover:opacity-100 transition-all duration-300 ease-out flex items-center justify-center border-l-2 border-dashed border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-gradient-to-r from-transparent to-orange-600/20" style={{ borderStyle: 'dashed' }}>
+                            <div className="w-0 opacity-0 group-hover:w-20 group-hover:opacity-100 transition-all duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] flex items-center justify-center border-l-2 border-dashed border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-gradient-to-r from-transparent to-orange-600/20 flex-shrink-0" style={{ borderStyle: 'dashed' }}>
                               <span className="text-white font-bold text-xs drop-shadow-md">...{getLastTwoDigits(coupon)}</span>
                             </div>
                           )}
@@ -564,22 +564,22 @@ export default function PopularCoupons() {
                     </button>
                     <button 
                       onClick={(e) => handleGetDeal(coupon, e)}
-                      className="flex-1 bg-gradient-to-r from-pink-500 via-pink-400 to-orange-500 border-2 border-dashed border-white/60 rounded-lg px-3 py-2.5 flex items-center justify-between text-white font-semibold hover:from-pink-600 hover:via-pink-500 hover:to-orange-600 hover:border-white/80 transition-all duration-300 group relative overflow-hidden shadow-md hover:shadow-lg"
+                      className="flex-1 bg-gradient-to-r from-pink-500 via-pink-400 to-orange-500 border-2 border-dashed border-white/60 rounded-lg px-3 py-2.5 flex items-center text-white font-semibold hover:from-pink-600 hover:via-pink-500 hover:to-orange-600 hover:border-white/80 transition-all duration-300 group relative overflow-hidden shadow-md hover:shadow-lg whitespace-nowrap"
                       style={{ borderStyle: 'dashed', borderWidth: '2px' }}
                     >
-                      <span className="flex-1 flex items-center justify-center">
+                      <span className="flex-1 flex items-center justify-center group-hover:justify-start transition-all duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)]">
                         {coupon.id && revealedCoupons.has(coupon.id) ? (
-                          <span className="text-xs sm:text-sm font-bold drop-shadow-sm">
+                          <span className="text-xs sm:text-sm font-bold drop-shadow-sm whitespace-nowrap">
                             {coupon.code}
                           </span>
                         ) : (
-                          <span className="text-xs sm:text-sm drop-shadow-sm">
+                          <span className="text-xs sm:text-sm drop-shadow-sm whitespace-nowrap">
                             {getCodePreview(coupon)}
                           </span>
                         )}
                       </span>
                       {getLastTwoDigits(coupon) && !(coupon.id && revealedCoupons.has(coupon.id)) && (
-                        <div className="w-0 opacity-0 group-hover:w-20 group-hover:opacity-100 transition-all duration-300 ease-out flex items-center justify-center border-l-2 border-dashed border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-gradient-to-r from-transparent to-orange-600/20" style={{ borderStyle: 'dashed' }}>
+                        <div className="w-0 opacity-0 group-hover:w-20 group-hover:opacity-100 transition-all duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] flex items-center justify-center border-l-2 border-dashed border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-gradient-to-r from-transparent to-orange-600/20 flex-shrink-0" style={{ borderStyle: 'dashed' }}>
                           <span className="text-white font-bold text-xs drop-shadow-md">...{getLastTwoDigits(coupon)}</span>
                         </div>
                       )}
