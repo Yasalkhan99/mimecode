@@ -27,7 +27,8 @@ export async function POST(req: NextRequest) {
 
     // Get recipient email from settings
     const emailSettings = await getEmailSettings();
-    const recipientEmail = emailSettings?.newsletterEmail || 'yasalkhan90@gmail.com';
+    // Use email1 as primary, fallback to email2, email3, or default
+    const recipientEmail = emailSettings?.email1 || emailSettings?.email2 || emailSettings?.email3 || 'yasalkhan90@gmail.com';
     
     console.log('📧 Contact Form Submission:', {
       from: email.trim(),

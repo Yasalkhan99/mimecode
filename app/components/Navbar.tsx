@@ -113,7 +113,7 @@ export default function Navbar() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4 max-w-7xl mx-auto">
           <Link href="/" className="flex items-center ml-2 md:ml-4">
             <img 
-              src="/Asset 2@2x 2.svg" 
+              src="/Asset 7@3x 2.svg" 
               alt="Avail Coupon Code Logo" 
               className="h-10 sm:h-12 md:h-14 lg:h-16 w-auto"
             />

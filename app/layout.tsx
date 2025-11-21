@@ -22,7 +22,19 @@ export const metadata: Metadata = {
   title: "AvailCoupon",
   description: "Manage coupons and discounts with Firebase backend",
   icons: {
-    icon: '/Asset 2@2x 1 (1).svg',
+    icon: [
+      {
+        url: '/Favicon 1.svg',
+        type: 'image/svg+xml',
+      },
+      {
+        url: '/Favicon 1.svg',
+        sizes: 'any',
+        type: 'image/svg+xml',
+      },
+    ],
+    apple: '/Favicon 1.svg',
+    shortcut: '/Favicon 1.svg',
   },
   viewport: {
     width: 'device-width',

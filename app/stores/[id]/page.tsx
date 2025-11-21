@@ -8,6 +8,7 @@ import { addNotification } from '@/lib/services/notificationsService';
 import Navbar from '@/app/components/Navbar';
 import NewsletterSubscription from '@/app/components/NewsletterSubscription';
 import Footer from '@/app/components/Footer';
+import CouponPopup from '@/app/components/CouponPopup';
 
 export default function StoreDetailPage() {
   const params = useParams();
@@ -18,6 +19,8 @@ export default function StoreDetailPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [revealedCoupons, setRevealedCoupons] = useState<Set<string>>(new Set());
+  const [showPopup, setShowPopup] = useState(false);
+  const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -100,7 +103,7 @@ export default function StoreDetailPage() {
       e.stopPropagation();
     }
     
-    // Copy code to clipboard FIRST (before revealing)
+    // Copy code to clipboard FIRST (before showing popup)
     if (coupon.code) {
       const codeToCopy = coupon.code.trim();
       copyToClipboard(codeToCopy);
@@ -111,12 +114,29 @@ export default function StoreDetailPage() {
       setRevealedCoupons(prev => new Set(prev).add(coupon.id!));
     }
     
-    // Redirect to coupon URL if available
-    if (coupon.url) {
+    // Show popup
+    setSelectedCoupon(coupon);
+    setShowPopup(true);
+    
+    // Automatically open URL in new tab after a short delay (to ensure popup is visible first)
+    if (coupon.url && coupon.url.trim()) {
       setTimeout(() => {
         window.open(coupon.url, '_blank', 'noopener,noreferrer');
-      }, 200);
+      }, 500);
     }
+  };
+
+  const handlePopupContinue = () => {
+    if (selectedCoupon?.url) {
+      window.open(selectedCoupon.url, '_blank', 'noopener,noreferrer');
+    }
+    setShowPopup(false);
+    setSelectedCoupon(null);
+  };
+
+  const handlePopupClose = () => {
+    setShowPopup(false);
+    setSelectedCoupon(null);
   };
 
   const copyToClipboard = (text: string) => {
@@ -403,6 +423,14 @@ export default function StoreDetailPage() {
       
       {/* Footer */}
       <Footer />
+
+      {/* Coupon Popup */}
+      <CouponPopup
+        coupon={selectedCoupon}
+        isOpen={showPopup}
+        onClose={handlePopupClose}
+        onContinue={handlePopupContinue}
+      />
     </div>
   );
 }

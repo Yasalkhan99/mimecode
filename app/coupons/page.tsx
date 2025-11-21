@@ -9,6 +9,7 @@ import { addNotification } from '@/lib/services/notificationsService';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
 import NewsletterSubscription from '@/app/components/NewsletterSubscription';
+import CouponPopup from '@/app/components/CouponPopup';
 import Link from 'next/link';
 
 function CouponsContent() {
@@ -24,6 +25,8 @@ function CouponsContent() {
   const [selectedCategory, setSelectedCategory] = useState<string>(categoryParam || '');
   const [selectedStore, setSelectedStore] = useState<string>(storeParam || '');
   const [revealedCoupons, setRevealedCoupons] = useState<Set<string>>(new Set());
+  const [showPopup, setShowPopup] = useState(false);
+  const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
 
   useEffect(() => {
     document.title = 'All Coupons - AvailCoupon';
@@ -111,7 +114,7 @@ function CouponsContent() {
       e.stopPropagation();
     }
     
-    // Copy code to clipboard FIRST (before revealing)
+    // Copy code to clipboard FIRST (before showing popup)
     if (coupon.code) {
       const codeToCopy = coupon.code.trim();
       copyToClipboard(codeToCopy);
@@ -122,12 +125,29 @@ function CouponsContent() {
       setRevealedCoupons(prev => new Set(prev).add(coupon.id!));
     }
     
-    // Redirect to coupon URL if available
-    if (coupon.url) {
+    // Show popup
+    setSelectedCoupon(coupon);
+    setShowPopup(true);
+    
+    // Automatically open URL in new tab after a short delay (to ensure popup is visible first)
+    if (coupon.url && coupon.url.trim()) {
       setTimeout(() => {
         window.open(coupon.url, '_blank', 'noopener,noreferrer');
-      }, 200);
+      }, 500);
     }
+  };
+
+  const handlePopupContinue = () => {
+    if (selectedCoupon?.url) {
+      window.open(selectedCoupon.url, '_blank', 'noopener,noreferrer');
+    }
+    setShowPopup(false);
+    setSelectedCoupon(null);
+  };
+
+  const handlePopupClose = () => {
+    setShowPopup(false);
+    setSelectedCoupon(null);
   };
 
   const copyToClipboard = (text: string) => {
@@ -402,6 +422,14 @@ function CouponsContent() {
       
       {/* Footer */}
       <Footer />
+
+      {/* Coupon Popup */}
+      <CouponPopup
+        coupon={selectedCoupon}
+        isOpen={showPopup}
+        onClose={handlePopupClose}
+        onContinue={handlePopupContinue}
+      />
     </div>
   );
 }
