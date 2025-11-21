@@ -63,6 +63,12 @@ service cloud.firestore {
       allow write: if true; // Anyone can subscribe (public write)
     }
     
+    // Contact form submissions - public write (anyone can submit), authenticated read (admin only)
+    match /contactSubmissions/{document=**} {
+      allow read: if request.auth != null; // Only authenticated admin users can read
+      allow write: if true; // Anyone can submit contact form (public write)
+    }
+    
     // Admin panel collections - require authentication for both read and write
     match /users/{document=**} {
       allow read, write: if request.auth != null;
