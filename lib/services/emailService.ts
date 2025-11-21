@@ -3,7 +3,9 @@ import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 
 export interface EmailSettings {
   id?: string;
-  newsletterEmail: string; // Email address where newsletter subscriptions should be sent
+  email1: string; // First email address
+  email2: string; // Second email address
+  email3: string; // Third email address
   updatedAt?: Timestamp;
 }
 
@@ -23,24 +25,30 @@ export async function getEmailSettings(): Promise<EmailSettings | null> {
     // Return default if no settings exist
     return {
       id: emailSettingsDocId,
-      newsletterEmail: 'admin@availcoupon.com',
+      email1: 'admin@availcoupon.com',
+      email2: '',
+      email3: '',
     };
   } catch (error) {
     console.error('Error getting email settings:', error);
     return {
       id: emailSettingsDocId,
-      newsletterEmail: 'admin@availcoupon.com',
+      email1: 'admin@availcoupon.com',
+      email2: '',
+      email3: '',
     };
   }
 }
 
 // Update email settings
-export async function updateEmailSettings(newsletterEmail: string): Promise<{ success: boolean; error?: any }> {
+export async function updateEmailSettings(email1: string, email2: string, email3: string): Promise<{ success: boolean; error?: any }> {
   try {
     const docRef = doc(db, emailSettingsCollection, emailSettingsDocId);
     
     await setDoc(docRef, {
-      newsletterEmail: newsletterEmail.trim(),
+      email1: email1.trim(),
+      email2: email2.trim(),
+      email3: email3.trim(),
       updatedAt: Timestamp.now(),
     }, { merge: true });
     

@@ -6,6 +6,7 @@ import { addToFavorites, removeFromFavorites, isFavorite } from '@/lib/services/
 import { addToCart, removeFromCart, isInCart } from '@/lib/services/cartService';
 import { addNotification } from '@/lib/services/notificationsService';
 import Link from 'next/link';
+import CouponPopup from './CouponPopup';
 
 export default function PopularCoupons() {
   const [activeTab, setActiveTab] = useState<'latest' | 'popular'>('latest');
@@ -13,6 +14,8 @@ export default function PopularCoupons() {
   const [loading, setLoading] = useState(true);
   const [revealedCoupons, setRevealedCoupons] = useState<Set<string>>(new Set());
   const [updateTrigger, setUpdateTrigger] = useState(0);
+  const [showPopup, setShowPopup] = useState(false);
+  const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
 
   useEffect(() => {
     const fetchCoupons = async () => {
@@ -80,7 +83,7 @@ export default function PopularCoupons() {
       e.stopPropagation();
     }
     
-    // Copy code to clipboard FIRST (before revealing)
+    // Copy code to clipboard FIRST (before showing popup)
     if (coupon.code) {
       const codeToCopy = coupon.code.trim();
       copyToClipboard(codeToCopy);
@@ -91,12 +94,29 @@ export default function PopularCoupons() {
       setRevealedCoupons(prev => new Set(prev).add(coupon.id!));
     }
     
-    // Redirect to coupon URL if available (with small delay to ensure copy happens first)
-    if (coupon.url) {
+    // Show popup
+    setSelectedCoupon(coupon);
+    setShowPopup(true);
+    
+    // Automatically open URL in new tab after a short delay (to ensure popup is visible first)
+    if (coupon.url && coupon.url.trim()) {
       setTimeout(() => {
         window.open(coupon.url, '_blank', 'noopener,noreferrer');
-      }, 200);
+      }, 500);
     }
+  };
+
+  const handlePopupContinue = () => {
+    if (selectedCoupon?.url) {
+      window.open(selectedCoupon.url, '_blank', 'noopener,noreferrer');
+    }
+    setShowPopup(false);
+    setSelectedCoupon(null);
+  };
+
+  const handlePopupClose = () => {
+    setShowPopup(false);
+    setSelectedCoupon(null);
   };
 
   const copyToClipboard = (text: string) => {
@@ -605,6 +625,14 @@ export default function PopularCoupons() {
           </>
         )}
       </div>
+
+      {/* Coupon Popup */}
+      <CouponPopup
+        coupon={selectedCoupon}
+        isOpen={showPopup}
+        onClose={handlePopupClose}
+        onContinue={handlePopupContinue}
+      />
     </div>
   );
 }

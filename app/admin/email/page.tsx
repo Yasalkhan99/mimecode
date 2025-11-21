@@ -5,7 +5,9 @@ import { getEmailSettings, updateEmailSettings, EmailSettings } from '@/lib/serv
 
 export default function EmailPage() {
   const [emailSettings, setEmailSettings] = useState<EmailSettings | null>(null);
-  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [email1, setEmail1] = useState('');
+  const [email2, setEmail2] = useState('');
+  const [email3, setEmail3] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -16,7 +18,9 @@ export default function EmailPage() {
       try {
         const settings = await getEmailSettings();
         setEmailSettings(settings);
-        setNewsletterEmail(settings?.newsletterEmail || '');
+        setEmail1(settings?.email1 || '');
+        setEmail2(settings?.email2 || '');
+        setEmail3(settings?.email3 || '');
       } catch (error) {
         console.error('Error fetching email settings:', error);
         setMessage({ type: 'error', text: 'Failed to load email settings' });
@@ -33,28 +37,38 @@ export default function EmailPage() {
     
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!newsletterEmail.trim()) {
-      setMessage({ type: 'error', text: 'Please enter an email address' });
+    
+    // Validate all emails if they are filled
+    const emails = [email1.trim(), email2.trim(), email3.trim()];
+    const filledEmails = emails.filter(email => email !== '');
+    
+    if (filledEmails.length === 0) {
+      setMessage({ type: 'error', text: 'Please enter at least one email address' });
       return;
     }
     
-    if (!emailRegex.test(newsletterEmail.trim())) {
-      setMessage({ type: 'error', text: 'Please enter a valid email address' });
-      return;
+    // Validate each filled email
+    for (let i = 0; i < filledEmails.length; i++) {
+      if (!emailRegex.test(filledEmails[i])) {
+        setMessage({ type: 'error', text: `Please enter a valid email address for Email ${i + 1}` });
+        return;
+      }
     }
 
     setSaving(true);
     setMessage(null);
 
     try {
-      const result = await updateEmailSettings(newsletterEmail);
+      const result = await updateEmailSettings(email1, email2, email3);
       
       if (result.success) {
         setMessage({ type: 'success', text: 'Email settings saved successfully!' });
         // Update local state
         setEmailSettings({
           ...emailSettings,
-          newsletterEmail: newsletterEmail.trim(),
+          email1: email1.trim(),
+          email2: email2.trim(),
+          email3: email3.trim(),
         } as EmailSettings);
       } else {
         setMessage({ type: 'error', text: 'Failed to save email settings' });
@@ -82,9 +96,9 @@ export default function EmailPage() {
 
       <div className="bg-white rounded-lg border border-gray-200 p-6 sm:p-8">
         <div className="mb-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-2">Newsletter Subscription Email</h2>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">Manage Email Addresses</h2>
           <p className="text-gray-600 text-sm">
-            Set the email address where newsletter subscription requests will be sent when users click "Send" on the newsletter form.
+            Set up to 3 email addresses where emails will be sent. All fields are editable and optional.
           </p>
         </div>
 
@@ -101,25 +115,51 @@ export default function EmailPage() {
         )}
 
         <form onSubmit={handleSave}>
-          <div className="mb-6">
-            <label htmlFor="newsletterEmail" className="block text-sm font-semibold text-gray-700 mb-2">
-              Newsletter Email Address
-            </label>
-            <input
-              type="email"
-              id="newsletterEmail"
-              value={newsletterEmail}
-              onChange={(e) => setNewsletterEmail(e.target.value)}
-              placeholder="admin@availcoupon.com"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-              required
-            />
-            <p className="mt-2 text-xs text-gray-500">
-              All newsletter subscription requests will be sent to this email address.
-            </p>
+          <div className="space-y-6 mb-6">
+            <div>
+              <label htmlFor="email1" className="block text-sm font-semibold text-gray-700 mb-2">
+                Email Address 1
+              </label>
+              <input
+                type="email"
+                id="email1"
+                value={email1}
+                onChange={(e) => setEmail1(e.target.value)}
+                placeholder="admin@availcoupon.com"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="email2" className="block text-sm font-semibold text-gray-700 mb-2">
+                Email Address 2
+              </label>
+              <input
+                type="email"
+                id="email2"
+                value={email2}
+                onChange={(e) => setEmail2(e.target.value)}
+                placeholder="support@availcoupon.com"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="email3" className="block text-sm font-semibold text-gray-700 mb-2">
+                Email Address 3
+              </label>
+              <input
+                type="email"
+                id="email3"
+                value={email3}
+                onChange={(e) => setEmail3(e.target.value)}
+                placeholder="info@availcoupon.com"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+              />
+            </div>
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex gap-4 flex-wrap items-center">
             <button
               type="submit"
               disabled={saving}
@@ -138,9 +178,10 @@ export default function EmailPage() {
         <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <h3 className="font-semibold text-blue-900 mb-2">How it works:</h3>
           <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-            <li>When a user enters their email and clicks "Send" on the newsletter form, the subscription request will be sent to the email address above.</li>
-            <li>You can change this email address at any time from this page.</li>
-            <li>Make sure to use a valid email address that you have access to.</li>
+            <li>You can add up to 3 email addresses where emails will be sent.</li>
+            <li>All email fields are editable and can be updated at any time.</li>
+            <li>At least one email address is required to save settings.</li>
+            <li>Make sure to use valid email addresses that you have access to.</li>
           </ul>
         </div>
       </div>

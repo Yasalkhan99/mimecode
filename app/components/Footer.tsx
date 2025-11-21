@@ -17,7 +17,7 @@ export default function Footer() {
         {/* Logo */}
         <div className="flex justify-center mb-6 sm:mb-8 md:mb-10 animate-scale-in">
           <img 
-            src="/Asset 2@2x 2.svg" 
+            src="/Asset 7@3x 2.svg" 
             alt="Avail Coupon Code Logo" 
             className="h-12 sm:h-16 md:h-20 w-auto"
           />
