@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 export default function Footer() {
   return (
     <footer className="relative w-full bg-[#1a1a1a] text-white overflow-x-hidden mt-0 sm:-mt-20 md:-mt-8 animate-fade-in-up">
@@ -143,12 +145,29 @@ export default function Footer() {
           </svg>
         </div>
 
-        {/* Copyright */}
-        <div className="flex items-center justify-center pt-6 sm:pt-8 border-t border-gray-700 relative z-10 gap-2">
-          <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-800 rounded flex items-center justify-center">
-            <span className="text-white text-xs sm:text-sm font-bold">N</span>
+        {/* Copyright and Legal Links */}
+        <div className="relative z-10 pt-6 sm:pt-8 border-t border-gray-700">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 mb-4">
+            <Link 
+              href="/privacy-policy"
+              className="text-xs sm:text-sm text-gray-400 hover:text-white transition-colors"
+            >
+              Privacy Policy
+            </Link>
+            <span className="hidden sm:inline text-gray-600">|</span>
+            <Link 
+              href="/terms-and-conditions"
+              className="text-xs sm:text-sm text-gray-400 hover:text-white transition-colors"
+            >
+              Terms and Conditions
+            </Link>
           </div>
-          <p className="text-xs sm:text-sm text-gray-400">©2025 Avail Coupon Code. All Rights Reserved.</p>
+          <div className="flex items-center justify-center gap-2">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-800 rounded flex items-center justify-center">
+              <span className="text-white text-xs sm:text-sm font-bold">N</span>
+            </div>
+            <p className="text-xs sm:text-sm text-gray-400">©2025 Avail Coupon Code. All Rights Reserved.</p>
+          </div>
         </div>
       </div>
     </footer>
