@@ -78,6 +78,9 @@ export default function Navbar() {
     if (path === '/about-us') {
       return pathname === '/about-us';
     }
+    if (path === '/contact-us') {
+      return pathname === '/contact-us';
+    }
     if (path === '/stores') {
       return pathname === '/stores';
     }
@@ -244,6 +247,16 @@ export default function Navbar() {
             >
               About Us
             </Link>
+            <Link 
+              href="/contact-us" 
+              className={`font-semibold py-4 transition-colors ${
+                isActive('/contact-us') 
+                  ? 'text-pink-600 border-b-2 border-pink-600' 
+                  : 'text-gray-700 hover:text-pink-600'
+              }`}
+            >
+              Contact Us
+            </Link>
           </div>
 
           {/* Mobile Navigation - Horizontal Scrollable with Icons */}
@@ -300,6 +313,16 @@ export default function Navbar() {
                   }`}
                 >
                   About Us
+                </Link>
+                <Link 
+                  href="/contact-us" 
+                  className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${
+                    isActive('/contact-us') 
+                      ? 'text-pink-600 bg-pink-50 border-b-2 border-pink-600' 
+                      : 'text-gray-700 hover:text-pink-600 hover:bg-pink-50'
+                  }`}
+                >
+                  Contact Us
                 </Link>
               </div>
             </div>
