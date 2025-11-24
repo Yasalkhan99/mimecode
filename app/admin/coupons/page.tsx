@@ -92,6 +92,12 @@ export default function CouponsPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate coupon code only if coupon type is 'code'
+    if (formData.couponType === 'code' && (!formData.code || formData.code.trim() === '')) {
+      alert('Please enter a coupon code (required for code type coupons)');
+      return;
+    }
+    
     // Check if popular layout position is already taken
     if (formData.layoutPosition && formData.isPopular) {
       const couponsAtPosition = coupons.filter(
@@ -124,12 +130,24 @@ export default function CouponsPage() {
     const layoutPositionToSave = formData.isPopular ? formData.layoutPosition : null;
     // Only set latestLayoutPosition if coupon is latest
     const latestLayoutPositionToSave = formData.isLatest ? formData.latestLayoutPosition : null;
-    const couponData = {
+    
+    // Prepare coupon data
+    const couponData: any = {
       ...formData,
-      storeIds: selectedStoreIds.length > 0 ? selectedStoreIds : undefined, // Add storeIds
+      discountType: 'percentage', // Always use percentage
       layoutPosition: layoutPositionToSave,
       latestLayoutPosition: latestLayoutPositionToSave,
     };
+    
+    // For deal type, don't include code field
+    if (formData.couponType === 'deal') {
+      delete couponData.code;
+    }
+    
+    // Only include storeIds if there are selected stores
+    if (selectedStoreIds.length > 0) {
+      couponData.storeIds = selectedStoreIds;
+    }
     
     let result;
     if (logoUploadMethod === 'file') {
@@ -486,7 +504,7 @@ export default function CouponsPage() {
                     value="code"
                     checked={formData.couponType === 'code'}
                     onChange={(e) =>
-                      setFormData({ ...formData, couponType: 'code' as const })
+                      setFormData({ ...formData, couponType: 'code' as const, code: formData.code || '' })
                     }
                     className="mr-2"
                   />
@@ -499,7 +517,7 @@ export default function CouponsPage() {
                     value="deal"
                     checked={formData.couponType === 'deal'}
                     onChange={(e) =>
-                      setFormData({ ...formData, couponType: 'deal' as const })
+                      setFormData({ ...formData, couponType: 'deal' as const, code: '' })
                     }
                     className="mr-2"
                   />
@@ -512,26 +530,31 @@ export default function CouponsPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="code" className="block text-gray-700 text-sm font-semibold mb-2">
-                  Coupon Code
-                </label>
-                <input
-                  id="code"
-                  name="code"
-                  type="text"
-                  placeholder="Coupon Code (e.g., SAVE20)"
-                  value={formData.code || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, code: e.target.value })
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
+              {formData.couponType === 'code' && (
+                <div>
+                  <label htmlFor="code" className="block text-gray-700 text-sm font-semibold mb-2">
+                    Coupon Code <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="code"
+                    name="code"
+                    type="text"
+                    placeholder="Coupon Code (e.g., SAVE20)"
+                    value={formData.code || ''}
+                    onChange={(e) =>
+                      setFormData({ ...formData, code: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Required for code type coupons
+                  </p>
+                </div>
+              )}
               <div>
                 <label htmlFor="storeName" className="block text-gray-700 text-sm font-semibold mb-2">
-                  Store Name (Displayed on coupon card)
+                  Coupon Title
                 </label>
                 <input
                   id="storeName"
@@ -654,24 +677,6 @@ export default function CouponsPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="discountType" className="sr-only">Discount Type</label>
-                <select
-                  id="discountType"
-                  name="discountType"
-                  value={formData.discountType || 'percentage'}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      discountType: e.target.value as 'percentage' | 'fixed',
-                    })
-                  }
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                <option value="percentage">Percentage (%)</option>
-                <option value="fixed">Fixed (AED)</option>
-              </select>
-              </div>
               <div>
                 <label htmlFor="maxUses" className="sr-only">Max Uses</label>
                 <input
@@ -963,7 +968,7 @@ export default function CouponsPage() {
                     </td>
                     <td className="px-6 py-4">
                       {coupon.discount}
-                      {coupon.discountType === 'percentage' ? '%' : ' AED'}
+%
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
                       {coupon.description}

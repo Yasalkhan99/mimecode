@@ -5,6 +5,7 @@ import { extractOriginalCloudinaryUrl } from '@/lib/utils/cloudinary';
 export interface Store {
   id?: string;
   name: string;
+  subStoreName?: string; // Sub store name displayed on store page
   slug?: string; // URL-friendly slug (e.g., "nike", "amazon")
   description: string;
   logoUrl?: string;

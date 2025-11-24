@@ -163,7 +163,7 @@ function SearchContent() {
                             {coupon.description}
                           </p>
                           <div className="inline-block bg-gradient-to-r from-orange-500 to-pink-500 text-white text-sm font-bold px-4 py-2 rounded-lg">
-                            {coupon.discount}{coupon.discountType === 'percentage' ? '%' : ' AED'} OFF
+                            {coupon.discount}% OFF
                           </div>
                         </div>
                       </Link>
