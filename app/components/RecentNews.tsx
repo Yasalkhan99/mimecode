@@ -123,17 +123,24 @@ export default function RecentNews() {
                   </p>
 
                   {/* Read More Button */}
-                  <Link
-                    href={article.articleUrl || '#'}
-                    target={article.articleUrl ? '_blank' : undefined}
-                    rel={article.articleUrl ? 'noopener noreferrer' : undefined}
-                    className="inline-flex items-center gap-1 sm:gap-2 border-2 border-orange-600 text-orange-600 bg-white hover:bg-orange-600 hover:text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-colors font-semibold text-xs sm:text-sm w-fit mt-auto"
-                  >
-                    READ MORE
-                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </Link>
+                  {article.id ? (
+                    <Link
+                      href={`/blogs/${article.id}`}
+                      className="inline-flex items-center gap-1 sm:gap-2 border-2 border-orange-600 text-orange-600 bg-white hover:bg-orange-600 hover:text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-colors font-semibold text-xs sm:text-sm w-fit mt-auto"
+                    >
+                      READ MORE
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Link>
+                  ) : (
+                    <div className="inline-flex items-center gap-1 sm:gap-2 border-2 border-gray-300 text-gray-400 bg-gray-50 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold text-xs sm:text-sm w-fit mt-auto cursor-not-allowed">
+                      READ MORE
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
