@@ -38,7 +38,6 @@ export default function AnalyticsPage() {
     .slice(0, 5);
 
   const percentageCoupons = coupons.filter((c) => c.discountType === 'percentage');
-  const fixedCoupons = coupons.filter((c) => c.discountType === 'fixed');
 
   const avgUsageRate =
     coupons.length > 0
@@ -61,11 +60,6 @@ export default function AnalyticsPage() {
         <div className="bg-cyan-50 p-6 rounded-lg border border-cyan-200">
           <div className="text-gray-600 text-sm font-semibold">Percentage Coupons</div>
           <div className="text-3xl font-bold text-cyan-600 mt-2">{percentageCoupons.length}</div>
-        </div>
-
-        <div className="bg-teal-50 p-6 rounded-lg border border-teal-200">
-          <div className="text-gray-600 text-sm font-semibold">Fixed Coupons</div>
-          <div className="text-3xl font-bold text-teal-600 mt-2">{fixedCoupons.length}</div>
         </div>
 
         <div className="bg-pink-50 p-6 rounded-lg border border-pink-200">
@@ -110,15 +104,6 @@ export default function AnalyticsPage() {
               </div>
             </div>
 
-            <div>
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-700 font-semibold">Fixed Amount Coupons</span>
-                <span className="text-gray-600">{fixedCoupons.length} ({fixedCoupons.length > 0 ? ((fixedCoupons.length / coupons.length) * 100).toFixed(1) : 0}%)</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-green-600 h-2 rounded-full" style={{ width: coupons.length > 0 ? `${(fixedCoupons.length / coupons.length) * 100}%` : '0%' }}></div>
-              </div>
-            </div>
           </div>
         </div>
       </div>

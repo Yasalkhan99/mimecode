@@ -243,7 +243,7 @@ export default function StoresPage() {
                   <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-orange-50 via-pink-50 to-purple-50 p-3 sm:p-4 md:p-6">
                     <div 
                       ref={sliderRef}
-                      className="flex gap-3 sm:gap-4 md:gap-6 overflow-x-auto sm:overflow-x-hidden scrollbar-hide pb-2"
+                      className="flex gap-3 sm:gap-4 md:gap-6 overflow-x-auto sm:overflow-x-hidden scrollbar-hide pb-2 pt-2"
                       style={{ scrollBehavior: 'auto' }}
                     >
                       {/* Duplicate items for seamless loop - show more copies for smoother loop */}
@@ -251,51 +251,52 @@ export default function StoresPage() {
                         <Link
                           key={`${store.id}-${index}`}
                           href={`/stores/${store.slug || store.id}`}
-                          className="flex-shrink-0 w-[240px] sm:w-[280px] md:w-[320px] bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:scale-105 block"
+                          className="group flex flex-col flex-shrink-0 w-[180px] sm:w-[200px] md:w-[220px] bg-white rounded-2xl border border-gray-200 hover:border-orange-400 transition-all duration-500 shadow-md hover:shadow-2xl overflow-hidden cursor-pointer transform hover:-translate-y-1 hover:scale-[1.02] relative"
                           style={{
                             animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`
                           }}
                         >
-                          <div className="p-4 sm:p-6 flex items-center gap-3 sm:gap-4">
-                            <div className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center overflow-hidden shadow-md group-hover:shadow-lg transition-shadow">
-                              {store.logoUrl ? (
+                          {/* Logo Section */}
+                          <div className="aspect-[4/3] px-4 pt-3 pb-1.5 sm:px-5 sm:pt-4 sm:pb-2 flex flex-col items-center justify-center relative bg-gradient-to-br from-gray-50 via-white to-gray-50 transition-all duration-500 flex-shrink-0">
+                            {store.logoUrl ? (
+                              <div className="w-full h-full flex items-center justify-center transform group-hover:scale-110 transition-transform duration-500">
                                 <img
                                   src={store.logoUrl}
                                   alt={store.name}
-                                  className="w-full h-full object-contain p-2"
+                                  className="max-w-full max-h-full object-contain drop-shadow-lg group-hover:drop-shadow-xl transition-all duration-500"
                                   onError={(e) => {
                                     const target = e.target as HTMLImageElement;
                                     target.style.display = 'none';
+                                    const parent = target.parentElement;
+                                    if (parent) {
+                                      parent.innerHTML = `<div class="text-gray-400 text-xs text-center font-semibold">${store.name}</div>`;
+                                    }
                                   }}
                                 />
-                              ) : (
-                                <div className="text-gray-500 text-xs font-bold">
-                                  {store.name.substring(0, 2).toUpperCase()}
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-bold text-base sm:text-lg text-gray-900 mb-1 truncate">
+                              </div>
+                            ) : (
+                              <div className="text-gray-400 text-sm text-center font-semibold group-hover:text-orange-600 transition-colors">
                                 {store.name}
-                              </h4>
-                              {store.description && (
-                                <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">
-                                  {store.description}
-                                </p>
-                              )}
-                              {store.voucherText && (
-                                <div className="mt-2">
-                                  <span className="inline-flex items-center gap-1 bg-gradient-to-r from-orange-500 to-pink-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                      <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
-                                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd"/>
-                                    </svg>
-                                    {store.voucherText}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
+                              </div>
+                            )}
                           </div>
+                          
+                          {/* Content Section - Footer */}
+                          <div className="px-3 py-1.5 sm:px-4 sm:py-2 border-t border-gray-100 bg-white relative z-20 mt-auto">
+                            <h3 className="font-bold text-sm sm:text-base text-gray-900 text-center break-words group-hover:text-orange-600 transition-colors duration-300 mb-1">
+                              {store.name}
+                            </h3>
+                            {store.voucherText && (
+                              <div className="flex justify-center mt-1">
+                                <span className="inline-block bg-gradient-to-r from-orange-500 to-pink-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg group-hover:shadow-xl transform group-hover:scale-110 transition-all duration-300">
+                                  {store.voucherText}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Shine Effect */}
+                          <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none z-30"></div>
                         </Link>
                       ))}
                     </div>
@@ -321,16 +322,13 @@ export default function StoresPage() {
                         <Link
                           key={store.id}
                           href={`/stores/${store.slug || store.id}`}
-                          className="group bg-white rounded-2xl border border-gray-200 hover:border-orange-400 transition-all duration-500 shadow-lg hover:shadow-2xl overflow-hidden cursor-pointer transform active:scale-95 relative block flex-shrink-0 w-[160px] snap-start"
+                          className="group flex flex-col bg-white rounded-2xl border border-gray-200 hover:border-orange-400 transition-all duration-500 shadow-lg hover:shadow-2xl overflow-hidden cursor-pointer transform active:scale-95 relative flex-shrink-0 w-[160px] snap-start"
                           style={{
                             animation: `fadeInUp 0.6s ease-out ${(index % 12) * 0.05}s both`
                           }}
                         >
-                          {/* Gradient Overlay on Hover */}
-                          <div className="absolute inset-0 bg-gradient-to-br from-orange-500/0 to-pink-500/0 group-hover:from-orange-500/5 group-hover:to-pink-500/5 transition-all duration-500 pointer-events-none z-10"></div>
-                          
                           {/* Logo Section */}
-                          <div className="aspect-square p-4 flex flex-col items-center justify-center relative bg-gradient-to-br from-gray-50 via-white to-gray-50 group-hover:from-orange-50 group-hover:via-pink-50 group-hover:to-purple-50 transition-all duration-500">
+                          <div className="aspect-[4/3] px-4 pt-3 pb-1.5 flex flex-col items-center justify-center relative bg-gradient-to-br from-gray-50 via-white to-gray-50 transition-all duration-500 flex-shrink-0">
                             {store.logoUrl ? (
                               <div className="w-full h-full flex items-center justify-center transform group-hover:scale-110 transition-transform duration-500">
                                 <img
@@ -352,26 +350,19 @@ export default function StoresPage() {
                                 {store.name}
                               </div>
                             )}
-                            
-                            {/* Voucher Badge */}
+                          </div>
+                          
+                          {/* Content Section - Footer */}
+                          <div className="px-3 py-1.5 border-t border-gray-100 bg-white relative z-20 mt-auto">
+                            <h3 className="font-bold text-xs text-gray-900 text-center break-words group-hover:text-orange-600 transition-colors duration-300 mb-1">
+                              {store.name}
+                            </h3>
                             {store.voucherText && (
-                              <div className="absolute bottom-1 left-1 right-1 transform translate-y-0 group-hover:translate-y-0 opacity-100 group-hover:opacity-100 transition-all duration-300">
+                              <div className="flex justify-center mt-1">
                                 <span className="inline-block bg-gradient-to-r from-orange-500 to-pink-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg group-hover:shadow-xl transform group-hover:scale-110 transition-all duration-300">
                                   {store.voucherText}
                                 </span>
                               </div>
-                            )}
-                          </div>
-                          
-                          {/* Content Section */}
-                          <div className="p-3 border-t border-gray-100 bg-white relative z-20">
-                            <h3 className="font-bold text-xs text-gray-900 text-center truncate group-hover:text-orange-600 transition-colors duration-300 mb-1">
-                              {store.name}
-                            </h3>
-                            {store.description && (
-                              <p className="text-[10px] text-gray-500 text-center mt-1 line-clamp-2 group-hover:text-gray-600 transition-colors">
-                                {store.description}
-                              </p>
                             )}
                           </div>
 
@@ -390,16 +381,13 @@ export default function StoresPage() {
                     <Link
                       key={store.id}
                       href={`/stores/${store.slug || store.id}`}
-                      className="group bg-white rounded-2xl border border-gray-200 hover:border-orange-400 transition-all duration-500 shadow-md hover:shadow-2xl overflow-hidden cursor-pointer transform hover:-translate-y-2 hover:scale-105 relative block"
+                      className="group flex flex-col bg-white rounded-2xl border border-gray-200 hover:border-orange-400 transition-all duration-500 shadow-md hover:shadow-2xl overflow-hidden cursor-pointer transform hover:-translate-y-2 hover:scale-105 relative"
                       style={{
                         animation: `fadeInUp 0.6s ease-out ${(index % 12) * 0.05}s both`
                       }}
                     >
-                    {/* Gradient Overlay on Hover */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-orange-500/0 to-pink-500/0 group-hover:from-orange-500/5 group-hover:to-pink-500/5 transition-all duration-500 pointer-events-none z-10"></div>
-                    
                     {/* Logo Section */}
-                    <div className="aspect-square p-4 sm:p-6 flex flex-col items-center justify-center relative bg-gradient-to-br from-gray-50 via-white to-gray-50 group-hover:from-orange-50 group-hover:via-pink-50 group-hover:to-purple-50 transition-all duration-500">
+                    <div className="aspect-[4/3] px-4 pt-3 pb-1.5 sm:px-5 sm:pt-4 sm:pb-2 flex flex-col items-center justify-center relative bg-gradient-to-br from-gray-50 via-white to-gray-50 transition-all duration-500 flex-shrink-0">
                       {store.logoUrl ? (
                         <div className="w-full h-full flex items-center justify-center transform group-hover:scale-110 transition-transform duration-500">
                           <img
@@ -421,26 +409,19 @@ export default function StoresPage() {
                           {store.name}
                         </div>
                       )}
-                      
-                      {/* Voucher Badge */}
+                    </div>
+                    
+                    {/* Content Section - Footer */}
+                    <div className="px-3 py-1.5 sm:px-4 sm:py-2 border-t border-gray-100 bg-white relative z-20 mt-auto">
+                      <h3 className="font-bold text-sm sm:text-base text-gray-900 text-center break-words group-hover:text-orange-600 transition-colors duration-300 mb-1">
+                        {store.name}
+                      </h3>
                       {store.voucherText && (
-                        <div className="absolute bottom-2 left-2 right-2 transform translate-y-0 group-hover:translate-y-0 opacity-100 group-hover:opacity-100 transition-all duration-300">
+                        <div className="flex justify-center mt-1">
                           <span className="inline-block bg-gradient-to-r from-orange-500 to-pink-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg group-hover:shadow-xl transform group-hover:scale-110 transition-all duration-300">
                             {store.voucherText}
                           </span>
                         </div>
-                      )}
-                    </div>
-                    
-                    {/* Content Section */}
-                    <div className="p-3 sm:p-4 border-t border-gray-100 bg-white relative z-20">
-                      <h3 className="font-bold text-sm sm:text-base text-gray-900 text-center truncate group-hover:text-orange-600 transition-colors duration-300 mb-1">
-                        {store.name}
-                      </h3>
-                      {store.description && (
-                        <p className="text-xs text-gray-500 text-center mt-1 line-clamp-2 group-hover:text-gray-600 transition-colors">
-                          {store.description}
-                        </p>
                       )}
                     </div>
 

@@ -173,6 +173,27 @@ export default function EditStorePage() {
             </div>
 
             <div>
+              <label htmlFor="subStoreName" className="block text-sm font-semibold text-gray-700 mb-1">
+                Sub Store Name (Displayed on store page)
+              </label>
+              <input
+                id="subStoreName"
+                name="subStoreName"
+                type="text"
+                value={formData.subStoreName || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, subStoreName: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                This name will be displayed on the store page when visiting the store
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
               <div className="flex items-center justify-between mb-1">
                 <label htmlFor="slug" className="block text-sm font-semibold text-gray-700">
                   Slug (URL-friendly name)
@@ -228,24 +249,6 @@ export default function EditStorePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="voucherText" className="block text-sm font-semibold text-gray-700 mb-1">
-                Voucher Text (e.g., Upto 58% Voucher)
-              </label>
-              <input
-                id="voucherText"
-                name="voucherText"
-                type="text"
-                value={formData.voucherText || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, voucherText: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Upto 58% Voucher"
-              />
-            </div>
-          </div>
 
           <div>
             <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-1">

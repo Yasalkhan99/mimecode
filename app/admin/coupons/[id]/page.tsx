@@ -75,16 +75,33 @@ export default function EditCouponPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate coupon code only if coupon type is 'code'
+    if (formData.couponType === 'code' && (!formData.code || formData.code.trim() === '')) {
+      alert('Please enter a coupon code (required for code type coupons)');
+      return;
+    }
+    
     setSaving(true);
     
     // Extract original URL if it's a Cloudinary URL
     const logoUrlToSave = logoUrl ? extractOriginalCloudinaryUrl(logoUrl) : undefined;
-    const updates = {
+    const updates: any = {
       ...formData,
-      storeIds: selectedStoreIds.length > 0 ? selectedStoreIds : undefined,
+      discountType: 'percentage', // Always use percentage
       couponType: formData.couponType || 'code',
       ...(logoUrlToSave ? { logoUrl: logoUrlToSave } : {}),
     };
+    
+    // For deal type, don't include code field
+    if (formData.couponType === 'deal') {
+      delete updates.code;
+    }
+    
+    // Only include storeIds if there are selected stores
+    if (selectedStoreIds.length > 0) {
+      updates.storeIds = selectedStoreIds;
+    }
     
     const result = await updateCoupon(couponId, updates);
     if (result.success) {
@@ -255,7 +272,7 @@ export default function EditCouponPage() {
                   value="code"
                   checked={formData.couponType === 'code'}
                   onChange={(e) =>
-                    setFormData({ ...formData, couponType: 'code' as const })
+                    setFormData({ ...formData, couponType: 'code' as const, code: formData.code || '' })
                   }
                   className="mr-2"
                 />
@@ -268,7 +285,7 @@ export default function EditCouponPage() {
                   value="deal"
                   checked={formData.couponType === 'deal'}
                   onChange={(e) =>
-                    setFormData({ ...formData, couponType: 'deal' as const })
+                    setFormData({ ...formData, couponType: 'deal' as const, code: '' })
                   }
                   className="mr-2"
                 />
@@ -281,25 +298,31 @@ export default function EditCouponPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="code" className="block text-sm font-semibold text-gray-700 mb-1">
-                Coupon Code
-              </label>
-              <input
-                id="code"
-                name="code"
-                type="text"
-                value={formData.code || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, code: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+            {formData.couponType === 'code' && (
+              <div>
+                <label htmlFor="code" className="block text-sm font-semibold text-gray-700 mb-1">
+                  Coupon Code <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="code"
+                  name="code"
+                  type="text"
+                  value={formData.code || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, code: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Required for code type coupons
+                </p>
+              </div>
+            )}
 
             <div>
               <label htmlFor="storeName" className="block text-sm font-semibold text-gray-700 mb-1">
-                Store Name (Displayed on coupon card)
+                Coupon Title
               </label>
               <input
                 id="storeName"
@@ -340,27 +363,6 @@ export default function EditCouponPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="discountType" className="block text-sm font-semibold text-gray-700 mb-1">
-                Discount Type
-              </label>
-              <select
-                id="discountType"
-                name="discountType"
-                value={formData.discountType || 'percentage'}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    discountType: e.target.value as 'percentage' | 'fixed',
-                  })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="percentage">Percentage (%)</option>
-                <option value="fixed">Fixed (AED)</option>
-              </select>
-            </div>
-
             <div>
               <label htmlFor="maxUses" className="block text-sm font-semibold text-gray-700 mb-1">
                 Max Uses

@@ -32,7 +32,7 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
     : `${coupon.discount} Discount`;
 
   const handleCopyCode = () => {
-    if (coupon.code) {
+    if (coupon.couponType === 'code' && coupon.code) {
       navigator.clipboard.writeText(coupon.code.trim()).then(() => {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
@@ -168,7 +168,7 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
 
               {/* Content */}
               <div className="relative p-5 sm:p-6">
-                {/* Discount Banner with glow effect */}
+                {/* Coupon Title Banner with glow effect */}
                 <motion.div
                   custom={0}
                   variants={itemVariants}
@@ -191,7 +191,7 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                     }}
                     className="text-white text-xl sm:text-2xl font-extrabold tracking-tight"
                   >
-                    {discountText} on Your Order
+                    {coupon.storeName || coupon.code || 'Coupon'}
                   </motion.h2>
                   <div className="mt-1.5 h-0.5 w-16 bg-white/30 rounded-full mx-auto" />
                 </motion.div>
@@ -253,61 +253,87 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                   )}
                 </motion.div>
 
-                {/* Coupon Code Section with enhanced styling */}
-                <motion.div
-                  custom={2}
-                  variants={itemVariants}
-                  initial="hidden"
-                  animate="visible"
-                  whileHover={{ scale: 1.03, boxShadow: "0 20px 40px rgba(236, 72, 153, 0.4)" }}
-                  whileTap={{ scale: 0.97 }}
-                  className="relative bg-gradient-to-r from-pink-600 via-red-500 to-red-600 rounded-2xl p-5 mb-4 shadow-xl cursor-pointer overflow-hidden border border-white/20"
-                  onClick={handleCopyCode}
-                >
-                  {/* Shimmer effect */}
+                {/* Coupon Code Section with enhanced styling - Only show for code type */}
+                {coupon.couponType === 'code' && coupon.code && (
                   <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                    animate={{
-                      x: ['-100%', '100%']
-                    }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      repeatDelay: 1,
-                      ease: "linear"
-                    }}
-                  />
-                  
-                  <div className="relative z-10 text-center">
+                    custom={2}
+                    variants={itemVariants}
+                    initial="hidden"
+                    animate="visible"
+                    whileHover={{ scale: 1.03, boxShadow: "0 20px 40px rgba(236, 72, 153, 0.4)" }}
+                    whileTap={{ scale: 0.97 }}
+                    className="relative bg-gradient-to-r from-pink-600 via-red-500 to-red-600 rounded-2xl p-5 mb-4 shadow-xl cursor-pointer overflow-hidden border border-white/20"
+                    onClick={handleCopyCode}
+                  >
+                    {/* Shimmer effect */}
                     <motion.div
-                      animate={copied ? {
-                        scale: [1, 1.08, 1],
-                        color: ['#ffffff', '#10b981', '#ffffff']
-                      } : {}}
-                      className="text-white text-3xl sm:text-4xl font-black mb-2 tracking-wider select-all drop-shadow-md"
-                    >
-                      {coupon.code}
-                    </motion.div>
-                    <motion.p
-                      animate={copied ? { 
-                        opacity: [0.9, 1, 0.9],
-                        scale: [1, 1.05, 1]
-                      } : {}}
-                      className="text-white text-xs opacity-90 font-medium tracking-wide"
-                    >
-                      {copied ? (
-                        <span className="flex items-center justify-center gap-1.5">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                          </svg>
-                          COPIED!
-                        </span>
-                      ) : (
-                        'CLICK THE CODE TO AUTO COPY'
-                      )}
-                    </motion.p>
-                  </div>
-                </motion.div>
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                      animate={{
+                        x: ['-100%', '100%']
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        repeatDelay: 1,
+                        ease: "linear"
+                      }}
+                    />
+                    
+                    <div className="relative z-10 text-center">
+                      <motion.div
+                        animate={copied ? {
+                          scale: [1, 1.08, 1],
+                          color: ['#ffffff', '#10b981', '#ffffff']
+                        } : {}}
+                        className="text-white text-3xl sm:text-4xl font-black mb-2 tracking-wider select-all drop-shadow-md"
+                      >
+                        {coupon.code}
+                      </motion.div>
+                      <motion.p
+                        animate={copied ? { 
+                          opacity: [0.9, 1, 0.9],
+                          scale: [1, 1.05, 1]
+                        } : {}}
+                        className="text-white text-xs opacity-90 font-medium tracking-wide"
+                      >
+                        {copied ? (
+                          <span className="flex items-center justify-center gap-1.5">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                            </svg>
+                            COPIED!
+                          </span>
+                        ) : (
+                          'CLICK THE CODE TO AUTO COPY'
+                        )}
+                      </motion.p>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Deal Section - Show URL for deals */}
+                {coupon.couponType === 'deal' && coupon.url && (
+                  <motion.div
+                    custom={2}
+                    variants={itemVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="relative bg-gradient-to-r from-pink-600 via-red-500 to-red-600 rounded-2xl p-5 mb-4 shadow-xl overflow-hidden border border-white/20"
+                  >
+                    <div className="relative z-10 text-center">
+                      <motion.div
+                        className="text-white text-xl sm:text-2xl font-bold mb-2 tracking-wide drop-shadow-md"
+                      >
+                        Exclusive Deal Available!
+                      </motion.div>
+                      <motion.p
+                        className="text-white text-sm opacity-90 font-medium tracking-wide"
+                      >
+                        Click "Continue to Store" to access this deal
+                      </motion.p>
+                    </div>
+                  </motion.div>
+                )}
 
                 {/* Action Buttons with enhanced styling */}
                 <motion.div

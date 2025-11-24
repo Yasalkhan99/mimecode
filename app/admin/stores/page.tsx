@@ -20,10 +20,10 @@ export default function StoresPage() {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<Partial<Store>>({
     name: '',
+    subStoreName: '',
     slug: '',
     description: '',
     logoUrl: '',
-    voucherText: '',
     isTrending: false,
     layoutPosition: null,
     categoryId: null,
@@ -128,7 +128,6 @@ export default function StoresPage() {
       slug: formData.slug || '',
       description: formData.description || '',
       logoUrl: logoUrlToSave,
-      voucherText: formData.voucherText || '',
       isTrending: formData.isTrending || false,
       layoutPosition: layoutPositionToSave,
       categoryId: formData.categoryId || null,
@@ -144,7 +143,6 @@ export default function StoresPage() {
         slug: '',
         description: '',
         logoUrl: '',
-        voucherText: '',
         isTrending: false,
         layoutPosition: null,
         categoryId: null,
@@ -230,7 +228,6 @@ export default function StoresPage() {
         setFormData({
           name: data.name || formData.name || '',
           description: data.description || formData.description || '',
-          voucherText: formData.voucherText || '',
           isTrending: formData.isTrending || false,
           layoutPosition: formData.layoutPosition || null,
         });
@@ -326,6 +323,28 @@ export default function StoresPage() {
                 />
               </div>
               <div>
+                <label htmlFor="subStoreName" className="block text-gray-700 text-sm font-semibold mb-2">
+                  Sub Store Name (Displayed on store page)
+                </label>
+                <input
+                  id="subStoreName"
+                  name="subStoreName"
+                  type="text"
+                  placeholder="Sub Store Name (e.g., Nike Official Store)"
+                  value={formData.subStoreName || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, subStoreName: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  This name will be displayed on the store page when visiting the store
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
                 <div className="flex items-center justify-between mb-2">
                   <label htmlFor="slug" className="block text-gray-700 text-sm font-semibold">
                     Slug (URL-friendly name)
@@ -378,20 +397,6 @@ export default function StoresPage() {
                   URL will be: /stores/{formData.slug || 'slug'}
                   {autoGenerateSlug && <span className="text-blue-600 ml-2">(Auto-generated)</span>}
                 </p>
-              </div>
-              <div>
-                <label htmlFor="voucherText" className="sr-only">Voucher Text</label>
-                <input
-                  id="voucherText"
-                  name="voucherText"
-                  type="text"
-                  placeholder="Voucher Text (e.g., Upto 58% Voucher)"
-                  value={formData.voucherText || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, voucherText: e.target.value })
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
               </div>
             </div>
 
@@ -569,9 +574,6 @@ export default function StoresPage() {
                     Description
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold">
-                    Voucher Text
-                  </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">
                     Trending
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold">
@@ -606,9 +608,6 @@ export default function StoresPage() {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600 max-w-md truncate">
                       {store.description}
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      {store.voucherText || '-'}
                     </td>
                     <td className="px-6 py-4">
                       <button

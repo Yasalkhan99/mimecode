@@ -114,8 +114,8 @@ function CouponsContent() {
       e.stopPropagation();
     }
     
-    // Copy code to clipboard FIRST (before showing popup)
-    if (coupon.code) {
+    // Copy code to clipboard FIRST (before showing popup) - only for code type
+    if (coupon.couponType === 'code' && coupon.code) {
       const codeToCopy = coupon.code.trim();
       copyToClipboard(codeToCopy);
     }
@@ -315,21 +315,24 @@ function CouponsContent() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-              {filteredCoupons.map((coupon) => {
+            <div className="grid grid-cols-1 gap-4 sm:gap-6">
+              {filteredCoupons.map((coupon, index) => {
                 const isRevealed = coupon.id && revealedCoupons.has(coupon.id);
                 const isExpired = coupon.expiryDate && coupon.expiryDate.toDate() < new Date();
                 
                 return (
                   <div
                     key={coupon.id}
-                    className="bg-white rounded-lg border border-gray-200 p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col"
-                    style={{ overflow: 'visible' }}
+                    className="bg-white rounded-lg p-4 sm:p-5 shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-orange-400 transform hover:-translate-y-1 flex flex-row items-center gap-4 sm:gap-6"
+                    style={{
+                      overflow: 'visible',
+                      minHeight: '110px'
+                    }}
                   >
-                    {/* Logo and Brand Name */}
-                    <div className="flex items-center gap-3 mb-3">
+                    {/* Logo Section */}
+                    <div className="flex-shrink-0">
                       {coupon.logoUrl ? (
-                        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded flex items-center justify-center overflow-hidden bg-gray-50 flex-shrink-0">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50">
                           <img
                             src={coupon.logoUrl}
                             alt={coupon.storeName || coupon.code}
@@ -338,77 +341,83 @@ function CouponsContent() {
                               const target = e.target as HTMLImageElement;
                               const parent = target.parentElement;
                               if (parent) {
-                                parent.innerHTML = `<span class="text-xs font-semibold text-gray-500">${coupon.code.charAt(0)}</span>`;
+                                parent.innerHTML = `<span class="text-sm font-semibold text-gray-500">${coupon.code.charAt(0)}</span>`;
                               }
                             }}
                           />
                         </div>
                       ) : (
-                        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded bg-gray-200 flex items-center justify-center flex-shrink-0">
-                          <span className="text-xs font-semibold text-gray-500">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg bg-gray-200 flex items-center justify-center">
+                          <span className="text-sm font-semibold text-gray-500">
                             {coupon.code.charAt(0)}
                           </span>
                         </div>
                       )}
-                      <h3 className="text-sm sm:text-base font-bold text-gray-900 flex-1">
-                        {coupon.storeName || coupon.code}
-                      </h3>
                     </div>
 
-                    {/* Description */}
-                    <p className="text-xs sm:text-sm text-gray-600 mb-4 line-clamp-2 leading-relaxed flex-grow">
-                      {coupon.description || `${coupon.code} Coupon Code - Get ${coupon.discount}${coupon.discountType === 'percentage' ? '%' : ' AED'} off your order.`}
-                    </p>
-
-                    {/* Expiry Date and Verified Badge */}
-                    <div className="flex items-center justify-between mb-4 text-xs text-gray-500">
-                      {coupon.expiryDate ? (
-                        <div className="flex items-center gap-1">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          <span>{formatDate(coupon.expiryDate) || '31 Dec, 2025'}</span>
-                        </div>
-                      ) : (
-                        <span>31 Dec, 2025</span>
-                      )}
-                      <div className="flex items-center gap-1 text-green-600">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span>Verified</span>
-                      </div>
-                    </div>
-
-                    {/* Action Button */}
-                    {isExpired ? (
-                      <div className="bg-red-100 text-red-700 text-xs font-semibold px-3 py-2 rounded text-center">
-                        Expired
-                      </div>
-                    ) : (
-                      <button
-                        onClick={(e) => handleGetDeal(coupon, e)}
-                        className="w-full bg-gradient-to-r from-pink-500 via-pink-400 to-orange-500 border-2 border-dashed border-white/60 rounded-lg px-3 py-2.5 flex items-center justify-between text-white font-semibold hover:from-pink-600 hover:via-pink-500 hover:to-orange-600 hover:border-white/80 transition-all duration-300 group relative overflow-hidden shadow-md hover:shadow-lg"
-                        style={{ borderStyle: 'dashed', borderWidth: '2px' }}
-                      >
-                        <span className="flex-1 flex items-center justify-center">
-                          {isRevealed ? (
-                            <span className="text-xs sm:text-sm font-bold drop-shadow-sm">
-                              {coupon.code}
-                            </span>
-                          ) : (
-                            <span className="text-xs sm:text-sm drop-shadow-sm">
-                              {getCodePreview(coupon)}
-                            </span>
-                          )}
-                        </span>
-                        {getLastTwoDigits(coupon) && !isRevealed && (
-                          <div className="w-0 opacity-0 group-hover:w-20 group-hover:opacity-100 transition-all duration-300 ease-out flex items-center justify-center border-l-2 border-dashed border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-gradient-to-r from-transparent to-orange-600/20" style={{ borderStyle: 'dashed' }}>
-                            <span className="text-white font-bold text-xs drop-shadow-md">...{getLastTwoDigits(coupon)}</span>
+                    {/* Content Section */}
+                    <div className="flex-1 min-w-0 flex flex-row items-center justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-base sm:text-lg font-bold text-gray-900 break-words mb-1">
+                          {coupon.storeName || coupon.code}
+                        </h3>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-bold text-orange-600">
+                            {coupon.discount}% OFF
+                          </span>
+                          <div className="flex items-center gap-1 text-green-600">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="text-[10px]">Verified</span>
                           </div>
+                          <div className="text-xs text-gray-500">
+                            {coupon.expiryDate ? (
+                              <div className="flex items-center gap-1">
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span>{formatDate(coupon.expiryDate) || '31 Dec, 2025'}</span>
+                              </div>
+                            ) : (
+                              <span>31 Dec, 2025</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Button on Right */}
+                      <div className="flex-shrink-0">
+                        {isExpired ? (
+                          <div className="bg-red-100 text-red-700 text-xs font-semibold px-3 py-2 rounded text-center whitespace-nowrap">
+                            Expired
+                          </div>
+                        ) : (
+                          <button
+                            onClick={(e) => handleGetDeal(coupon, e)}
+                            className="bg-gradient-to-r from-pink-500 via-pink-400 to-orange-500 border-2 border-dashed border-white/60 rounded-lg px-4 py-2.5 sm:px-6 sm:py-3 flex items-center justify-between text-white font-semibold hover:from-pink-600 hover:via-pink-500 hover:to-orange-600 hover:border-white/80 transition-all duration-300 group relative overflow-hidden shadow-md hover:shadow-lg whitespace-nowrap"
+                            style={{ borderStyle: 'dashed', borderWidth: '2px' }}
+                          >
+                            <span className="flex-1 flex items-center justify-center">
+                              {isRevealed && coupon.couponType === 'code' && coupon.code ? (
+                                <span className="font-bold text-sm sm:text-base drop-shadow-sm">
+                                  {coupon.code}
+                                </span>
+                              ) : (
+                                <span className="drop-shadow-sm text-sm sm:text-base">
+                                  {getCodePreview(coupon)}
+                                </span>
+                              )}
+                            </span>
+                            {getLastTwoDigits(coupon) && !isRevealed && (
+                              <div className="w-0 opacity-0 group-hover:w-20 group-hover:opacity-100 transition-all duration-300 ease-out flex items-center justify-center border-l-2 border-dashed border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-gradient-to-r from-transparent to-orange-600/20" style={{ borderStyle: 'dashed' }}>
+                                <span className="text-white font-bold text-xs drop-shadow-md">...{getLastTwoDigits(coupon)}</span>
+                              </div>
+                            )}
+                          </button>
                         )}
-                      </button>
-                    )}
+                      </div>
+                    </div>
                   </div>
                 );
               })}

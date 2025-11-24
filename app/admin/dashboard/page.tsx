@@ -112,7 +112,7 @@ export default function DashboardPage() {
                         </td>
                         <td className="px-2 sm:px-4 py-2">
                           {coupon.discount}
-                          {coupon.discountType === 'percentage' ? '%' : ' AED'}
+                          %
                         </td>
                         <td className="px-2 sm:px-4 py-2">
                           <span
