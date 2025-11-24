@@ -15,6 +15,7 @@ export interface NewsArticle {
   id?: string;
   title: string;
   description: string;
+  content?: string; // Full blog content (HTML or plain text)
   imageUrl: string;
   articleUrl?: string; // Original article URL if extracted from URL
   date?: string; // Date display (e.g., "18 Oct 2005")
@@ -26,7 +27,7 @@ export interface NewsArticle {
 const news = 'news';
 
 // Create a new news article from URL (extracts article info automatically)
-export async function createNewsFromUrl(title: string, articleUrl: string, imageUrl: string, description?: string, layoutPosition?: number | null, date?: string) {
+export async function createNewsFromUrl(title: string, articleUrl: string, imageUrl: string, description?: string, content?: string, layoutPosition?: number | null, date?: string) {
   try {
     // Extract original URL if it's a Cloudinary URL
     const extractedImageUrl = extractOriginalCloudinaryUrl(imageUrl);
@@ -34,6 +35,7 @@ export async function createNewsFromUrl(title: string, articleUrl: string, image
     const docRef = await addDoc(collection(db, news), {
       title: title || '',
       description: description || '',
+      content: content || '',
       imageUrl: extractedImageUrl || imageUrl,
       articleUrl: articleUrl,
       date: date || new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),

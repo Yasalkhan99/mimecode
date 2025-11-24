@@ -296,15 +296,13 @@ export default function BlogsPage() {
 
                         {/* Read More Button - Fixed at bottom */}
                         <div className="mt-auto">
-                          {article.articleUrl ? (
+                          {article.id ? (
                             <motion.div
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
                             >
                               <Link
-                                href={article.articleUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                                href={`/blogs/${article.id}`}
                                 className="inline-flex items-center gap-2 bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white font-semibold px-5 py-2.5 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg w-full justify-center"
                               >
                                 Read More

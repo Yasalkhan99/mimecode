@@ -17,6 +17,7 @@ export default function NewsPage() {
   const [formData, setFormData] = useState<Partial<NewsArticle>>({
     title: '',
     description: '',
+    content: '',
     imageUrl: '',
     articleUrl: '',
     date: '',
@@ -102,6 +103,7 @@ export default function NewsPage() {
       formData.articleUrl || articleUrl || '',
       formData.imageUrl || '',
       formData.description || '',
+      formData.content || '',
       formData.layoutPosition !== undefined ? formData.layoutPosition : null,
       formData.date || undefined
     );
@@ -112,6 +114,7 @@ export default function NewsPage() {
       setFormData({
         title: '',
         description: '',
+        content: '',
         imageUrl: '',
         articleUrl: '',
         date: '',
@@ -218,7 +221,7 @@ export default function NewsPage() {
 
             <div>
               <label htmlFor="description" className="block text-gray-700 text-sm font-semibold mb-2">
-                Description
+                Description (Short Summary)
               </label>
               <textarea
                 id="description"
@@ -231,6 +234,26 @@ export default function NewsPage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 rows={3}
               />
+            </div>
+
+            <div>
+              <label htmlFor="content" className="block text-gray-700 text-sm font-semibold mb-2">
+                Full Blog Content (HTML supported)
+              </label>
+              <textarea
+                id="content"
+                name="content"
+                placeholder="Enter the full blog content here. You can use HTML tags for formatting."
+                value={formData.content || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, content: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={10}
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                This content will be displayed on the blog detail page. You can use HTML tags like &lt;p&gt;, &lt;h2&gt;, &lt;strong&gt;, etc.
+              </p>
             </div>
 
             <div>
