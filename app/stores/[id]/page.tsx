@@ -65,9 +65,66 @@ export default function StoreDetailPage() {
     }
   }, [idOrSlug]);
 
+  const copyToClipboard = (text: string) => {
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(() => {
+        // Code copied successfully
+        console.log('Code copied to clipboard:', text);
+      }).catch((err) => {
+        console.error('Clipboard API failed:', err);
+        copyToClipboardFallback(text);
+      });
+    } else {
+      copyToClipboardFallback(text);
+    }
+  };
+
+  const copyToClipboardFallback = (text: string) => {
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '0';
+      textArea.style.top = '0';
+      textArea.style.width = '2px';
+      textArea.style.height = '2px';
+      textArea.style.opacity = '0';
+      textArea.style.pointerEvents = 'none';
+      textArea.style.zIndex = '-1';
+      
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      textArea.setSelectionRange(0, 99999);
+      
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      
+      if (successful) {
+        console.log('Code copied to clipboard (fallback):', text);
+      }
+    } catch (err) {
+      console.error('Fallback copy failed:', err);
+    }
+  };
+
   const handleCouponClick = (coupon: Coupon) => {
+    // Copy code to clipboard FIRST (before showing popup) - only for code type
+    if (coupon.couponType === 'code' && coupon.code) {
+      const codeToCopy = coupon.code.trim();
+      copyToClipboard(codeToCopy);
+    }
+    
+    // Show popup
     setSelectedCoupon(coupon);
     setShowPopup(true);
+    
+    // Automatically open URL in new tab after a short delay (to ensure popup is visible first)
+    if (coupon.url && coupon.url.trim()) {
+      setTimeout(() => {
+        window.open(coupon.url, '_blank', 'noopener,noreferrer');
+      }, 500);
+    }
   };
 
   const handleContinue = () => {
@@ -98,6 +155,17 @@ export default function StoreDetailPage() {
     } catch (error) {
       return null;
     }
+  };
+
+  // Get last 2 digits for hover display
+  const getLastTwoDigits = (coupon: Coupon): string | null => {
+    if ((coupon.couponType || 'deal') === 'code' && coupon.code) {
+      const code = coupon.code.trim();
+      if (code.length >= 2) {
+        return code.slice(-2);
+      }
+    }
+    return null;
   };
 
   if (loading) {
@@ -209,6 +277,7 @@ export default function StoreDetailPage() {
             <div className="grid grid-cols-1 gap-4 sm:gap-6">
             {coupons.map((coupon) => {
               const isExpired = coupon.expiryDate && coupon.expiryDate.toDate() < new Date();
+              const isRevealed = false; // For store page, we don't track revealed state
               
               return (
                 <div
@@ -287,12 +356,25 @@ export default function StoreDetailPage() {
                             e.stopPropagation();
                             handleCouponClick(coupon);
                           }}
-                          className="bg-gradient-to-r from-pink-500 via-pink-400 to-orange-500 border-2 border-dashed border-white/60 rounded-lg px-4 py-2.5 sm:px-6 sm:py-3 flex items-center justify-center text-white font-semibold hover:from-pink-600 hover:via-pink-500 hover:to-orange-600 hover:border-white/80 transition-all duration-300 shadow-md hover:shadow-lg whitespace-nowrap"
+                          className="bg-gradient-to-r from-pink-500 via-pink-400 to-orange-500 border-2 border-dashed border-white/60 rounded-lg px-4 py-2.5 sm:px-6 sm:py-3 flex items-center justify-between text-white font-semibold hover:from-pink-600 hover:via-pink-500 hover:to-orange-600 hover:border-white/80 transition-all duration-300 group relative overflow-hidden shadow-md hover:shadow-lg whitespace-nowrap"
                           style={{ borderStyle: 'dashed', borderWidth: '2px' }}
                         >
-                          <span className="drop-shadow-sm text-sm sm:text-base">
-                            {coupon.couponType === 'code' ? 'Get Code' : 'Get Deal'}
+                          <span className="flex-1 flex items-center justify-center">
+                            {isRevealed && coupon.couponType === 'code' && coupon.code ? (
+                              <span className="font-bold text-sm sm:text-base drop-shadow-sm">
+                                {coupon.code}
+                              </span>
+                            ) : (
+                              <span className="drop-shadow-sm text-sm sm:text-base">
+                                {coupon.couponType === 'code' ? 'Get Code' : 'Get Deal'}
+                              </span>
+                            )}
                           </span>
+                          {getLastTwoDigits(coupon) && !isRevealed && (
+                            <div className="w-0 opacity-0 group-hover:w-20 group-hover:opacity-100 transition-all duration-300 ease-out flex items-center justify-center border-l-2 border-dashed border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-gradient-to-r from-transparent to-orange-600/20" style={{ borderStyle: 'dashed' }}>
+                              <span className="text-white font-bold text-xs drop-shadow-md">...{getLastTwoDigits(coupon)}</span>
+                            </div>
+                          )}
                           <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
