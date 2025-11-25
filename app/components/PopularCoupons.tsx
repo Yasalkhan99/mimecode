@@ -57,7 +57,7 @@ export default function PopularCoupons() {
   // Get last 2 digits of code for code type coupons
   const getCodePreview = (coupon: Coupon): string => {
     if ((coupon.couponType || 'deal') === 'code' && coupon.code) {
-      return 'Get Coupon';
+      return 'Get Code';
     }
     return 'Get Deal';
   };
@@ -353,7 +353,8 @@ export default function PopularCoupons() {
                                 const target = e.target as HTMLImageElement;
                                 const parent = target.parentElement;
                                 if (parent) {
-                                  parent.innerHTML = `<span class="text-xs font-semibold text-gray-500">${coupon.code.charAt(0)}</span>`;
+                                  const initial = coupon.code?.charAt(0) || coupon.storeName?.charAt(0) || '?';
+                                  parent.innerHTML = `<span class="text-xs font-semibold text-gray-500">${initial}</span>`;
                                 }
                               }}
                             />
@@ -361,7 +362,7 @@ export default function PopularCoupons() {
                         ) : (
                           <div className="w-12 h-12 rounded bg-gray-200 flex items-center justify-center flex-shrink-0">
                             <span className="text-xs font-semibold text-gray-500">
-                              {coupon.code.charAt(0)}
+                              {coupon.code?.charAt(0) || coupon.storeName?.charAt(0) || '?'}
                             </span>
                           </div>
                         )}
@@ -474,7 +475,8 @@ export default function PopularCoupons() {
                             const target = e.target as HTMLImageElement;
                             const parent = target.parentElement;
                             if (parent) {
-                              parent.innerHTML = `<span class="text-xs font-semibold text-gray-500">${coupon.code.charAt(0)}</span>`;
+                              const initial = coupon.code?.charAt(0) || coupon.storeName?.charAt(0) || '?';
+                              parent.innerHTML = `<span class="text-xs font-semibold text-gray-500">${initial}</span>`;
                             }
                           }}
                         />
@@ -482,7 +484,7 @@ export default function PopularCoupons() {
                     ) : (
                       <div className="w-12 h-12 sm:w-14 sm:h-14 rounded bg-gray-200 flex items-center justify-center flex-shrink-0">
                         <span className="text-xs font-semibold text-gray-500">
-                          {coupon.code.charAt(0)}
+                          {coupon.code?.charAt(0) || coupon.storeName?.charAt(0) || '?'}
                         </span>
                       </div>
                     )}

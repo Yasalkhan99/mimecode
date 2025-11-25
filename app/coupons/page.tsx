@@ -92,7 +92,7 @@ function CouponsContent() {
   // Get last 2 digits of code for code type coupons
   const getCodePreview = (coupon: Coupon): string => {
     if ((coupon.couponType || 'deal') === 'code' && coupon.code) {
-      return 'Get Coupon';
+      return 'Get Code';
     }
     return 'Get Deal';
   };
@@ -339,17 +339,18 @@ function CouponsContent() {
                             className="w-full h-full object-contain"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              const parent = target.parentElement;
-                              if (parent) {
-                                parent.innerHTML = `<span class="text-sm font-semibold text-gray-500">${coupon.code.charAt(0)}</span>`;
-                              }
+                                    const parent = target.parentElement;
+                                    if (parent) {
+                                      const initial = coupon.code?.charAt(0) || coupon.storeName?.charAt(0) || '?';
+                                      parent.innerHTML = `<span class="text-sm font-semibold text-gray-500">${initial}</span>`;
+                                    }
                             }}
                           />
                         </div>
                       ) : (
                         <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-gray-200 flex items-center justify-center">
                           <span className="text-xs sm:text-sm font-semibold text-gray-500">
-                            {coupon.code.charAt(0)}
+                            {coupon.code?.charAt(0) || coupon.storeName?.charAt(0) || '?'}
                           </span>
                         </div>
                       )}
@@ -362,9 +363,6 @@ function CouponsContent() {
                           {coupon.storeName || coupon.code}
                         </h3>
                         <div className="flex items-center gap-3">
-                          <span className="text-sm font-bold text-orange-600">
-                            {coupon.discount}% OFF
-                          </span>
                           <div className="flex items-center gap-1 text-green-600">
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />

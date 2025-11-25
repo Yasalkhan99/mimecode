@@ -27,10 +27,6 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
 
   if (!isOpen || !coupon) return null;
 
-  const discountText = coupon.discountType === 'percentage' 
-    ? `${coupon.discount}% Off` 
-    : `${coupon.discount} Discount`;
-
   const handleCopyCode = () => {
     if (coupon.couponType === 'code' && coupon.code) {
       navigator.clipboard.writeText(coupon.code.trim()).then(() => {

@@ -62,7 +62,7 @@ export default function CategoryDetailPage() {
   // Get last 2 digits of code for code type coupons
   const getCodePreview = (coupon: Coupon): string => {
     if ((coupon.couponType || 'deal') === 'code' && coupon.code) {
-      return 'Get Coupon';
+      return 'Get Code';
     }
     return 'Get Deal';
   };
@@ -328,12 +328,6 @@ export default function CategoryDetailPage() {
                       <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-800 mb-1 sm:mb-2 text-center line-clamp-2">
                         {coupon.storeName || coupon.code}
                       </h3>
-                      <div className="text-center mb-2 sm:mb-3 md:mb-4">
-                        <span className="text-lg sm:text-xl md:text-2xl font-bold text-pink-600">
-                          {coupon.discount}
-                          {coupon.discountType === 'percentage' ? '%' : '$'} OFF
-                        </span>
-                      </div>
                       {coupon.description && (
                         <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3 md:mb-4 text-center line-clamp-2 hidden sm:block">
                           {coupon.description}
