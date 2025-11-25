@@ -28,57 +28,65 @@ export async function POST(req: Request) {
       });
     }
 
+    // Check if Firebase Admin is configured
+    const hasEnvVar = !!process.env.FIREBASE_ADMIN_SA;
+    const hasFilePath = !!process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+    const envVarLength = process.env.FIREBASE_ADMIN_SA?.length || 0;
+    
+    console.log('🔍 Firebase Admin Configuration Check:');
+    console.log(`  - FIREBASE_ADMIN_SA: ${hasEnvVar ? `✅ Set (${envVarLength} chars)` : '❌ Not set'}`);
+    console.log(`  - FIREBASE_SERVICE_ACCOUNT_PATH: ${hasFilePath ? `✅ Set (${process.env.FIREBASE_SERVICE_ACCOUNT_PATH})` : '❌ Not set'}`);
+    console.log(`  - NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || '❌ Not set'}`);
+    
     // If service account is provided, try Admin SDK (recommended)
-    if (process.env.FIREBASE_ADMIN_SA) {
-      console.log('✅ FIREBASE_ADMIN_SA found, attempting Admin SDK upload...');
-      console.log('📋 Service account length:', process.env.FIREBASE_ADMIN_SA.length);
-      console.log('📋 Storage bucket:', process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
+    if (hasEnvVar || hasFilePath) {
+      console.log('✅ Firebase Admin SA found, attempting Admin SDK upload...');
       
       try {
-        const adminModule = await import('firebase-admin');
-        const admin = adminModule.default || adminModule;
-
+        // Import and initialize Firebase Admin
+        const adminModule = await import('@/lib/firebase-admin');
+        const admin = adminModule.default;
+        
+        // Check if admin is initialized
         if (!admin.apps.length) {
-          console.log('🔧 Initializing Firebase Admin SDK...');
-          let serviceAccount;
-          try {
-            serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_SA as string);
-            console.log('✅ Service account JSON parsed successfully');
-          } catch (parseError) {
-            console.error('❌ Failed to parse FIREBASE_ADMIN_SA as JSON:', parseError);
-            return new Response(
-              JSON.stringify({ 
-                success: false, 
-                error: `Invalid FIREBASE_ADMIN_SA format. It must be a valid JSON string wrapped in single quotes. Error: ${parseError instanceof Error ? parseError.message : String(parseError)}` 
-              }), 
-              { 
-                status: 500,
-                headers: { 'Content-Type': 'application/json' }
-              }
-            );
-          }
+          console.error('❌ Firebase Admin SDK not initialized after import');
+          console.error('This usually means:');
+          console.error('  1. FIREBASE_ADMIN_SA has invalid JSON');
+          console.error('  2. Service account file path is incorrect');
+          console.error('  3. Private key format is incorrect');
+          console.error('Check server console logs above for detailed error messages');
           
-          try {
-            admin.initializeApp({
-              credential: admin.credential.cert(serviceAccount),
-              storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-            });
-            console.log('✅ Firebase Admin SDK initialized successfully');
-          } catch (initError) {
-            console.error('❌ Failed to initialize Firebase Admin SDK:', initError);
-            return new Response(
-              JSON.stringify({ 
-                success: false, 
-                error: `Failed to initialize Firebase Admin SDK: ${initError instanceof Error ? initError.message : String(initError)}` 
-              }), 
-              { 
-                status: 500,
-                headers: { 'Content-Type': 'application/json' }
-              }
-            );
-          }
-        } else {
-          console.log('✅ Firebase Admin SDK already initialized');
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: 'Firebase Admin SDK not initialized. Please check your FIREBASE_ADMIN_SA configuration and server console logs for details.' 
+            }), 
+            { 
+              status: 500,
+              headers: { 'Content-Type': 'application/json' }
+            }
+          );
+        }
+        
+        console.log('✅ Firebase Admin SDK is initialized');
+        
+        let storage;
+        try {
+          storage = admin.storage();
+          console.log('✅ Admin storage initialized');
+        } catch (initError) {
+          console.error('❌ Failed to get Admin storage:', initError);
+          const initErrorMessage = initError instanceof Error ? initError.message : String(initError);
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: `Failed to get Firebase Admin storage: ${initErrorMessage}. Please check your FIREBASE_ADMIN_SA configuration.` 
+            }), 
+            { 
+              status: 500,
+              headers: { 'Content-Type': 'application/json' }
+            }
+          );
         }
 
         const buffer = Buffer.from(base64, 'base64');
@@ -86,35 +94,136 @@ export async function POST(req: Request) {
         const dest = `coupon_logos/${Date.now()}_${safeName}`;
         console.log('📤 Uploading file to:', dest);
         
-        const bucket = admin.storage().bucket();
+        let bucket;
+        try {
+          // Get bucket name from environment or use default
+          const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+          console.log('📦 Attempting to use bucket:', bucketName);
+          
+          if (!bucketName) {
+            throw new Error('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET is not set');
+          }
+          
+          // Try to get the bucket (with or without .appspot.com)
+          bucket = storage.bucket(bucketName);
+          console.log('✅ Bucket object created:', bucket.name);
+          
+          // Test if bucket exists by trying to get its metadata
+          try {
+            await bucket.getMetadata();
+            console.log('✅ Bucket exists and is accessible');
+          } catch (metadataError) {
+            console.warn('⚠️ Could not verify bucket metadata:', metadataError);
+            // Continue anyway - bucket might still work
+          }
+        } catch (bucketError) {
+          console.error('❌ Failed to get bucket:', bucketError);
+          throw bucketError; // Throw to outer catch to try Cloudinary
+        }
+        
         const file = bucket.file(dest);
 
-        console.log('💾 Saving file to storage...');
-        await file.save(buffer, { metadata: { contentType: contentType || 'image/svg+xml' }, resumable: false });
-        console.log('✅ File saved successfully');
-
         try {
-          console.log('🌐 Making file public...');
-          await file.makePublic();
-          console.log('✅ File made public');
-        } catch (e) {
-          console.warn('⚠️ makePublic failed (file may already be public):', e);
-        }
+          console.log('💾 Saving file to storage...');
+          await file.save(buffer, { 
+            metadata: { 
+              contentType: contentType || 'image/svg+xml',
+              cacheControl: 'public, max-age=31536000'
+            }, 
+            resumable: false 
+          });
+          console.log('✅ File saved successfully');
 
-        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${file.name}`;
-        console.log('✅ Upload successful! URL:', publicUrl);
-        return new Response(JSON.stringify({ success: true, logoUrl: publicUrl }), { 
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
-        });
+          try {
+            console.log('🌐 Making file public...');
+            await file.makePublic();
+            console.log('✅ File made public');
+          } catch (e) {
+            console.warn('⚠️ makePublic failed (file may already be public or bucket has default permissions):', e);
+            // Don't fail the upload if makePublic fails - file might already be public
+          }
+
+          const publicUrl = `https://storage.googleapis.com/${bucket.name}/${file.name}`;
+          console.log('✅ Upload successful! URL:', publicUrl);
+          return new Response(JSON.stringify({ success: true, logoUrl: publicUrl, storage: 'firebase' }), { 
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        } catch (saveError) {
+          console.error('❌ Failed to save file to Firebase Storage:', saveError);
+          throw saveError; // Throw to outer catch to try Cloudinary
+        }
       } catch (err) {
-        console.error('Admin SDK upload error:', err);
+        console.error('❌ Firebase Storage upload failed:', err);
         const errorMessage = err instanceof Error ? err.message : String(err);
+        
+        // Check if it's a bucket error - if so, try Cloudinary
+        if (errorMessage.includes('bucket does not exist') || 
+            errorMessage.includes('bucket') || 
+            errorMessage.includes('Storage')) {
+          console.log('🔄 Firebase Storage bucket issue detected, trying Cloudinary fallback...');
+          // Fall through to Cloudinary fallback below
+        } else {
+          // For other Firebase errors, also try Cloudinary
+          console.log('🔄 Trying Cloudinary as fallback...');
+        }
+      }
+    }
+
+    // Fallback to Cloudinary if Firebase Storage fails or is not configured
+    console.log('🔄 Trying Cloudinary as fallback...');
+    
+    if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+      try {
+        const { v2: cloudinary } = await import('cloudinary');
+        
+        cloudinary.config({
+          cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+          api_key: process.env.CLOUDINARY_API_KEY,
+          api_secret: process.env.CLOUDINARY_API_SECRET,
+        });
+
+        const dataUri = `data:${contentType || 'image/png'};base64,${base64}`;
+        const safeName = fileName.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+        const publicId = `coupon_logos/${Date.now()}_${safeName}`;
+        
+        console.log('📤 Uploading to Cloudinary:', publicId);
+        
+        const uploadResult = await new Promise((resolve, reject) => {
+          cloudinary.uploader.upload(
+            dataUri,
+            {
+              public_id: publicId,
+              folder: 'coupon_logos',
+              resource_type: 'auto',
+            },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result);
+            }
+          );
+        });
+
+        const result = uploadResult as any;
+        const logoUrl = result.secure_url || result.url;
+
+        console.log('✅ Cloudinary upload successful! URL:', logoUrl);
+
+        return new Response(
+          JSON.stringify({ success: true, logoUrl, storage: 'cloudinary' }),
+          { 
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+      } catch (cloudinaryError) {
+        console.error('❌ Cloudinary upload also failed:', cloudinaryError);
+        const cloudinaryErrorMessage = cloudinaryError instanceof Error ? cloudinaryError.message : String(cloudinaryError);
         return new Response(
           JSON.stringify({ 
             success: false, 
-            error: `Admin SDK upload failed: ${errorMessage}. Please check your FIREBASE_ADMIN_SA configuration.` 
-          }), 
+            error: `Both Firebase Storage and Cloudinary upload failed. Cloudinary error: ${cloudinaryErrorMessage}. Please configure either Firebase Storage or Cloudinary.` 
+          }),
           { 
             status: 500,
             headers: { 'Content-Type': 'application/json' }
@@ -123,11 +232,11 @@ export async function POST(req: Request) {
       }
     }
 
-    // If no service account, return helpful error message
-    console.warn('⚠️ FIREBASE_ADMIN_SA not configured');
+    // If no service account and no Cloudinary, return helpful error message
+    console.warn('⚠️ Neither Firebase Admin SDK nor Cloudinary is configured');
     const errorResponse = { 
       success: false, 
-      error: 'FIREBASE_ADMIN_SA not configured. Logo upload requires Firebase Admin SDK. Please add FIREBASE_ADMIN_SA to your .env.local file. The coupon will be created without a logo.' 
+      error: 'No storage configured. Please either: 1) Enable Firebase Storage and configure FIREBASE_ADMIN_SA, or 2) Configure Cloudinary (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET) in .env.local. Cloudinary is FREE for students!' 
     };
     console.log('📤 Returning error response:', errorResponse);
     return new Response(

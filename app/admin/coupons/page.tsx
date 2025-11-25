@@ -41,6 +41,7 @@ export default function CouponsPage() {
   const [logoUploadMethod, setLogoUploadMethod] = useState<'file' | 'url'>('file');
   const [logoUrl, setLogoUrl] = useState('');
   const [extractedLogoUrl, setExtractedLogoUrl] = useState<string | null>(null);
+  const [uploadingToCloudinary, setUploadingToCloudinary] = useState(false);
   const [couponUrl, setCouponUrl] = useState('');
   const [extracting, setExtracting] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(0);
@@ -158,15 +159,33 @@ export default function CouponsPage() {
       delete couponData.code;
     }
     
-    // Only include storeIds if there are selected stores
-    if (selectedStoreIds.length > 0) {
-      couponData.storeIds = selectedStoreIds;
-    }
+    // Always include storeIds (even if empty array) to ensure it's saved
+    // Filter out any undefined/null values
+    const validStoreIds = selectedStoreIds.filter(id => id && id.trim() !== '');
+    couponData.storeIds = validStoreIds.length > 0 ? validStoreIds : [];
+    
+    // Debug log
+    console.log('📝 Creating coupon with data:', {
+      storeName: couponData.storeName,
+      storeIds: couponData.storeIds,
+      selectedStoreIds: selectedStoreIds,
+      validStoreIds: validStoreIds,
+      logoUrl: logoUrl,
+      logoUploadMethod: logoUploadMethod,
+      hasLogoFile: !!logoFile
+    });
     
     try {
       let result;
-      if (logoUploadMethod === 'file') {
-        // File upload method - logo is optional but validate if user selected file method
+      
+      // If logoUrl is set (from Cloudinary upload), use URL method
+      // Otherwise, if file is selected, try to upload it
+      if (logoUrl && logoUrl.trim() !== '') {
+        // Use the Cloudinary URL that was automatically uploaded
+        console.log('Creating coupon with Cloudinary URL:', logoUrl);
+        result = await createCouponFromUrl(couponData as Omit<Coupon, 'id'>, logoUrl);
+      } else if (logoUploadMethod === 'file' && logoFile) {
+        // File upload method - upload to Cloudinary first, then create coupon
         console.log('Creating coupon with file upload, logoFile:', logoFile);
         result = await createCoupon(couponData as Omit<Coupon, 'id'>, logoFile || undefined);
       } else {
@@ -204,6 +223,8 @@ export default function CouponsPage() {
         setCouponUrl('');
         setFileInputKey(prev => prev + 1);
         setSelectedStoreIds([]); // Reset selected stores
+        setUploadingToCloudinary(false); // Reset upload state
+        setLogoUploadMethod('file'); // Reset to file method
       } else {
         // Show error message
         const errorMessage = result.error instanceof Error 
@@ -509,12 +530,30 @@ export default function CouponsPage() {
                                 type="checkbox"
                                 checked={isSelected}
                                 onChange={(e) => {
+                                  if (!store.id) {
+                                    console.warn('⚠️ Store has no ID:', store);
+                                    return;
+                                  }
+                                  
                                   let newSelected: string[];
                                   if (e.target.checked) {
-                                    newSelected = [...selectedStoreIds, store.id!];
+                                    // Only add if not already selected
+                                    if (!selectedStoreIds.includes(store.id)) {
+                                      newSelected = [...selectedStoreIds, store.id];
+                                    } else {
+                                      newSelected = selectedStoreIds;
+                                    }
                                   } else {
                                     newSelected = selectedStoreIds.filter(id => id !== store.id);
                                   }
+                                  
+                                  console.log('🛒 Store selection changed:', {
+                                    storeId: store.id,
+                                    storeName: store.name,
+                                    isChecked: e.target.checked,
+                                    newSelected: newSelected
+                                  });
+                                  
                                   setSelectedStoreIds(newSelected);
                                   
                                   // Auto-populate storeName from first selected store
@@ -704,19 +743,87 @@ export default function CouponsPage() {
                     id="logo"
                     name="logo"
                     type="file"
-                    accept="image/png,image/svg+xml"
-                    onChange={(e) => {
+                    accept="image/png,image/svg+xml,image/jpeg,image/jpg,image/webp"
+                    onChange={async (e) => {
                       const file = e.target.files?.[0] ?? null;
                       setLogoFile(file);
+                      
                       if (file) {
+                        // Show preview immediately
                         setLogoPreview(URL.createObjectURL(file));
+                        
+                        // Automatically upload to Cloudinary
+                        setUploadingToCloudinary(true);
+                        try {
+                          // Convert file to base64
+                          const base64 = await new Promise<string>((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                              const result = reader.result as string;
+                              const base64 = result.split(',')[1]; // Remove data URL prefix
+                              resolve(base64);
+                            };
+                            reader.onerror = reject;
+                            reader.readAsDataURL(file);
+                          });
+
+                          // Upload to Cloudinary via API
+                          const uploadResponse = await fetch('/api/coupons/upload', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              fileName: file.name,
+                              contentType: file.type || 'image/png',
+                              base64: base64,
+                            }),
+                          });
+
+                          const uploadData = await uploadResponse.json();
+
+                          if (uploadData.success && uploadData.logoUrl) {
+                            // Set the Cloudinary URL automatically
+                            const cloudinaryUrl = uploadData.logoUrl;
+                            setLogoUrl(cloudinaryUrl);
+                            setExtractedLogoUrl(cloudinaryUrl);
+                            
+                            // Switch to URL method to show the uploaded URL
+                            setLogoUploadMethod('url');
+                            
+                            console.log('✅ Logo uploaded to Cloudinary:', cloudinaryUrl);
+                            console.log('📋 Cloudinary URL saved to state:', cloudinaryUrl);
+                            alert('✅ Logo uploaded to Cloudinary successfully! URL has been copied.');
+                          } else {
+                            console.error('❌ Upload failed:', uploadData.error);
+                            alert(`Upload failed: ${uploadData.error || 'Unknown error'}`);
+                          }
+                        } catch (error) {
+                          console.error('❌ Error uploading to Cloudinary:', error);
+                          alert(`Error uploading: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                        } finally {
+                          setUploadingToCloudinary(false);
+                        }
                       } else {
                         setLogoPreview(null);
+                        setLogoUrl('');
+                        setExtractedLogoUrl(null);
                       }
                     }}
                     className="w-full"
                     key={`file-input-${fileInputKey}`}
+                    disabled={uploadingToCloudinary}
                   />
+                  {uploadingToCloudinary && (
+                    <div className="mt-2 flex items-center gap-2 text-sm text-blue-600">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                      <span>Uploading to Cloudinary...</span>
+                    </div>
+                  )}
+                  {logoUrl && logoUploadMethod === 'url' && (
+                    <div className="mt-2 p-2 bg-green-50 rounded text-sm text-green-700">
+                      <strong>✅ Uploaded to Cloudinary:</strong>
+                      <div className="mt-1 break-all text-xs">{logoUrl}</div>
+                    </div>
+                  )}
                 </>
               ) : (
                 <>
