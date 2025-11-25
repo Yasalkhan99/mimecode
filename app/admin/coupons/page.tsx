@@ -818,12 +818,6 @@ export default function CouponsPage() {
                       <span>Uploading to Cloudinary...</span>
                     </div>
                   )}
-                  {logoUrl && logoUploadMethod === 'url' && (
-                    <div className="mt-2 p-2 bg-green-50 rounded text-sm text-green-700">
-                      <strong>✅ Uploaded to Cloudinary:</strong>
-                      <div className="mt-1 break-all text-xs">{logoUrl}</div>
-                    </div>
-                  )}
                 </>
               ) : (
                 <>
@@ -847,6 +841,15 @@ export default function CouponsPage() {
                   )}
                 </>
               )}
+              
+              {/* Show Cloudinary URL if uploaded */}
+              {logoUrl && logoUploadMethod === 'url' && (
+                <div className="mt-2 p-2 bg-green-50 rounded text-sm text-green-700">
+                  <strong>✅ Uploaded to Cloudinary:</strong>
+                  <div className="mt-1 break-all text-xs">{logoUrl}</div>
+                </div>
+              )}
+              
               {logoPreview && (
                 <div className="mt-2">
                   <img src={logoPreview} alt="Logo preview" className="h-16 object-contain" />
