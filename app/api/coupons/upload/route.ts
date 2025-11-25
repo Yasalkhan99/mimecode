@@ -55,17 +55,10 @@ export async function POST(req: Request) {
           console.error('  2. Service account file path is incorrect');
           console.error('  3. Private key format is incorrect');
           console.error('Check server console logs above for detailed error messages');
+          console.log('🔄 Firebase Admin SDK not initialized, trying Cloudinary fallback...');
           
-          return new Response(
-            JSON.stringify({ 
-              success: false, 
-              error: 'Firebase Admin SDK not initialized. Please check your FIREBASE_ADMIN_SA configuration and server console logs for details.' 
-            }), 
-            { 
-              status: 500,
-              headers: { 'Content-Type': 'application/json' }
-            }
-          );
+          // Throw error to fall through to Cloudinary fallback
+          throw new Error('Firebase Admin SDK not initialized');
         }
         
         console.log('✅ Firebase Admin SDK is initialized');
@@ -76,17 +69,9 @@ export async function POST(req: Request) {
           console.log('✅ Admin storage initialized');
         } catch (initError) {
           console.error('❌ Failed to get Admin storage:', initError);
-          const initErrorMessage = initError instanceof Error ? initError.message : String(initError);
-          return new Response(
-            JSON.stringify({ 
-              success: false, 
-              error: `Failed to get Firebase Admin storage: ${initErrorMessage}. Please check your FIREBASE_ADMIN_SA configuration.` 
-            }), 
-            { 
-              status: 500,
-              headers: { 'Content-Type': 'application/json' }
-            }
-          );
+          console.log('🔄 Failed to get Firebase Admin storage, trying Cloudinary fallback...');
+          // Throw error to fall through to Cloudinary fallback
+          throw initError;
         }
 
         const buffer = Buffer.from(base64, 'base64');
@@ -157,16 +142,9 @@ export async function POST(req: Request) {
         console.error('❌ Firebase Storage upload failed:', err);
         const errorMessage = err instanceof Error ? err.message : String(err);
         
-        // Check if it's a bucket error - if so, try Cloudinary
-        if (errorMessage.includes('bucket does not exist') || 
-            errorMessage.includes('bucket') || 
-            errorMessage.includes('Storage')) {
-          console.log('🔄 Firebase Storage bucket issue detected, trying Cloudinary fallback...');
-          // Fall through to Cloudinary fallback below
-        } else {
-          // For other Firebase errors, also try Cloudinary
-          console.log('🔄 Trying Cloudinary as fallback...');
-        }
+        // Always try Cloudinary fallback for any Firebase error
+        console.log('🔄 Firebase Storage failed, trying Cloudinary fallback...');
+        // Fall through to Cloudinary fallback below
       }
     }
 
