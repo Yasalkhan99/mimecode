@@ -343,27 +343,6 @@ export default function EditCouponPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="discount" className="block text-sm font-semibold text-gray-700 mb-1">
-                Discount Value
-              </label>
-              <input
-                id="discount"
-                name="discount"
-                type="number"
-                value={formData.discount || 0}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    discount: parseFloat(e.target.value),
-                  })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
               <label htmlFor="maxUses" className="block text-sm font-semibold text-gray-700 mb-1">
                 Max Uses
               </label>

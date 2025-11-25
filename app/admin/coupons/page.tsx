@@ -47,6 +47,8 @@ export default function CouponsPage() {
   const [stores, setStores] = useState<Store[]>([]);
   const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
   const [isStoreDropdownOpen, setIsStoreDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isCreating, setIsCreating] = useState(false);
   const storeDropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -92,9 +94,21 @@ export default function CouponsPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (isCreating) return; // Prevent double submission
+    
+    setIsCreating(true);
+    
     // Validate coupon code only if coupon type is 'code'
     if (formData.couponType === 'code' && (!formData.code || formData.code.trim() === '')) {
       alert('Please enter a coupon code (required for code type coupons)');
+      setIsCreating(false);
+      return;
+    }
+    
+    // Validate required fields
+    if (!formData.storeName || formData.storeName.trim() === '') {
+      alert('Please enter a store name (Coupon Title)');
+      setIsCreating(false);
       return;
     }
     
@@ -149,41 +163,62 @@ export default function CouponsPage() {
       couponData.storeIds = selectedStoreIds;
     }
     
-    let result;
-    if (logoUploadMethod === 'file') {
-      result = await createCoupon(couponData as Omit<Coupon, 'id'>, logoFile || undefined);
-    } else {
-      result = await createCouponFromUrl(couponData as Omit<Coupon, 'id'>, logoUrl || undefined);
-    }
-    
-    if (result.success) {
-      fetchCoupons();
-      setShowForm(false);
-      setFormData({
-        code: '',
-        storeName: '',
-        discount: 0,
-        discountType: 'percentage',
-        description: '',
-        url: '',
-        isActive: true,
-        maxUses: 100,
-        currentUses: 0,
-        expiryDate: null,
-        isPopular: false,
-        layoutPosition: null,
-        isLatest: false,
-        latestLayoutPosition: null,
-        categoryId: null,
-        couponType: 'code',
-      });
-      setLogoFile(null);
-      setLogoPreview(null);
-      setLogoUrl('');
-      setExtractedLogoUrl(null);
-      setCouponUrl('');
-      setFileInputKey(prev => prev + 1);
-      setSelectedStoreIds([]); // Reset selected stores
+    try {
+      let result;
+      if (logoUploadMethod === 'file') {
+        // File upload method - logo is optional but validate if user selected file method
+        console.log('Creating coupon with file upload, logoFile:', logoFile);
+        result = await createCoupon(couponData as Omit<Coupon, 'id'>, logoFile || undefined);
+      } else {
+        // URL method - logoUrl is optional
+        console.log('Creating coupon with URL, logoUrl:', logoUrl);
+        result = await createCouponFromUrl(couponData as Omit<Coupon, 'id'>, logoUrl || undefined);
+      }
+      
+      if (result.success) {
+        alert('Coupon created successfully!');
+        fetchCoupons();
+        setShowForm(false);
+        setFormData({
+          code: '',
+          storeName: '',
+          discount: 0,
+          discountType: 'percentage',
+          description: '',
+          url: '',
+          isActive: true,
+          maxUses: 100,
+          currentUses: 0,
+          expiryDate: null,
+          isPopular: false,
+          layoutPosition: null,
+          isLatest: false,
+          latestLayoutPosition: null,
+          categoryId: null,
+          couponType: 'code',
+        });
+        setLogoFile(null);
+        setLogoPreview(null);
+        setLogoUrl('');
+        setExtractedLogoUrl(null);
+        setCouponUrl('');
+        setFileInputKey(prev => prev + 1);
+        setSelectedStoreIds([]); // Reset selected stores
+      } else {
+        // Show error message
+        const errorMessage = result.error instanceof Error 
+          ? result.error.message 
+          : typeof result.error === 'string'
+          ? result.error
+          : 'Failed to create coupon. Please check console for details.';
+        alert(`Error: ${errorMessage}`);
+        console.error('Coupon creation failed:', result.error);
+      }
+    } catch (error) {
+      console.error('Error creating coupon:', error);
+      alert(`Error creating coupon: ${error instanceof Error ? error.message : 'Unknown error. Please check console.'}`);
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -327,16 +362,72 @@ export default function CouponsPage() {
     fetchCoupons();
   };
 
+  // Filter coupons based on search query
+  const filteredCoupons = searchQuery.trim() === '' 
+    ? coupons 
+    : coupons.filter(coupon => 
+        coupon.storeName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        coupon.code?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Manage Coupons</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Manage Coupons</h1>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition whitespace-nowrap"
         >
           {showForm ? 'Cancel' : 'Create New Coupon'}
         </button>
+      </div>
+
+      {/* Search Bar - Always Visible */}
+      <div className="mb-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          <label htmlFor="searchStore" className="block text-sm font-semibold text-gray-700 mb-2">
+            Search by Store Name or Coupon Code
+          </label>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex-1 relative">
+              <input
+                id="searchStore"
+                type="text"
+                placeholder="Enter store name or coupon code..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              />
+              <svg
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium whitespace-nowrap"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          {searchQuery && (
+            <p className="mt-2 text-sm text-gray-600">
+              Showing <span className="font-semibold">{filteredCoupons.length}</span> of{' '}
+              <span className="font-semibold">{coupons.length}</span> coupons
+            </p>
+          )}
+        </div>
       </div>
 
       {showForm && (
@@ -572,108 +663,88 @@ export default function CouponsPage() {
                 </p>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-gray-700 text-sm font-semibold mb-2">Logo Upload Method</label>
-                  <div className="flex gap-4 mb-2">
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="logoUploadMethod"
-                        value="file"
-                        checked={logoUploadMethod === 'file'}
-                        onChange={(e) => {
-                          setLogoUploadMethod('file');
-                          setLogoUrl('');
-                          setExtractedLogoUrl(null);
-                        }}
-                        className="mr-2"
-                      />
-                      File Upload
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="logoUploadMethod"
-                        value="url"
-                        checked={logoUploadMethod === 'url'}
-                        onChange={(e) => {
-                          setLogoUploadMethod('url');
-                          setLogoFile(null);
-                        }}
-                        className="mr-2"
-                      />
-                      URL (Cloudinary)
-                    </label>
-                  </div>
-                  
-                  {logoUploadMethod === 'file' ? (
-                    <>
-                      <label htmlFor="logo" className="sr-only">Logo (PNG / SVG)</label>
-                      <input
-                        id="logo"
-                        name="logo"
-                        type="file"
-                        accept="image/png,image/svg+xml"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0] ?? null;
-                          setLogoFile(file);
-                          if (file) {
-                            setLogoPreview(URL.createObjectURL(file));
-                          } else {
-                            setLogoPreview(null);
-                          }
-                        }}
-                        className="w-full"
-                        key={`file-input-${fileInputKey}`}
-                      />
-                    </>
-                  ) : (
-                    <>
-                      <label htmlFor="logoUrl" className="block text-gray-700 text-sm font-semibold mb-2">
-                        Logo URL (Cloudinary URL)
-                      </label>
-                      <input
-                        id="logoUrl"
-                        name="logoUrl"
-                        type="url"
-                        value={logoUrl || ''}
-                        onChange={(e) => handleLogoUrlChange(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="https://res.cloudinary.com/..."
-                      />
-                      {extractedLogoUrl && extractedLogoUrl !== logoUrl && (
-                        <div className="mt-2 p-2 bg-blue-50 rounded text-sm text-blue-700">
-                          <strong>Extracted Original URL:</strong>
-                          <div className="mt-1 break-all text-xs">{extractedLogoUrl}</div>
-                        </div>
-                      )}
-                    </>
-                  )}
-                  {logoPreview && (
-                    <div className="mt-2">
-                      <img src={logoPreview} alt="Logo preview" className="h-16 object-contain" />
+            <div>
+              <label className="block text-gray-700 text-sm font-semibold mb-2">Logo Upload Method</label>
+              <div className="flex gap-4 mb-2">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="logoUploadMethod"
+                    value="file"
+                    checked={logoUploadMethod === 'file'}
+                    onChange={(e) => {
+                      setLogoUploadMethod('file');
+                      setLogoUrl('');
+                      setExtractedLogoUrl(null);
+                    }}
+                    className="mr-2"
+                  />
+                  File Upload
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="logoUploadMethod"
+                    value="url"
+                    checked={logoUploadMethod === 'url'}
+                    onChange={(e) => {
+                      setLogoUploadMethod('url');
+                      setLogoFile(null);
+                    }}
+                    className="mr-2"
+                  />
+                  URL (Cloudinary)
+                </label>
+              </div>
+              
+              {logoUploadMethod === 'file' ? (
+                <>
+                  <label htmlFor="logo" className="sr-only">Logo (PNG / SVG)</label>
+                  <input
+                    id="logo"
+                    name="logo"
+                    type="file"
+                    accept="image/png,image/svg+xml"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] ?? null;
+                      setLogoFile(file);
+                      if (file) {
+                        setLogoPreview(URL.createObjectURL(file));
+                      } else {
+                        setLogoPreview(null);
+                      }
+                    }}
+                    className="w-full"
+                    key={`file-input-${fileInputKey}`}
+                  />
+                </>
+              ) : (
+                <>
+                  <label htmlFor="logoUrl" className="block text-gray-700 text-sm font-semibold mb-2">
+                    Logo URL (Cloudinary URL)
+                  </label>
+                  <input
+                    id="logoUrl"
+                    name="logoUrl"
+                    type="url"
+                    value={logoUrl || ''}
+                    onChange={(e) => handleLogoUrlChange(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="https://res.cloudinary.com/..."
+                  />
+                  {extractedLogoUrl && extractedLogoUrl !== logoUrl && (
+                    <div className="mt-2 p-2 bg-blue-50 rounded text-sm text-blue-700">
+                      <strong>Extracted Original URL:</strong>
+                      <div className="mt-1 break-all text-xs">{extractedLogoUrl}</div>
                     </div>
                   )}
+                </>
+              )}
+              {logoPreview && (
+                <div className="mt-2">
+                  <img src={logoPreview} alt="Logo preview" className="h-16 object-contain" />
                 </div>
-              <div>
-                <label htmlFor="discount" className="sr-only">Discount Value</label>
-                <input
-                  id="discount"
-                  name="discount"
-                  type="number"
-                  placeholder="Discount Value"
-                  value={formData.discount || 0}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      discount: parseFloat(e.target.value),
-                    })
-                  }
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -908,9 +979,20 @@ export default function CouponsPage() {
 
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold"
+              disabled={isCreating}
+              className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              Create Coupon
+              {isCreating ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Creating...
+                </>
+              ) : (
+                'Create Coupon'
+              )}
             </button>
           </form>
         </div>
@@ -922,64 +1004,73 @@ export default function CouponsPage() {
         <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
           <p className="text-gray-500">No coupons created yet</p>
         </div>
+      ) : filteredCoupons.length === 0 ? (
+        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+          <p className="text-gray-500">No coupons found matching "{searchQuery}"</p>
+          <button
+            onClick={() => setSearchQuery('')}
+            className="mt-4 text-blue-600 hover:text-blue-800 underline"
+          >
+            Clear search
+          </button>
+        </div>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold">
+                    Store Name
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold">
                     Code
                   </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">
-                    Discount
-                  </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold">
                     Description
                   </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold">
                     Uses
                   </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold">
                     Latest
                   </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold">
                     Latest Layout
                   </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold">
                     Popular
                   </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold">
                     Popular Layout
                   </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold">
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {coupons.map((coupon) => (
+                {filteredCoupons.map((coupon) => (
                   <tr key={coupon.id} className="border-b hover:bg-gray-50">
-                    <td className="px-6 py-4 font-mono font-semibold">
-                      {coupon.code}
+                    <td className="px-4 sm:px-6 py-4 text-sm font-semibold text-gray-900">
+                      {coupon.storeName || 'N/A'}
                     </td>
-                    <td className="px-6 py-4">
-                      {coupon.discount}
-%
+                    <td className="px-4 sm:px-6 py-4 font-mono font-semibold text-xs sm:text-sm">
+                      {coupon.code || 'N/A'}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {coupon.description}
+                    <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-600 max-w-xs truncate" title={coupon.description}>
+                      {coupon.description || 'No description'}
                     </td>
-                    <td className="px-6 py-4 text-sm">
+                    <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm">
                       {coupon.currentUses} / {coupon.maxUses}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 sm:px-6 py-4">
                       <button
                         onClick={() => handleToggleActive(coupon)}
-                        className={`px-2 py-1 rounded text-xs font-semibold cursor-pointer ${
+                        className={`px-2 py-1 rounded text-xs font-semibold cursor-pointer whitespace-nowrap ${
                           coupon.isActive
                             ? 'bg-green-100 text-green-700 hover:bg-green-200'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -988,10 +1079,10 @@ export default function CouponsPage() {
                         {coupon.isActive ? 'Active' : 'Inactive'}
                       </button>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 sm:px-6 py-4">
                       <button
                         onClick={() => handleToggleLatest(coupon)}
-                        className={`px-2 py-1 rounded text-xs font-semibold cursor-pointer ${
+                        className={`px-2 py-1 rounded text-xs font-semibold cursor-pointer whitespace-nowrap ${
                           coupon.isLatest
                             ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -1000,14 +1091,14 @@ export default function CouponsPage() {
                         {coupon.isLatest ? 'Latest' : 'Not Latest'}
                       </button>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 sm:px-6 py-4">
                       <select
                         value={coupon.latestLayoutPosition || ''}
                         onChange={(e) => {
                           const position = e.target.value ? parseInt(e.target.value) : null;
                           handleAssignLatestLayoutPosition(coupon, position);
                         }}
-                        className="px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="px-2 sm:px-3 py-1.5 border border-gray-300 rounded text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         disabled={!coupon.isLatest}
                       >
                         <option value="">Not Assigned</option>
@@ -1021,10 +1112,10 @@ export default function CouponsPage() {
                         <p className="text-xs text-gray-400 mt-1">Enable Latest first</p>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 sm:px-6 py-4">
                       <button
                         onClick={() => handleTogglePopular(coupon)}
-                        className={`px-2 py-1 rounded text-xs font-semibold cursor-pointer ${
+                        className={`px-2 py-1 rounded text-xs font-semibold cursor-pointer whitespace-nowrap ${
                           coupon.isPopular
                             ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -1033,14 +1124,14 @@ export default function CouponsPage() {
                         {coupon.isPopular ? 'Popular' : 'Not Popular'}
                       </button>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 sm:px-6 py-4">
                       <select
                         value={coupon.layoutPosition || ''}
                         onChange={(e) => {
                           const position = e.target.value ? parseInt(e.target.value) : null;
                           handleAssignLayoutPosition(coupon, position);
                         }}
-                        className="px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="px-2 sm:px-3 py-1.5 border border-gray-300 rounded text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         disabled={!coupon.isPopular}
                       >
                         <option value="">Not Assigned</option>
@@ -1054,19 +1145,21 @@ export default function CouponsPage() {
                         <p className="text-xs text-gray-400 mt-1">Enable Popular first</p>
                       )}
                     </td>
-                    <td className="px-6 py-4 space-x-2">
-                      <Link
-                        href={`/admin/coupons/${coupon.id}`}
-                        className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded text-sm hover:bg-blue-200"
-                      >
-                        Edit
-                      </Link>
-                      <button
-                        onClick={() => handleDelete(coupon.id)}
-                        className="bg-red-100 text-red-700 px-3 py-1 rounded text-sm hover:bg-red-200"
-                      >
-                        Delete
-                      </button>
+                    <td className="px-4 sm:px-6 py-4">
+                      <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
+                        <Link
+                          href={`/admin/coupons/${coupon.id}`}
+                          className="inline-block bg-blue-100 text-blue-700 px-2 sm:px-3 py-1 rounded text-xs sm:text-sm hover:bg-blue-200 text-center"
+                        >
+                          Edit
+                        </Link>
+                        <button
+                          onClick={() => handleDelete(coupon.id)}
+                          className="bg-red-100 text-red-700 px-2 sm:px-3 py-1 rounded text-xs sm:text-sm hover:bg-red-200"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

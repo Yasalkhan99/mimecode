@@ -131,9 +131,6 @@ export default function CartPage() {
                       {item.description}
                     </p>
                     <div className="flex gap-2 justify-center">
-                      <div className="inline-block bg-gradient-to-r from-orange-500 to-pink-500 text-white text-sm font-bold px-4 py-2 rounded-lg">
-                        {item.discount}% OFF
-                      </div>
                       {item.url && (
                         <a
                           href={item.url}

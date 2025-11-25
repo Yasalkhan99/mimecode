@@ -162,9 +162,6 @@ function SearchContent() {
                           <p className="text-xs sm:text-sm text-gray-500 mb-3 line-clamp-2">
                             {coupon.description}
                           </p>
-                          <div className="inline-block bg-gradient-to-r from-orange-500 to-pink-500 text-white text-sm font-bold px-4 py-2 rounded-lg">
-                            {coupon.discount}% OFF
-                          </div>
                         </div>
                       </Link>
                     ))}

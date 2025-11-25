@@ -10,8 +10,7 @@ import {
   getDoc,
   Timestamp,
 } from 'firebase/firestore';
-import { db, storage } from '@/lib/firebase';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db } from '@/lib/firebase';
 import { extractOriginalCloudinaryUrl } from '@/lib/utils/cloudinary';
 
 export interface Coupon {
@@ -45,9 +44,89 @@ export async function createCoupon(coupon: Omit<Coupon, 'id'>, logoFile?: File) 
   try {
     let logoUrl: string | undefined;
     if (logoFile) {
-      const ref = storageRef(storage, `coupon_logos/${Date.now()}_${logoFile.name}`);
-      await uploadBytes(ref, logoFile);
-      logoUrl = await getDownloadURL(ref);
+      // Use server-side upload only (avoids CORS issues)
+      try {
+        // Convert file to base64
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result as string;
+            // Remove data URL prefix
+            const base64 = result.split(',')[1];
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(logoFile);
+        });
+
+        const uploadResponse = await fetch('/api/coupons/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileName: logoFile.name,
+            contentType: logoFile.type || 'image/svg+xml',
+            base64,
+          }),
+        });
+
+        if (uploadResponse.ok) {
+          const uploadData = await uploadResponse.json();
+          if (uploadData.success && uploadData.logoUrl) {
+            logoUrl = uploadData.logoUrl;
+            console.log('✅ Logo uploaded successfully via server:', logoUrl);
+          } else {
+            console.warn('⚠️ Server upload returned success but no logoUrl:', uploadData);
+          }
+        } else {
+          // Handle error response - try to parse JSON, fallback to status text
+          let errorData: any = { error: `HTTP ${uploadResponse.status}` };
+          let errorText = '';
+          
+          try {
+            errorText = await uploadResponse.text();
+            if (errorText) {
+              try {
+                errorData = JSON.parse(errorText);
+              } catch (parseError) {
+                // If not JSON, use the text as error message
+                errorData = { error: errorText || `HTTP ${uploadResponse.status}` };
+              }
+            }
+          } catch (e) {
+            errorData = { error: `HTTP ${uploadResponse.status}: ${uploadResponse.statusText || 'Unknown error'}` };
+          }
+          
+          const errorMessage = errorData.error || errorData.message || `HTTP ${uploadResponse.status}`;
+          
+          console.error('❌ Server-side upload failed:', {
+            status: uploadResponse.status,
+            statusText: uploadResponse.statusText,
+            error: errorMessage,
+            rawResponse: errorText.substring(0, 200) // First 200 chars for debugging
+          });
+          
+          // Show user-friendly error message
+          if (errorMessage.includes('FIREBASE_ADMIN_SA') || 
+              errorMessage.includes('Admin SDK') || 
+              errorMessage.includes('not configured') ||
+              uploadResponse.status === 500) {
+            console.warn('⚠️ Logo upload failed: Firebase Admin SDK not configured.');
+            console.warn('💡 To enable logo uploads:');
+            console.warn('   1. Go to Firebase Console → Project Settings → Service Accounts');
+            console.warn('   2. Click "Generate New Private Key"');
+            console.warn('   3. Copy the JSON and add to .env.local as:');
+            console.warn('      FIREBASE_ADMIN_SA=\'{"type":"service_account",...}\'');
+            console.warn('   4. Restart your dev server');
+          } else {
+            console.warn('⚠️ Logo upload failed:', errorMessage);
+          }
+          console.warn('✅ Coupon will be created without logo');
+        }
+      } catch (serverError) {
+        console.error('Error during server-side upload:', serverError);
+        // Continue without logo - coupon can still be created
+        console.warn('Creating coupon without logo due to upload error');
+      }
     }
 
     const docRef = await addDoc(collection(db, coupons), {
