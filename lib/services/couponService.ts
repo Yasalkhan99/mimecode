@@ -129,12 +129,21 @@ export async function createCoupon(coupon: Omit<Coupon, 'id'>, logoFile?: File) 
       }
     }
 
-    const docRef = await addDoc(collection(db, coupons), {
+    const couponData = {
       ...coupon,
       ...(logoUrl ? { logoUrl } : {}),
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
-    });
+    };
+    
+    // Debug log to verify storeIds are included
+    if (coupon.storeIds) {
+      console.log('✅ Saving coupon with storeIds:', coupon.storeIds);
+    } else {
+      console.log('⚠️ Coupon created without storeIds');
+    }
+    
+    const docRef = await addDoc(collection(db, coupons), couponData);
     return { success: true, id: docRef.id };
   } catch (error) {
     console.error('Error creating coupon:', error);
@@ -308,18 +317,52 @@ export async function applyCoupon(code: string) {
  */
 export async function createCouponFromUrl(coupon: Omit<Coupon, 'id'>, logoUrl?: string) {
   try {
-    let extractedLogoUrl: string | undefined;
-    if (logoUrl) {
-      // Extract original URL if it's a Cloudinary URL
-      extractedLogoUrl = extractOriginalCloudinaryUrl(logoUrl);
+    let finalLogoUrl: string | undefined;
+    if (logoUrl && logoUrl.trim() !== '') {
+      // For Cloudinary URLs, use them directly (they're already optimized)
+      // Only extract if the URL seems malformed
+      if (logoUrl.includes('res.cloudinary.com')) {
+        // Check if URL is malformed (has /image/image/upload/)
+        if (logoUrl.includes('/image/image/upload/') || logoUrl.match(/res\.cloudinary\.com\/image\//)) {
+          // Extract to fix malformed URL
+          finalLogoUrl = extractOriginalCloudinaryUrl(logoUrl);
+          console.log('🔧 Fixed malformed Cloudinary URL:', { original: logoUrl, fixed: finalLogoUrl });
+        } else {
+          // Use Cloudinary URL directly (it's already correct)
+          finalLogoUrl = logoUrl;
+          console.log('✅ Using Cloudinary URL directly:', finalLogoUrl);
+        }
+      } else {
+        // For non-Cloudinary URLs, use as-is
+        finalLogoUrl = logoUrl;
+      }
     }
 
-    const docRef = await addDoc(collection(db, coupons), {
+    const couponData = {
       ...coupon,
-      ...(extractedLogoUrl ? { logoUrl: extractedLogoUrl } : {}),
+      ...(finalLogoUrl ? { logoUrl: finalLogoUrl } : {}),
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
+    };
+    
+    // Debug log to verify storeIds and logoUrl are included
+    console.log('📝 Creating coupon from URL:', {
+      storeIds: coupon.storeIds,
+      logoUrl: finalLogoUrl,
+      hasLogoUrl: !!finalLogoUrl,
+      couponDataLogoUrl: couponData.logoUrl,
+      fullCouponData: JSON.stringify(couponData, null, 2)
     });
+    
+    const docRef = await addDoc(collection(db, coupons), couponData);
+    console.log('✅ Coupon created successfully with ID:', docRef.id);
+    console.log('📋 Saved coupon data (logoUrl):', couponData.logoUrl);
+    
+    // Verify the saved document
+    const savedDoc = await getDoc(docRef);
+    const savedData = savedDoc.data();
+    console.log('🔍 Verification - Saved document logoUrl:', savedData?.logoUrl);
+    
     return { success: true, id: docRef.id };
   } catch (error) {
     console.error('Error creating coupon from URL:', error);

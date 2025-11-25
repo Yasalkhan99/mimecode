@@ -10,24 +10,17 @@ export async function POST(req: Request) {
   }
 
   // If service account is provided, try Admin SDK (recommended)
-  if (process.env.FIREBASE_ADMIN_SA) {
+  if (process.env.FIREBASE_ADMIN_SA || process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
     try {
-      const adminModule = await import('firebase-admin');
-      const admin = adminModule.default || adminModule;
-
-      if (!admin.apps.length) {
-        const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_SA as string);
-        admin.initializeApp({
-          credential: admin.credential.cert(serviceAccount),
-          storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-        });
-      }
+      const { getAdminStorage, getAdminFirestore, default: admin } = await import('@/lib/firebase-admin');
+      const storage = getAdminStorage();
+      const firestore = getAdminFirestore();
 
       const buffer = Buffer.from(base64, 'base64');
       const safeName = fileName.replace(/[^a-zA-Z0-9.\-_]/g, '_');
       const targetCollection = collection || 'banners';
       const dest = `${targetCollection}/${Date.now()}_${safeName}`;
-      const bucket = admin.storage().bucket();
+      const bucket = storage.bucket();
       const file = bucket.file(dest);
 
       await file.save(buffer, { metadata: { contentType }, resumable: false });
@@ -47,7 +40,7 @@ export async function POST(req: Request) {
       if (layoutPosition !== undefined && layoutPosition !== null) {
         bannerData.layoutPosition = layoutPosition;
       }
-      const docRef = await admin.firestore().collection(targetCollection).add(bannerData);
+      const docRef = await firestore.collection(targetCollection).add(bannerData);
 
       return new Response(JSON.stringify({ success: true, id: docRef.id, imageUrl: publicUrl }), { status: 200 });
     } catch (err) {
@@ -84,14 +77,10 @@ export async function POST(req: Request) {
         const publicUrl = data?.publicUrl || `https://${process.env.SUPABASE_URL}/storage/v1/object/public/${supabaseBucket}/${filePath}`;
 
         // Save metadata to Firestore via REST (or Admin SDK if available)
-        if (process.env.FIREBASE_ADMIN_SA) {
+        if (process.env.FIREBASE_ADMIN_SA || process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
           try {
-            const adminModule = await import('firebase-admin');
-            const admin = adminModule.default || adminModule;
-            if (!admin.apps.length) {
-              const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_SA as string);
-              admin.initializeApp({ credential: admin.credential.cert(serviceAccount as any) });
-            }
+            const { getAdminFirestore, default: admin } = await import('@/lib/firebase-admin');
+            const firestore = getAdminFirestore();
             const bannerDataSupabase: any = {
               title: title || '',
               imageUrl: publicUrl,
@@ -100,7 +89,7 @@ export async function POST(req: Request) {
             if (layoutPosition !== undefined && layoutPosition !== null) {
               bannerDataSupabase.layoutPosition = layoutPosition;
             }
-            const docRef = await admin.firestore().collection(targetCollection).add(bannerDataSupabase);
+            const docRef = await firestore.collection(targetCollection).add(bannerDataSupabase);
             return new Response(JSON.stringify({ success: true, id: docRef.id, imageUrl: publicUrl, stored: 'supabase' }), { status: 200 });
           } catch (e) {
             console.error('Admin SDK Firestore write failed after Supabase upload', e);
