@@ -83,17 +83,29 @@ export default function TrendingStores() {
           </div>
         ) : (
           <>
-            {/* Mobile: Horizontal Scrolling Carousel */}
-            <div className="md:hidden overflow-x-auto pb-4 -mx-3 sm:-mx-4 px-3 sm:px-4 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              <div className="flex gap-3 min-w-max">
-                {stores.map((store, index) => (
-                  store ? (
-                    <Link
-                      key={store.id}
-                      href={`/stores/${store.slug || store.id}`}
-                      className={`bg-white rounded-lg p-3 w-[280px] flex-shrink-0 shadow-sm hover:shadow-md transition-shadow border flex flex-col animate-scale-in ${index > 0 ? 'animate-delay-' + (index % 4 + 1) : ''}`}
-                      style={{ borderColor: 'rgba(244, 117, 79, 0.3)' }}
-                    >
+            {/* Mobile: Horizontal Scrolling Carousel with Continuous Animation */}
+            <div className="md:hidden overflow-hidden pb-4 -mx-3 sm:-mx-4 px-3 sm:px-4">
+              <div className="relative overflow-hidden w-full">
+                <div 
+                  className="flex gap-3"
+                  style={{
+                    animation: 'slideLeftSmooth 30s linear infinite',
+                    width: 'fit-content',
+                    willChange: 'transform',
+                    backfaceVisibility: 'hidden',
+                    WebkitBackfaceVisibility: 'hidden',
+                    transform: 'translateZ(0)'
+                  }}
+                >
+                  {[...Array(3)].map((_, loopIndex) => (
+                    stores.map((store, index) => (
+                      store ? (
+                        <Link
+                          key={`${store.id}-${loopIndex}`}
+                          href={`/stores/${store.slug || store.id}`}
+                          className="bg-white rounded-lg p-3 w-[280px] flex-shrink-0 shadow-sm hover:shadow-md transition-shadow border flex flex-col"
+                          style={{ borderColor: 'rgba(244, 117, 79, 0.3)' }}
+                        >
                       <div className="flex items-center gap-2 mb-2">
                         {store.logoUrl ? (
                           <div className="w-10 h-10 rounded flex items-center justify-center overflow-hidden bg-gray-50 flex-shrink-0 relative">
@@ -144,7 +156,7 @@ export default function TrendingStores() {
                     </Link>
                   ) : (
                     <div
-                      key={`empty-${index}`}
+                      key={`empty-${index}-${loopIndex}`}
                       className="bg-gray-50 rounded-lg p-3 w-[280px] flex-shrink-0 border-2 border-dashed flex flex-col items-center justify-center min-h-[180px]"
                       style={{ borderColor: 'rgba(244, 117, 79, 0.2)' }}
                     >
@@ -157,8 +169,10 @@ export default function TrendingStores() {
                       </div>
                     </div>
                   )
-                ))}
+                    ))
+                  ))}
               </div>
+            </div>
             </div>
             {/* Desktop: Grid Layout */}
             <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
