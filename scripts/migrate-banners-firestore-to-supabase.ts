@@ -136,7 +136,7 @@ async function migrateBanners(): Promise<MigrationResult> {
     const batchSize = 10;
     const banners = snapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data(),
+      ...(doc.data() as any),
     }));
 
     for (let i = 0; i < banners.length; i += batchSize) {

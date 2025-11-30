@@ -439,19 +439,17 @@ export async function applyCoupon(code: string) {
     if (coupon.expiryDate) {
       const now = new Date();
       // Handle expiryDate - can be string, Date, or Firestore Timestamp
-      let expiryTime: Date;
+      let expiryTime: Date | null = null;
       if (coupon.expiryDate instanceof Date) {
         expiryTime = coupon.expiryDate;
-      } else if (coupon.expiryDate && typeof coupon.expiryDate.toDate === 'function') {
-        expiryTime = coupon.expiryDate.toDate();
+      } else if (coupon.expiryDate && typeof (coupon.expiryDate as any).toDate === 'function') {
+        expiryTime = (coupon.expiryDate as any).toDate();
       } else if (typeof coupon.expiryDate === 'string') {
         expiryTime = new Date(coupon.expiryDate);
       } else if (typeof coupon.expiryDate === 'number') {
         expiryTime = new Date(coupon.expiryDate);
-      } else {
-        expiryTime = new Date(coupon.expiryDate);
       }
-      if (now > expiryTime) {
+      if (expiryTime && now > expiryTime) {
         return { valid: false, message: 'Coupon has expired' };
       }
     }
