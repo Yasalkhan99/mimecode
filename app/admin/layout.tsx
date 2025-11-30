@@ -184,6 +184,13 @@ export default function AdminLayout({
             Manage Stores
           </Link>
           <Link
+            href="/admin/regions"
+            onClick={() => setSidebarOpen(false)}
+            className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
+          >
+            Manage Regions
+          </Link>
+          <Link
             href="/admin/logos"
             onClick={() => setSidebarOpen(false)}
             className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"

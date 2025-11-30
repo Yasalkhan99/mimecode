@@ -1,15 +1,4 @@
-import {
-  collection,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
-  getDocs,
-  getDoc,
-  Timestamp,
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { extractOriginalCloudinaryUrl } from '@/lib/utils/cloudinary';
+import { Timestamp } from 'firebase/firestore';
 
 export interface Logo {
   id?: string;
@@ -17,28 +6,36 @@ export interface Logo {
   logoUrl: string;
   websiteUrl?: string; // Original website URL if extracted from URL
   layoutPosition?: number | null; // Position in logo grid layout (1-18)
-  createdAt?: Timestamp;
-  updatedAt?: Timestamp;
+  createdAt?: Timestamp | number; // Can be Timestamp or number (milliseconds)
+  updatedAt?: Timestamp | number; // Can be Timestamp or number (milliseconds)
 }
 
-const logos = 'logos';
+// Use environment variable to separate collections between projects
+// Default to 'logos-mimecode' for this new project
+const logos = process.env.NEXT_PUBLIC_LOGOS_COLLECTION || 'logos-mimecode';
 
 // Create a new logo from URL (extracts logo automatically)
 export async function createLogoFromUrl(name: string, logoUrl: string, layoutPosition?: number | null, websiteUrl?: string) {
   try {
-    // Extract original URL if it's a Cloudinary URL
-    const extractedLogoUrl = extractOriginalCloudinaryUrl(logoUrl);
-    
-    const docRef = await addDoc(collection(db, logos), {
-      name: name || '',
-      logoUrl: extractedLogoUrl || logoUrl,
-      websiteUrl: websiteUrl || logoUrl, // Use websiteUrl if provided, otherwise use logoUrl
-      layoutPosition: layoutPosition !== undefined ? layoutPosition : null,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
+    const res = await fetch('/api/logos/create-from-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        logoUrl,
+        layoutPosition,
+        websiteUrl,
+        collection: logos,
+      }),
     });
-    
-    return { success: true, id: docRef.id };
+
+    const json = await res.json();
+    if (!res.ok) {
+      console.error('Server create failed', { status: res.status, body: json });
+      return { success: false, error: json.error || 'Failed to create logo from URL' };
+    }
+
+    return { success: true, id: json.id };
   } catch (error) {
     console.error('Error creating logo from URL:', error);
     return { success: false, error };
@@ -48,11 +45,25 @@ export async function createLogoFromUrl(name: string, logoUrl: string, layoutPos
 // Get all logos
 export async function getLogos(): Promise<Logo[]> {
   try {
-    const querySnapshot = await getDocs(collection(db, logos));
-    return querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    } as Logo));
+    // Try server-side API first (bypasses security rules)
+    try {
+      const res = await fetch(`/api/logos/get?collection=${encodeURIComponent(logos)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.logos) {
+          return data.logos as Logo[];
+        }
+      } else {
+        console.warn('Server API returned error, not falling back to client-side');
+        return [];
+      }
+    } catch (apiError) {
+      console.warn('Server API failed:', apiError);
+      return [];
+    }
+
+    // Removed client-side fallback to avoid permission errors
+    return [];
   } catch (error) {
     console.error('Error getting logos:', error);
     return [];
@@ -62,11 +73,21 @@ export async function getLogos(): Promise<Logo[]> {
 // Get logo by ID
 export async function getLogoById(id: string): Promise<Logo | null> {
   try {
-    const docRef = doc(db, logos, id);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() } as Logo;
+    // Try server-side API first (bypasses security rules)
+    try {
+      const res = await fetch(`/api/logos/get?collection=${encodeURIComponent(logos)}&id=${encodeURIComponent(id)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.logo) {
+          return data.logo as Logo;
+        }
+        return null;
+      }
+    } catch (apiError) {
+      console.warn('Server API failed:', apiError);
     }
+
+    // Removed client-side fallback to avoid permission errors
     return null;
   } catch (error) {
     console.error('Error getting logo:', error);
@@ -103,11 +124,22 @@ export async function getLogosWithLayout(): Promise<(Logo | null)[]> {
 // Update a logo
 export async function updateLogo(id: string, updates: Partial<Logo>) {
   try {
-    const docRef = doc(db, logos, id);
-    await updateDoc(docRef, {
-      ...updates,
-      updatedAt: Timestamp.now(),
+    const res = await fetch('/api/logos/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id,
+        updates,
+        collection: logos,
+      }),
     });
+
+    const json = await res.json();
+    if (!res.ok) {
+      console.error('Server update failed', { status: res.status, body: json });
+      return { success: false, error: json.error || 'Failed to update logo' };
+    }
+
     return { success: true };
   } catch (error) {
     console.error('Error updating logo:', error);
@@ -118,8 +150,21 @@ export async function updateLogo(id: string, updates: Partial<Logo>) {
 // Delete a logo
 export async function deleteLogo(id: string) {
   try {
-    const docRef = doc(db, logos, id);
-    await deleteDoc(docRef);
+    const res = await fetch('/api/logos/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id,
+        collection: logos,
+      }),
+    });
+
+    const json = await res.json();
+    if (!res.ok) {
+      console.error('Server delete failed', { status: res.status, body: json });
+      return { success: false, error: json.error || 'Failed to delete logo' };
+    }
+
     return { success: true };
   } catch (error) {
     console.error('Error deleting logo:', error);

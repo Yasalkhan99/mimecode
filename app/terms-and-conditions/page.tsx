@@ -6,7 +6,7 @@ import Footer from '@/app/components/Footer';
 
 export default function TermsAndConditionsPage() {
   useEffect(() => {
-    document.title = 'Terms and Conditions - AvailCoupon';
+    document.title = 'Terms and Conditions - MimeCode';
   }, []);
 
   return (
@@ -28,7 +28,7 @@ export default function TermsAndConditionsPage() {
                 1. Agreement to Terms
               </h2>
               <p className="text-gray-700 leading-relaxed mb-4">
-                By accessing and using AvailCoupon ("the Website"), you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service.
+                By accessing and using MimeCode ("the Website"), you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service.
               </p>
               <p className="text-gray-700 leading-relaxed">
                 These Terms and Conditions ("Terms") govern your access to and use of our website, services, and applications. By using our services, you agree to comply with and be bound by these Terms.
@@ -93,7 +93,7 @@ export default function TermsAndConditionsPage() {
                 4. Intellectual Property
               </h2>
               <p className="text-gray-700 leading-relaxed mb-4">
-                All content on this website, including but not limited to text, graphics, logos, images, and software, is the property of AvailCoupon or its content suppliers and is protected by copyright, trademark, and other intellectual property laws.
+                All content on this website, including but not limited to text, graphics, logos, images, and software, is the property of MimeCode or its content suppliers and is protected by copyright, trademark, and other intellectual property laws.
               </p>
               <p className="text-gray-700 leading-relaxed mb-4">
                 You may not:
@@ -165,7 +165,7 @@ export default function TermsAndConditionsPage() {
                 7.2 Limitation of Liability
               </h3>
               <p className="text-gray-700 leading-relaxed mb-4">
-                TO THE MAXIMUM EXTENT PERMITTED BY LAW, AVAILCOUPON SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS OR REVENUES, WHETHER INCURRED DIRECTLY OR INDIRECTLY, OR ANY LOSS OF DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES.
+                TO THE MAXIMUM EXTENT PERMITTED BY LAW, MIMECODE SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS OR REVENUES, WHETHER INCURRED DIRECTLY OR INDIRECTLY, OR ANY LOSS OF DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES.
               </p>
             </section>
 
@@ -174,7 +174,7 @@ export default function TermsAndConditionsPage() {
                 8. Indemnification
               </h2>
               <p className="text-gray-700 leading-relaxed mb-4">
-                You agree to indemnify, defend, and hold harmless AvailCoupon, its officers, directors, employees, and agents from and against any claims, liabilities, damages, losses, and expenses, including reasonable attorneys' fees, arising out of or in any way connected with:
+                You agree to indemnify, defend, and hold harmless MimeCode, its officers, directors, employees, and agents from and against any claims, liabilities, damages, losses, and expenses, including reasonable attorneys' fees, arising out of or in any way connected with:
               </p>
               <ul className="list-disc list-inside text-gray-700 space-y-2 mb-4 ml-4">
                 <li>Your use of the website</li>
@@ -220,10 +220,10 @@ export default function TermsAndConditionsPage() {
               </p>
               <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
                 <p className="text-gray-700 mb-2">
-                  <strong>Email:</strong> legal@availcoupon.com
+                  <strong>Email:</strong> legal@mimecode.com
                 </p>
                 <p className="text-gray-700">
-                  <strong>Website:</strong> www.availcoupon.com
+                  <strong>Website:</strong> www.mimecode.com
                 </p>
               </div>
             </section>

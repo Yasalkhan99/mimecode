@@ -13,7 +13,7 @@ export interface CartItem {
   addedAt: number; // timestamp
 }
 
-const CART_KEY = 'availcoupon_cart';
+const CART_KEY = 'mimecode_cart';
 
 // Get all cart items
 export function getCartItems(): CartItem[] {

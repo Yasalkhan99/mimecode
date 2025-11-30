@@ -11,7 +11,7 @@ export interface Notification {
   link?: string; // Optional link to navigate
 }
 
-const NOTIFICATIONS_KEY = 'availcoupon_notifications';
+const NOTIFICATIONS_KEY = 'mimecode_notifications';
 
 // Get all notifications
 export function getNotifications(): Notification[] {
@@ -112,7 +112,7 @@ export function initializeSampleNotifications(): void {
   const existing = getNotifications();
   if (existing.length === 0) {
     addNotification({
-      title: 'Welcome to AvailCoupon!',
+      title: 'Welcome to MimeCode!',
       message: 'Discover amazing deals and save money with our exclusive coupons.',
       type: 'info'
     });

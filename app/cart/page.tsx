@@ -12,7 +12,7 @@ export default function CartPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    document.title = 'My Cart - AvailCoupon';
+    document.title = 'My Cart - MimeCode';
     loadCart();
     
     // Listen for updates

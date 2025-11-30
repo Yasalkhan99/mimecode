@@ -16,8 +16,21 @@ export default function AnalyticsPage() {
       const now = Date.now();
       const expiring = data.filter((c) => {
         if (!c.expiryDate) return false;
+        // Handle expiryDate - can be string, Date, or Firestore Timestamp
+        let expiryTime: Date;
+        if (c.expiryDate instanceof Date) {
+          expiryTime = c.expiryDate;
+        } else if (c.expiryDate && typeof c.expiryDate.toDate === 'function') {
+          expiryTime = c.expiryDate.toDate();
+        } else if (typeof c.expiryDate === 'string') {
+          expiryTime = new Date(c.expiryDate);
+        } else if (typeof c.expiryDate === 'number') {
+          expiryTime = new Date(c.expiryDate);
+        } else {
+          return false;
+        }
         const daysUntilExpiry = Math.floor(
-          (c.expiryDate.toDate().getTime() - now) / (1000 * 60 * 60 * 24)
+          (expiryTime.getTime() - now) / (1000 * 60 * 60 * 24)
         );
         return daysUntilExpiry <= 7 && daysUntilExpiry > 0;
       }).length;
@@ -62,9 +75,9 @@ export default function AnalyticsPage() {
           <div className="text-3xl font-bold text-cyan-600 mt-2">{percentageCoupons.length}</div>
         </div>
 
-        <div className="bg-pink-50 p-6 rounded-lg border border-pink-200">
+        <div className="bg-[#ABC443]/10 p-6 rounded-lg border border-[#ABC443]/20">
           <div className="text-gray-600 text-sm font-semibold">Expiring Soon</div>
-          <div className="text-3xl font-bold text-pink-600 mt-2">{expiringSoonCount}</div>
+          <div className="text-3xl font-bold text-[#ABC443] mt-2">{expiringSoonCount}</div>
         </div>
       </div>
 

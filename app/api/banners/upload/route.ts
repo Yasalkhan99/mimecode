@@ -18,7 +18,9 @@ export async function POST(req: Request) {
 
       const buffer = Buffer.from(base64, 'base64');
       const safeName = fileName.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-      const targetCollection = collection || 'banners';
+      // Use environment variable to separate collections between projects
+      // Default to 'banners-mimecode' for this new project
+      const targetCollection = collection || process.env.NEXT_PUBLIC_BANNERS_COLLECTION || 'banners-mimecode';
       const dest = `${targetCollection}/${Date.now()}_${safeName}`;
       const bucket = storage.bucket();
       const file = bucket.file(dest);
@@ -59,7 +61,9 @@ export async function POST(req: Request) {
 
       const buffer = Buffer.from(base64, 'base64');
       const safeName = fileName.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-      const targetCollection = collection || 'banners';
+      // Use environment variable to separate collections between projects
+      // Default to 'banners-mimecode' for this new project
+      const targetCollection = collection || process.env.NEXT_PUBLIC_BANNERS_COLLECTION || 'banners-mimecode';
       const filePath = `${targetCollection}/${Date.now()}_${safeName}`;
 
       // Use the same name for Supabase bucket as the collection, or set SUPABASE_STORAGE_BUCKET
@@ -143,7 +147,9 @@ export async function POST(req: Request) {
 
     const buffer = Buffer.from(base64, 'base64');
     const safeName = fileName.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-    const targetCollection = collection || 'banners';
+    // Use environment variable to separate collections between projects
+    // Default to 'banners-mimecode' for this new project
+    const targetCollection = collection || process.env.NEXT_PUBLIC_BANNERS_COLLECTION || 'banners-mimecode';
     const filePath = `${targetCollection}/${Date.now()}_${safeName}`;
 
     const uploadUrl = `https://www.googleapis.com/upload/storage/v1/b/${storageBucket}/o?uploadType=media&name=${encodeURIComponent(

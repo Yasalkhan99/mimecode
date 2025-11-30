@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { getCoupons, Coupon } from '@/lib/services/couponService';
 import { getStores, Store } from '@/lib/services/storeService';
+import Link from 'next/link';
 
 export default function DashboardPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -60,6 +61,68 @@ export default function DashboardPage() {
   return (
     <div>
       <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4 sm:mb-8">Dashboard</h1>
+
+      {/* Quick Actions */}
+      <div className="bg-gradient-to-r from-[#16a34a] to-[#15803d] rounded-lg shadow-lg p-6 mb-6">
+        <h2 className="text-white text-xl font-bold mb-4 flex items-center gap-2">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          Quick Actions
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Link
+            href="/admin/import"
+            className="bg-white hover:bg-gray-50 rounded-lg p-4 transition shadow-md hover:shadow-xl group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="bg-[#16a34a] text-white p-3 rounded-lg group-hover:scale-110 transition">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900 text-lg">Import Excel</h3>
+                <p className="text-sm text-gray-600">Bulk import stores & coupons</p>
+              </div>
+            </div>
+          </Link>
+          
+          <Link
+            href="/admin/stores"
+            className="bg-white hover:bg-gray-50 rounded-lg p-4 transition shadow-md hover:shadow-xl group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-600 text-white p-3 rounded-lg group-hover:scale-110 transition">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900 text-lg">Manage Stores</h3>
+                <p className="text-sm text-gray-600">View & edit all stores</p>
+              </div>
+            </div>
+          </Link>
+          
+          <Link
+            href="/admin/coupons"
+            className="bg-white hover:bg-gray-50 rounded-lg p-4 transition shadow-md hover:shadow-xl group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="bg-purple-600 text-white p-3 rounded-lg group-hover:scale-110 transition">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900 text-lg">Manage Coupons</h3>
+                <p className="text-sm text-gray-600">View & edit all coupons</p>
+              </div>
+            </div>
+          </Link>
+        </div>
+      </div>
 
       {/* Store Search/Select Bar */}
       <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 mb-6">
@@ -132,11 +195,11 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="bg-orange-50 p-4 sm:p-6 rounded-lg border border-orange-200">
+            <div className="bg-[#ABC443]/10 p-4 sm:p-6 rounded-lg border border-[#ABC443]/20">
               <div className="text-gray-600 text-xs sm:text-sm font-semibold">
                 Avg Discount
               </div>
-              <div className="text-2xl sm:text-3xl font-bold text-orange-600 mt-2">
+              <div className="text-2xl sm:text-3xl font-bold text-[#ABC443] mt-2">
                 {stats.averageDiscount}%
               </div>
             </div>

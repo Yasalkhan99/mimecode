@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Barlow } from "next/font/google";
+import { Geist, Geist_Mono, Barlow, Pacifico } from "next/font/google";
 import "./globals.css";
+import ClientLayout from "./components/ClientLayout";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,25 +17,31 @@ const barlow = Barlow({
   weight: '700',
   subsets: ["latin"],
   variable: "--font-barlow",
+});
+
+const pacifico = Pacifico({
+  weight: '400',
+  subsets: ["latin"],
+  variable: "--font-pacifico",
 }); 
 
 export const metadata: Metadata = {
-  title: "AvailCoupon",
+  title: "MimeCode",
   description: "Manage coupons and discounts with Firebase backend",
   icons: {
     icon: [
       {
-        url: '/Favicon 1.svg',
+        url: '/Group 1171275295.svg',
         type: 'image/svg+xml',
       },
       {
-        url: '/Favicon 1.svg',
+        url: '/Group 1171275295.svg',
         sizes: 'any',
         type: 'image/svg+xml',
       },
     ],
-    apple: '/Favicon 1.svg',
-    shortcut: '/Favicon 1.svg',
+    apple: '/Group 1171275295.svg',
+    shortcut: '/Group 1171275295.svg',
   },
   viewport: {
     width: 'device-width',
@@ -51,9 +58,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${barlow.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${barlow.variable} ${pacifico.variable} antialiased`}
       >
-        {children}
+        <ClientLayout>
+          {children}
+        </ClientLayout>
       </body>
     </html>
   );

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getEmailSettings } from '@/lib/services/emailService';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { getEmailSettingsServer } from '@/lib/services/emailService.server';
+import { getAdminFirestore, default as admin } from '@/lib/firebase-admin';
 import nodemailer from 'nodemailer';
 
 export async function POST(req: NextRequest) {
@@ -24,8 +23,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get recipient email from settings
-    const emailSettings = await getEmailSettings();
+    // Get recipient email from settings (server-side)
+    const emailSettings = await getEmailSettingsServer();
     // Use email1 as primary, fallback to email2, email3, or default
     const recipientEmail = emailSettings?.email1 || emailSettings?.email2 || emailSettings?.email3 || 'yasalkhan90@gmail.com';
     
@@ -35,11 +34,14 @@ export async function POST(req: NextRequest) {
       subscriberEmail: email.trim()
     });
 
-    // Store subscription in Firestore
-    await addDoc(collection(db, 'newsletterSubscriptions'), {
+    // Store subscription in Firestore using Admin SDK
+    // Use environment variable to separate collections between projects
+    const newsletterSubscriptionsCollection = process.env.NEXT_PUBLIC_NEWSLETTER_SUBSCRIPTIONS_COLLECTION || 'newsletterSubscriptions-mimecode';
+    const firestore = getAdminFirestore();
+    await firestore.collection(newsletterSubscriptionsCollection).add({
       email: email.trim(),
       recipientEmail: recipientEmail,
-      subscribedAt: Timestamp.now(),
+      subscribedAt: admin.firestore.FieldValue.serverTimestamp(),
       status: 'pending',
     });
 
@@ -52,7 +54,7 @@ export async function POST(req: NextRequest) {
     const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587;
     const smtpUser = process.env.SMTP_USER;
     const smtpPassword = process.env.SMTP_PASSWORD;
-    const smtpFrom = process.env.SMTP_FROM || smtpUser || 'AvailCoupon <noreply@availcoupon.com>';
+    const smtpFrom = process.env.SMTP_FROM || smtpUser || 'MimeCode <noreply@mimecode.com>';
     
     if (smtpHost && smtpUser && smtpPassword) {
       try {

@@ -21,6 +21,7 @@ export interface Coupon {
   discount: number;
   discountType: 'percentage' | 'fixed';
   description: string;
+  title?: string; // Coupon title (e.g., "20% Off", "10% Off Sitewide")
   isActive: boolean;
   maxUses: number;
   currentUses: number;
@@ -33,11 +34,15 @@ export interface Coupon {
   isLatest?: boolean;
   latestLayoutPosition?: number | null; // Position in latest coupons layout (1-8)
   categoryId?: string | null; // Category ID for this coupon
+  buttonText?: string; // Custom button text (e.g., "Get Code", "Get Deal", "Claim Now", etc.)
+  dealScope?: 'sitewide' | 'online-only'; // Scope of the deal: 'sitewide' or 'online-only'
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
 
-const coupons = 'coupons';
+// Use environment variable to separate collections between projects
+// Default to 'coupons-mimecode' for this new project
+const coupons = process.env.NEXT_PUBLIC_COUPONS_COLLECTION || 'coupons-mimecode';
 
 // Create a new coupon (optionally upload a logoFile to Storage)
 export async function createCoupon(coupon: Omit<Coupon, 'id'>, logoFile?: File) {
@@ -132,8 +137,6 @@ export async function createCoupon(coupon: Omit<Coupon, 'id'>, logoFile?: File) 
     const couponData = {
       ...coupon,
       ...(logoUrl ? { logoUrl } : {}),
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
     };
     
     // Debug log to verify storeIds are included
@@ -143,8 +146,36 @@ export async function createCoupon(coupon: Omit<Coupon, 'id'>, logoFile?: File) 
       console.log('⚠️ Coupon created without storeIds');
     }
     
-    const docRef = await addDoc(collection(db, coupons), couponData);
-    return { success: true, id: docRef.id };
+    // Use server-side API route to create coupon (bypasses security rules)
+    const res = await fetch('/api/coupons/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        coupon: couponData,
+        collection: coupons,
+      }),
+    });
+
+    let json: any = {};
+    let resText = '';
+    try {
+      resText = await res.text();
+      try {
+        json = JSON.parse(resText || '{}');
+      } catch (e) {
+        json = { text: resText };
+      }
+    } catch (e) {
+      console.error('Failed to read server response body', e);
+    }
+
+    if (!res.ok) {
+      console.error('Server create failed', { status: res.status, body: json });
+      // Don't fallback to client-side to avoid permission errors
+      return { success: false, error: json.error || json.text || 'Failed to create coupon' };
+    }
+
+    return { success: true, id: json.id };
   } catch (error) {
     console.error('Error creating coupon:', error);
     return { success: false, error };
@@ -154,11 +185,25 @@ export async function createCoupon(coupon: Omit<Coupon, 'id'>, logoFile?: File) 
 // Get all coupons
 export async function getCoupons(): Promise<Coupon[]> {
   try {
-    const querySnapshot = await getDocs(collection(db, coupons));
-    return querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    } as Coupon));
+    // Try server-side API first (bypasses security rules)
+    try {
+      const res = await fetch(`/api/coupons/get?collection=${encodeURIComponent(coupons)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.coupons) {
+          return data.coupons as Coupon[];
+        }
+      } else {
+        console.warn('Server API returned error, not falling back to client-side');
+        return [];
+      }
+    } catch (apiError) {
+      console.warn('Server API failed:', apiError);
+      return [];
+    }
+
+    // Removed client-side fallback to avoid permission errors
+    return [];
   } catch (error) {
     console.error('Error getting coupons:', error);
     return [];
@@ -168,15 +213,25 @@ export async function getCoupons(): Promise<Coupon[]> {
 // Get active coupons
 export async function getActiveCoupons(): Promise<Coupon[]> {
   try {
-    const q = query(
-      collection(db, coupons),
-      where('isActive', '==', true)
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    } as Coupon));
+    // Try server-side API first (bypasses security rules)
+    try {
+      const res = await fetch(`/api/coupons/get?activeOnly=true`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.coupons) {
+          return data.coupons as Coupon[];
+        }
+      } else {
+        console.warn('Server API returned error, not falling back to client-side');
+        return [];
+      }
+    } catch (apiError) {
+      console.warn('Server API failed:', apiError);
+      return [];
+    }
+
+    // Removed client-side fallback to avoid permission errors
+    return [];
   } catch (error) {
     console.error('Error getting active coupons:', error);
     return [];
@@ -186,11 +241,21 @@ export async function getActiveCoupons(): Promise<Coupon[]> {
 // Get coupon by ID
 export async function getCouponById(id: string): Promise<Coupon | null> {
   try {
-    const docRef = doc(db, coupons, id);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() } as Coupon;
+    // Try server-side API first (bypasses security rules)
+    try {
+      const res = await fetch(`/api/coupons/get?collection=${encodeURIComponent(coupons)}&id=${encodeURIComponent(id)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.coupon) {
+          return data.coupon as Coupon;
+        }
+        return null;
+      }
+    } catch (apiError) {
+      console.warn('Server API failed:', apiError);
     }
+
+    // Removed client-side fallback to avoid permission errors
     return null;
   } catch (error) {
     console.error('Error getting coupon:', error);
@@ -201,11 +266,36 @@ export async function getCouponById(id: string): Promise<Coupon | null> {
 // Update a coupon
 export async function updateCoupon(id: string, updates: Partial<Coupon>) {
   try {
-    const docRef = doc(db, coupons, id);
-    await updateDoc(docRef, {
-      ...updates,
-      updatedAt: Timestamp.now(),
+    // Use server-side API route to update coupon (bypasses security rules)
+    const res = await fetch('/api/coupons/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id,
+        updates,
+        collection: coupons,
+      }),
     });
+
+    let json: any = {};
+    let resText = '';
+    try {
+      resText = await res.text();
+      try {
+        json = JSON.parse(resText || '{}');
+      } catch (e) {
+        json = { text: resText };
+      }
+    } catch (e) {
+      console.error('Failed to read server response body', e);
+    }
+
+    if (!res.ok) {
+      console.error('Server update failed', { status: res.status, body: json });
+      // Don't fallback to client-side to avoid permission errors
+      return { success: false, error: json.error || json.text || 'Failed to update coupon' };
+    }
+
     return { success: true };
   } catch (error) {
     console.error('Error updating coupon:', error);
@@ -216,8 +306,35 @@ export async function updateCoupon(id: string, updates: Partial<Coupon>) {
 // Delete a coupon
 export async function deleteCoupon(id: string) {
   try {
-    const docRef = doc(db, coupons, id);
-    await deleteDoc(docRef);
+    // Use server-side API route to delete coupon (bypasses security rules)
+    const res = await fetch('/api/coupons/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id,
+        collection: coupons,
+      }),
+    });
+
+    let json: any = {};
+    let resText = '';
+    try {
+      resText = await res.text();
+      try {
+        json = JSON.parse(resText || '{}');
+      } catch (e) {
+        json = { text: resText };
+      }
+    } catch (e) {
+      console.error('Failed to read server response body', e);
+    }
+
+    if (!res.ok) {
+      console.error('Server delete failed', { status: res.status, body: json });
+      // Don't fallback to client-side to avoid permission errors
+      return { success: false, error: json.error || json.text || 'Failed to delete coupon' };
+    }
+
     return { success: true };
   } catch (error) {
     console.error('Error deleting coupon:', error);
@@ -228,16 +345,25 @@ export async function deleteCoupon(id: string) {
 // Get coupons by category ID
 export async function getCouponsByCategoryId(categoryId: string): Promise<Coupon[]> {
   try {
-    const q = query(
-      collection(db, coupons),
-      where('categoryId', '==', categoryId),
-      where('isActive', '==', true)
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    } as Coupon));
+    // Try server-side API first (bypasses security rules)
+    try {
+      const res = await fetch(`/api/coupons/get?collection=${encodeURIComponent(coupons)}&categoryId=${encodeURIComponent(categoryId)}&activeOnly=true`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.coupons) {
+          return data.coupons as Coupon[];
+        }
+      } else {
+        console.warn('Server API returned error, not falling back to client-side');
+        return [];
+      }
+    } catch (apiError) {
+      console.warn('Server API failed:', apiError);
+      return [];
+    }
+
+    // Removed client-side fallback to avoid permission errors
+    return [];
   } catch (error) {
     console.error('Error getting coupons by category:', error);
     return [];
@@ -266,11 +392,25 @@ export async function getCouponsByStoreName(storeName: string): Promise<Coupon[]
 // Get coupons by store ID
 export async function getCouponsByStoreId(storeId: string): Promise<Coupon[]> {
   try {
-    const allCoupons = await getCoupons();
-    // Filter coupons that have this storeId in their storeIds array
-    return allCoupons.filter(
-      coupon => coupon.storeIds && coupon.storeIds.includes(storeId)
-    );
+    // Try server-side API first (bypasses security rules)
+    try {
+      const res = await fetch(`/api/coupons/get?collection=${encodeURIComponent(coupons)}&storeId=${encodeURIComponent(storeId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.coupons) {
+          return data.coupons as Coupon[];
+        }
+      } else {
+        console.warn('Server API returned error, not falling back to client-side');
+        return [];
+      }
+    } catch (apiError) {
+      console.warn('Server API failed:', apiError);
+      return [];
+    }
+
+    // Removed client-side fallback to avoid permission errors
+    return [];
   } catch (error) {
     console.error('Error getting coupons by store ID:', error);
     return [];
@@ -298,7 +438,19 @@ export async function applyCoupon(code: string) {
 
     if (coupon.expiryDate) {
       const now = new Date();
-      const expiryTime = coupon.expiryDate.toDate();
+      // Handle expiryDate - can be string, Date, or Firestore Timestamp
+      let expiryTime: Date;
+      if (coupon.expiryDate instanceof Date) {
+        expiryTime = coupon.expiryDate;
+      } else if (coupon.expiryDate && typeof coupon.expiryDate.toDate === 'function') {
+        expiryTime = coupon.expiryDate.toDate();
+      } else if (typeof coupon.expiryDate === 'string') {
+        expiryTime = new Date(coupon.expiryDate);
+      } else if (typeof coupon.expiryDate === 'number') {
+        expiryTime = new Date(coupon.expiryDate);
+      } else {
+        expiryTime = new Date(coupon.expiryDate);
+      }
       if (now > expiryTime) {
         return { valid: false, message: 'Coupon has expired' };
       }
@@ -341,8 +493,6 @@ export async function createCouponFromUrl(coupon: Omit<Coupon, 'id'>, logoUrl?: 
     const couponData = {
       ...coupon,
       ...(finalLogoUrl ? { logoUrl: finalLogoUrl } : {}),
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
     };
     
     // Debug log to verify storeIds and logoUrl are included
@@ -354,16 +504,39 @@ export async function createCouponFromUrl(coupon: Omit<Coupon, 'id'>, logoUrl?: 
       fullCouponData: JSON.stringify(couponData, null, 2)
     });
     
-    const docRef = await addDoc(collection(db, coupons), couponData);
-    console.log('✅ Coupon created successfully with ID:', docRef.id);
+    // Use server-side API route to create coupon (bypasses security rules)
+    const res = await fetch('/api/coupons/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        coupon: couponData,
+        collection: coupons,
+      }),
+    });
+
+    let json: any = {};
+    let resText = '';
+    try {
+      resText = await res.text();
+      try {
+        json = JSON.parse(resText || '{}');
+      } catch (e) {
+        json = { text: resText };
+      }
+    } catch (e) {
+      console.error('Failed to read server response body', e);
+    }
+
+    if (!res.ok) {
+      console.error('Server create failed', { status: res.status, body: json });
+      // Don't fallback to client-side to avoid permission errors
+      return { success: false, error: json.error || json.text || 'Failed to create coupon from URL' };
+    }
+
+    console.log('✅ Coupon created successfully with ID:', json.id);
     console.log('📋 Saved coupon data (logoUrl):', couponData.logoUrl);
     
-    // Verify the saved document
-    const savedDoc = await getDoc(docRef);
-    const savedData = savedDoc.data();
-    console.log('🔍 Verification - Saved document logoUrl:', savedData?.logoUrl);
-    
-    return { success: true, id: docRef.id };
+    return { success: true, id: json.id };
   } catch (error) {
     console.error('Error creating coupon from URL:', error);
     return { success: false, error };
@@ -396,26 +569,70 @@ export async function getPopularCoupons(): Promise<(Coupon | null)[]> {
   }
 }
 
-// Get latest coupons with layout positions
+// Get latest coupons - returns most recently uploaded coupons (sorted by created_at)
 export async function getLatestCoupons(): Promise<(Coupon | null)[]> {
   try {
-    const allCoupons = await getCoupons();
-    // Filter coupons with latest layout positions (1-8) and isLatest
-    const couponsWithPositions = allCoupons
-      .filter(coupon => coupon.isLatest && coupon.latestLayoutPosition && coupon.latestLayoutPosition >= 1 && coupon.latestLayoutPosition <= 8)
-      .sort((a, b) => (a.latestLayoutPosition || 0) - (b.latestLayoutPosition || 0));
+    // Get active coupons (already filtered for active and not expired)
+    const allCoupons = await getActiveCoupons();
     
-    // Create array of 8 slots (positions 1-8)
-    const layoutSlots: (Coupon | null)[] = Array(8).fill(null);
-    
-    // Fill slots with coupons at their assigned positions
-    couponsWithPositions.forEach(coupon => {
-      if (coupon.latestLayoutPosition && coupon.latestLayoutPosition >= 1 && coupon.latestLayoutPosition <= 8) {
-        layoutSlots[coupon.latestLayoutPosition - 1] = coupon; // latestLayoutPosition 1 = index 0
-      }
+    // Sort by created_at descending (most recent first)
+    // Handle different date formats
+    const sortedCoupons = allCoupons.sort((a, b) => {
+      const getDate = (coupon: Coupon): number => {
+        if (!coupon.createdAt) return 0;
+        
+        // If it's a number (timestamp in milliseconds)
+        if (typeof coupon.createdAt === 'number') {
+          return coupon.createdAt;
+        }
+        
+        // If it's a Date object
+        if (coupon.createdAt instanceof Date) {
+          return coupon.createdAt.getTime();
+        }
+        
+        // If it's a Firestore Timestamp (has toDate method)
+        if (coupon.createdAt && typeof (coupon.createdAt as any).toDate === 'function') {
+          return (coupon.createdAt as any).toDate().getTime();
+        }
+        
+        // If it's a string, try to parse it
+        if (typeof coupon.createdAt === 'string') {
+          const parsed = new Date(coupon.createdAt).getTime();
+          return isNaN(parsed) ? 0 : parsed;
+        }
+        
+        return 0;
+      };
+      
+      const dateA = getDate(a);
+      const dateB = getDate(b);
+      
+      // Sort descending (newest first)
+      return dateB - dateA;
     });
     
-    return layoutSlots;
+    // Filter to only code type coupons and take first 8
+    const latestCodeCoupons = sortedCoupons
+      .filter(coupon => coupon.couponType === 'code' || !coupon.couponType) // Include code type or undefined
+      .slice(0, 8);
+    
+    // Pad with nulls to always return 8 items
+    const result: (Coupon | null)[] = [...latestCodeCoupons];
+    while (result.length < 8) {
+      result.push(null);
+    }
+    
+    console.log(`📊 Latest coupons: Found ${latestCodeCoupons.length} recent code coupons`);
+    if (latestCodeCoupons.length > 0) {
+      console.log(`📋 Latest coupon dates:`, latestCodeCoupons.slice(0, 3).map(c => ({
+        title: c.title || c.code,
+        createdAt: c.createdAt,
+        dateType: typeof c.createdAt
+      })));
+    }
+    
+    return result.slice(0, 8);
   } catch (error) {
     console.error('Error getting latest coupons:', error);
     return Array(8).fill(null);

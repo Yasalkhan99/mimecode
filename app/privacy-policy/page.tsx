@@ -6,7 +6,7 @@ import Footer from '@/app/components/Footer';
 
 export default function PrivacyPolicyPage() {
   useEffect(() => {
-    document.title = 'Privacy Policy - AvailCoupon';
+    document.title = 'Privacy Policy - MimeCode';
   }, []);
 
   return (
@@ -28,7 +28,7 @@ export default function PrivacyPolicyPage() {
                 1. Introduction
               </h2>
               <p className="text-gray-700 leading-relaxed mb-4">
-                Welcome to AvailCoupon ("we," "our," or "us"). We are committed to protecting your privacy and ensuring you have a positive experience on our website. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website availcoupon.com.
+                Welcome to MimeCode ("we," "our," or "us"). We are committed to protecting your privacy and ensuring you have a positive experience on our website. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website mimecode.com.
               </p>
               <p className="text-gray-700 leading-relaxed">
                 By using our website, you agree to the collection and use of information in accordance with this policy. If you do not agree with our policies and practices, please do not use our website.
@@ -182,10 +182,10 @@ export default function PrivacyPolicyPage() {
               </p>
               <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
                 <p className="text-gray-700 mb-2">
-                  <strong>Email:</strong> privacy@availcoupon.com
+                  <strong>Email:</strong> privacy@mimecode.com
                 </p>
                 <p className="text-gray-700">
-                  <strong>Website:</strong> www.availcoupon.com
+                  <strong>Website:</strong> www.mimecode.com
                 </p>
               </div>
             </section>

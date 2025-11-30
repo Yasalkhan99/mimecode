@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ==========================================
+    // MIMECODE PUBLIC COLLECTIONS
+    // Public Read, Admin Write Only (via API)
+    // ==========================================
+    
+    match /banners-mimecode/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    match /stores-mimecode/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    match /categories-mimecode/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    match /coupons-mimecode/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    match /news-mimecode/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    match /faqs-mimecode/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    match /store-faqs-mimecode/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    match /regions-mimecode/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    match /logos-mimecode/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    // ==========================================
+    // ADMIN & SETTINGS COLLECTIONS
+    // ==========================================
+    
+    match /emailSettings-mimecode/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    match /users-mimecode/{document=**} {
+      allow read: if false;
+      allow write: if false;
+    }
+    
+    // ==========================================
+    // PUBLIC WRITE COLLECTIONS
+    // (Newsletter, Contact Forms)
+    // ==========================================
+    
+    match /newsletterSubscriptions-mimecode/{document=**} {
+      allow read: if false;
+      allow create: if true;
+      allow update, delete: if false;
+    }
+    
+    match /contactSubmissions-mimecode/{document=**} {
+      allow read: if false;
+      allow create: if true;
+      allow update, delete: if false;
+    }
+    
+    // ==========================================
+    // DENY ALL OTHER COLLECTIONS
+    // ==========================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

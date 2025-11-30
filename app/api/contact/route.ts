@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getEmailSettings } from '@/lib/services/emailService';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { getEmailSettingsServer } from '@/lib/services/emailService.server';
+import { getAdminFirestore, default as admin } from '@/lib/firebase-admin';
 import nodemailer from 'nodemailer';
 
 export async function POST(req: NextRequest) {
@@ -25,8 +24,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get recipient email from settings
-    const emailSettings = await getEmailSettings();
+    // Get recipient email from settings (server-side)
+    const emailSettings = await getEmailSettingsServer();
     // Use email1 as primary, fallback to email2, email3, or default
     const recipientEmail = emailSettings?.email1 || emailSettings?.email2 || emailSettings?.email3 || 'yasalkhan90@gmail.com';
     
@@ -36,14 +35,17 @@ export async function POST(req: NextRequest) {
       subject: subject || 'Contact Support Inquiry'
     });
 
-    // Store contact form submission in Firestore
-    await addDoc(collection(db, 'contactSubmissions'), {
+    // Store contact form submission in Firestore using Admin SDK
+    // Use environment variable to separate collections between projects
+    const contactSubmissionsCollection = process.env.NEXT_PUBLIC_CONTACT_SUBMISSIONS_COLLECTION || 'contactSubmissions-mimecode';
+    const firestore = getAdminFirestore();
+    await firestore.collection(contactSubmissionsCollection).add({
       name: name.trim(),
       email: email.trim(),
       subject: subject?.trim() || 'Contact Support Inquiry',
       message: message.trim(),
       recipientEmail: recipientEmail,
-      submittedAt: Timestamp.now(),
+      submittedAt: admin.firestore.FieldValue.serverTimestamp(),
       status: 'pending',
     });
 
@@ -55,7 +57,7 @@ export async function POST(req: NextRequest) {
     const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587;
     const smtpUser = process.env.SMTP_USER;
     const smtpPassword = process.env.SMTP_PASSWORD;
-    const smtpFrom = process.env.SMTP_FROM || smtpUser || 'AvailCoupon <noreply@availcoupon.com>';
+    const smtpFrom = process.env.SMTP_FROM || smtpUser || 'MimeCode <noreply@mimecode.com>';
     
     if (smtpHost && smtpUser && smtpPassword) {
       try {

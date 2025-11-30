@@ -61,6 +61,11 @@ export default function CategoryDetailPage() {
 
   // Get last 2 digits of code for code type coupons
   const getCodePreview = (coupon: Coupon): string => {
+    // Use custom button text if provided
+    if (coupon.buttonText && coupon.buttonText.trim() !== '') {
+      return coupon.buttonText;
+    }
+    // Default to type-based text
     if ((coupon.couponType || 'deal') === 'code' && coupon.code) {
       return 'Get Code';
     }
@@ -77,6 +82,7 @@ export default function CategoryDetailPage() {
     }
     return null;
   };
+
 
   const handleGetDeal = (coupon: Coupon, e?: React.MouseEvent) => {
     if (e) {
@@ -198,7 +204,7 @@ export default function CategoryDetailPage() {
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-800 mb-2">Category Not Found</h1>
-            <Link href="/categories" className="text-pink-600 hover:underline">
+            <Link href="/categories" className="text-[#ABC443] hover:underline">
               Back to Categories
             </Link>
           </div>
@@ -213,7 +219,7 @@ export default function CategoryDetailPage() {
       <Navbar />
       
       {/* Category Header */}
-      <div className="w-full bg-gradient-to-r from-pink-50 to-orange-50 py-4 sm:py-6 md:py-8">
+      <div className="w-full bg-gradient-to-r from-[#ABC443]/10 to-[#41361A]/10 py-4 sm:py-6 md:py-8">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
           <div className="flex items-center gap-3 sm:gap-4 md:gap-6">
             <div
@@ -282,11 +288,11 @@ export default function CategoryDetailPage() {
                         </span>
                       </div>
                     )}
-                    <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-gray-800 mb-1 sm:mb-2 group-hover:text-pink-600 transition-colors line-clamp-2">
+                    <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-gray-800 mb-1 sm:mb-2 group-hover:text-[#ABC443] transition-colors line-clamp-2">
                       {store.name}
                     </h3>
                     {store.voucherText && (
-                      <p className="text-xs sm:text-sm text-pink-600 font-medium line-clamp-1">{store.voucherText}</p>
+                      <p className="text-xs sm:text-sm text-[#ABC443] font-medium line-clamp-1">{store.voucherText}</p>
                     )}
                     {store.description && (
                       <p className="text-xs sm:text-sm text-gray-600 mt-1 sm:mt-2 line-clamp-2 hidden sm:block">{store.description}</p>
@@ -305,7 +311,24 @@ export default function CategoryDetailPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
               {coupons.map((coupon) => {
                 const isRevealed = coupon.id && revealedCoupons.has(coupon.id);
-                const isExpired = coupon.expiryDate && coupon.expiryDate.toDate() < new Date();
+                // Handle expiryDate - can be string, Date, or Firestore Timestamp
+                const getExpiryDate = (expiryDate: any): Date | null => {
+                  if (!expiryDate) return null;
+                  if (expiryDate instanceof Date) return expiryDate;
+                  if (expiryDate && typeof expiryDate.toDate === 'function') {
+                    return expiryDate.toDate();
+                  }
+                  if (typeof expiryDate === 'string') {
+                    const parsed = new Date(expiryDate);
+                    return isNaN(parsed.getTime()) ? null : parsed;
+                  }
+                  if (typeof expiryDate === 'number') {
+                    return new Date(expiryDate);
+                  }
+                  return null;
+                };
+                const expiryDateObj = getExpiryDate(coupon.expiryDate);
+                const isExpired = expiryDateObj ? expiryDateObj < new Date() : false;
                 
                 return (
                   <div
@@ -326,7 +349,25 @@ export default function CategoryDetailPage() {
                         />
                       )}
                       <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-800 mb-1 sm:mb-2 text-center line-clamp-2">
-                        {coupon.storeName || coupon.code}
+                        {(() => {
+                          // Helper to strip HTML tags
+                          const stripHtml = (html: string) => {
+                            if (!html) return '';
+                            const tmp = document.createElement('DIV');
+                            tmp.innerHTML = html;
+                            return tmp.textContent || tmp.innerText || '';
+                          };
+                          
+                          // Get coupon title - prefer title, then description, then generate from discount
+                          if (coupon.title) return stripHtml(coupon.title);
+                          if (coupon.description) return stripHtml(coupon.description);
+                          if (coupon.discount && coupon.discount > 0) {
+                            return coupon.discountType === 'percentage' 
+                              ? `${coupon.discount}% Off`
+                              : `$${coupon.discount} Off`;
+                          }
+                          return coupon.code || coupon.storeName || 'Coupon';
+                        })()}
                       </h3>
                       {coupon.description && (
                         <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3 md:mb-4 text-center line-clamp-2 hidden sm:block">
@@ -341,19 +382,18 @@ export default function CategoryDetailPage() {
                       {!isExpired && (
                         <button
                           onClick={(e) => handleGetDeal(coupon, e)}
-                          className="w-full bg-gradient-to-r from-pink-500 via-pink-400 to-orange-500 border-2 border-dashed border-white/60 rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between text-white font-semibold hover:from-pink-600 hover:via-pink-500 hover:to-orange-600 hover:border-white/80 transition-all duration-300 group relative overflow-hidden shadow-md hover:shadow-lg text-xs sm:text-sm md:text-base"
-                          style={{ borderStyle: 'dashed', borderWidth: '2px' }}
+                          className="w-full bg-[#ABC443] hover:bg-[#9BB03A] text-white font-semibold rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between transition-all duration-300 shadow-md hover:shadow-lg text-xs sm:text-sm md:text-base group relative overflow-hidden"
                         >
                           <span className="flex-1 flex items-center justify-center">
                             {isRevealed ? (
                               coupon.url ? 'Visit Store' : (coupon.code || getCodePreview(coupon))
                             ) : (
-                              <span className="drop-shadow-sm">{getCodePreview(coupon)}</span>
+                              <span>{getCodePreview(coupon)}</span>
                             )}
                           </span>
                           {getLastTwoDigits(coupon) && !isRevealed && (
-                            <div className="w-0 opacity-0 group-hover:w-20 group-hover:opacity-100 transition-all duration-300 ease-out flex items-center justify-center border-l-2 border-dashed border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-gradient-to-r from-transparent to-orange-600/20" style={{ borderStyle: 'dashed' }}>
-                              <span className="text-white font-bold text-xs drop-shadow-md">...{getLastTwoDigits(coupon)}</span>
+                            <div className="w-0 opacity-0 group-hover:w-16 group-hover:opacity-100 transition-all duration-300 ease-out flex items-center justify-center border-l-2 border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-white/10">
+                              <span className="text-white font-bold text-xs">...{getLastTwoDigits(coupon)}</span>
                             </div>
                           )}
                         </button>

@@ -1,15 +1,4 @@
-import {
-  collection,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
-  getDocs,
-  getDoc,
-  Timestamp,
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { extractOriginalCloudinaryUrl } from '@/lib/utils/cloudinary';
+import { Timestamp } from 'firebase/firestore';
 
 export interface NewsArticle {
   id?: string;
@@ -20,31 +9,38 @@ export interface NewsArticle {
   articleUrl?: string; // Original article URL if extracted from URL
   date?: string; // Date display (e.g., "18 Oct 2005")
   layoutPosition?: number | null; // Position in news layout (1-4)
-  createdAt?: Timestamp;
-  updatedAt?: Timestamp;
+  createdAt?: Timestamp | number; // Can be Timestamp or number (milliseconds)
+  updatedAt?: Timestamp | number; // Can be Timestamp or number (milliseconds)
 }
 
-const news = 'news';
+// Use environment variable to separate collections between projects
+// Default to 'news-mimecode' for this new project
+const news = process.env.NEXT_PUBLIC_NEWS_COLLECTION || 'news-mimecode';
 
 // Create a new news article from URL (extracts article info automatically)
 export async function createNewsFromUrl(title: string, articleUrl: string, imageUrl: string, description?: string, content?: string, layoutPosition?: number | null, date?: string) {
   try {
-    // Extract original URL if it's a Cloudinary URL
-    const extractedImageUrl = extractOriginalCloudinaryUrl(imageUrl);
-    
-    const docRef = await addDoc(collection(db, news), {
-      title: title || '',
-      description: description || '',
-      content: content || '',
-      imageUrl: extractedImageUrl || imageUrl,
-      articleUrl: articleUrl,
-      date: date || new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
-      layoutPosition: layoutPosition !== undefined ? layoutPosition : null,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
+    const res = await fetch('/api/news/create-from-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title,
+        articleUrl,
+        imageUrl,
+        description,
+        content,
+        layoutPosition,
+        date,
+      }),
     });
-    
-    return { success: true, id: docRef.id };
+
+    const json = await res.json();
+    if (!res.ok) {
+      console.error('Server create failed', { status: res.status, body: json });
+      return { success: false, error: json.error || 'Failed to create news article from URL' };
+    }
+
+    return { success: true, id: json.id };
   } catch (error) {
     console.error('Error creating news article from URL:', error);
     return { success: false, error };
@@ -54,13 +50,21 @@ export async function createNewsFromUrl(title: string, articleUrl: string, image
 // Get all news articles
 export async function getNews(): Promise<NewsArticle[]> {
   try {
-    const querySnapshot = await getDocs(collection(db, news));
-    return querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    } as NewsArticle));
-  } catch (error) {
-    console.error('Error getting news:', error);
+    // Use server-side API to fetch news from Supabase
+    const res = await fetch('/api/news/get');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.news) {
+        return data.news as NewsArticle[];
+      }
+    }
+    
+    // If API returns error, check what type
+    const errorData = await res.json().catch(() => ({}));
+    console.warn('⚠️ Server API failed:', res.status, errorData.error || 'Unknown error');
+    return [];
+  } catch (error: any) {
+    console.warn('⚠️ Error getting news:', error.message || error);
     return [];
   }
 }
@@ -68,14 +72,20 @@ export async function getNews(): Promise<NewsArticle[]> {
 // Get news by ID
 export async function getNewsById(id: string): Promise<NewsArticle | null> {
   try {
-    const docRef = doc(db, news, id);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() } as NewsArticle;
+    // Use server-side API to fetch news from Supabase
+    const res = await fetch(`/api/news/get?id=${encodeURIComponent(id)}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.news) {
+        return data.news as NewsArticle;
+      }
+      return null;
     }
+    
+    console.warn('⚠️ Server API failed:', res.status);
     return null;
-  } catch (error) {
-    console.error('Error getting news:', error);
+  } catch (error: any) {
+    console.warn('⚠️ Error getting news by ID:', error.message || error);
     return null;
   }
 }
@@ -109,11 +119,21 @@ export async function getNewsWithLayout(): Promise<(NewsArticle | null)[]> {
 // Update a news article
 export async function updateNews(id: string, updates: Partial<NewsArticle>) {
   try {
-    const docRef = doc(db, news, id);
-    await updateDoc(docRef, {
-      ...updates,
-      updatedAt: Timestamp.now(),
+    const res = await fetch('/api/news/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id,
+        updates,
+      }),
     });
+
+    const json = await res.json();
+    if (!res.ok) {
+      console.error('Server update failed', { status: res.status, body: json });
+      return { success: false, error: json.error || 'Failed to update news article' };
+    }
+
     return { success: true };
   } catch (error) {
     console.error('Error updating news:', error);
@@ -124,8 +144,20 @@ export async function updateNews(id: string, updates: Partial<NewsArticle>) {
 // Delete a news article
 export async function deleteNews(id: string) {
   try {
-    const docRef = doc(db, news, id);
-    await deleteDoc(docRef);
+    const res = await fetch('/api/news/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id,
+      }),
+    });
+
+    const json = await res.json();
+    if (!res.ok) {
+      console.error('Server delete failed', { status: res.status, body: json });
+      return { success: false, error: json.error || 'Failed to delete news article' };
+    }
+
     return { success: true };
   } catch (error) {
     console.error('Error deleting news:', error);

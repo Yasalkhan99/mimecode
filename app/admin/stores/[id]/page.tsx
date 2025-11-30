@@ -9,6 +9,14 @@ import {
   isSlugUnique,
 } from '@/lib/services/storeService';
 import { getCategories, Category } from '@/lib/services/categoryService';
+import { getActiveRegions, Region } from '@/lib/services/regionService';
+import {
+  getStoreFAQs,
+  createStoreFAQ,
+  updateStoreFAQ,
+  deleteStoreFAQ,
+  StoreFAQ,
+} from '@/lib/services/storeFaqService';
 import { extractOriginalCloudinaryUrl, isCloudinaryUrl } from '@/lib/utils/cloudinary';
 
 export default function EditStorePage() {
@@ -18,6 +26,7 @@ export default function EditStorePage() {
 
   const [store, setStore] = useState<Store | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [regions, setRegions] = useState<Region[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<Partial<Store>>({});
@@ -25,6 +34,15 @@ export default function EditStorePage() {
   const [extractedLogoUrl, setExtractedLogoUrl] = useState<string | null>(null);
   const [slugError, setSlugError] = useState<string>('');
   const [autoGenerateSlug, setAutoGenerateSlug] = useState<boolean>(false);
+  const [storeFaqs, setStoreFaqs] = useState<StoreFAQ[]>([]);
+  const [showFaqForm, setShowFaqForm] = useState(false);
+  const [editingFaqId, setEditingFaqId] = useState<string | null>(null);
+  const [faqFormData, setFaqFormData] = useState<Partial<StoreFAQ>>({
+    question: '',
+    answer: '',
+    order: 0,
+    isActive: true,
+  });
 
   // Generate slug from name
   const generateSlug = (name: string): string => {
@@ -61,9 +79,10 @@ export default function EditStorePage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [storeData, categoriesData] = await Promise.all([
+      const [storeData, categoriesData, regionsData] = await Promise.all([
         getStoreById(storeId),
-        getCategories()
+        getCategories(),
+        getActiveRegions()
       ]);
       if (storeData) {
         setStore(storeData);
@@ -79,6 +98,14 @@ export default function EditStorePage() {
         }
       }
       setCategories(categoriesData);
+      setRegions(regionsData);
+      
+      // Fetch store FAQs
+      if (storeData) {
+        const faqsData = await getStoreFAQs(storeId);
+        setStoreFaqs(faqsData);
+      }
+      
       setLoading(false);
     };
     fetchData();
@@ -145,7 +172,15 @@ export default function EditStorePage() {
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">Edit Store</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-gray-800">Edit Store</h1>
+          <a
+            href="#store-faqs"
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-semibold text-sm"
+          >
+            Manage Store FAQs ↓
+          </a>
+        </div>
 
         <form onSubmit={handleSave} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -265,6 +300,219 @@ export default function EditStorePage() {
               rows={4}
               required
             />
+          </div>
+
+          <div>
+            <label htmlFor="voucherText" className="block text-sm font-semibold text-gray-700 mb-1">
+              Voucher Text
+            </label>
+            <input
+              id="voucherText"
+              name="voucherText"
+              type="text"
+              placeholder="e.g., Upto 58% Voucher, Get 20% Off, etc."
+              value={formData.voucherText || ''}
+              onChange={(e) =>
+                setFormData({ ...formData, voucherText: e.target.value })
+              }
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Voucher text that will be displayed on the store card
+            </p>
+          </div>
+
+          {/* Detailed Store Info Fields */}
+          <div className="border-t border-gray-300 pt-6 mt-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-4">Detailed Store Information</h3>
+            
+            <div>
+              <label htmlFor="websiteUrl" className="block text-sm font-semibold text-gray-700 mb-1">
+                Website URL
+              </label>
+              <input
+                id="websiteUrl"
+                name="websiteUrl"
+                type="url"
+                placeholder="https://example.com"
+                value={formData.websiteUrl || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, websiteUrl: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="aboutText" className="block text-sm font-semibold text-gray-700 mb-1">
+                About Text (Detailed)
+              </label>
+              <textarea
+                id="aboutText"
+                name="aboutText"
+                value={formData.aboutText || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, aboutText: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={6}
+                placeholder="Detailed about section for Store Info tab..."
+              />
+            </div>
+
+            <div>
+              <label htmlFor="features" className="block text-sm font-semibold text-gray-700 mb-1">
+                Features (One per line)
+              </label>
+              <textarea
+                id="features"
+                name="features"
+                value={formData.features ? formData.features.join('\n') : ''}
+                onChange={(e) => {
+                  const features = e.target.value.split('\n').filter(f => f.trim() !== '');
+                  setFormData({ ...formData, features });
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={4}
+                placeholder="Free Shipping&#10;24/7 Support&#10;Easy Returns"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Enter one feature per line
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="shippingInfo" className="block text-sm font-semibold text-gray-700 mb-1">
+                Shipping Information
+              </label>
+              <textarea
+                id="shippingInfo"
+                name="shippingInfo"
+                value={formData.shippingInfo || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, shippingInfo: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={4}
+                placeholder="Shipping information..."
+              />
+            </div>
+
+            <div>
+              <label htmlFor="returnPolicy" className="block text-sm font-semibold text-gray-700 mb-1">
+                Return Policy
+              </label>
+              <textarea
+                id="returnPolicy"
+                name="returnPolicy"
+                value={formData.returnPolicy || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, returnPolicy: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={4}
+                placeholder="Return policy information..."
+              />
+            </div>
+
+            <div>
+              <label htmlFor="contactInfo" className="block text-sm font-semibold text-gray-700 mb-1">
+                Contact Information
+              </label>
+              <textarea
+                id="contactInfo"
+                name="contactInfo"
+                value={formData.contactInfo || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, contactInfo: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={3}
+                placeholder="Contact information..."
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label htmlFor="establishedYear" className="block text-sm font-semibold text-gray-700 mb-1">
+                  Established Year
+                </label>
+                <input
+                  id="establishedYear"
+                  name="establishedYear"
+                  type="number"
+                  min="1900"
+                  max="2099"
+                  placeholder="2020"
+                  value={formData.establishedYear || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, establishedYear: e.target.value ? parseInt(e.target.value) : undefined })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="headquarters" className="block text-sm font-semibold text-gray-700 mb-1">
+                  Headquarters
+                </label>
+                <input
+                  id="headquarters"
+                  name="headquarters"
+                  type="text"
+                  placeholder="New York, USA"
+                  value={formData.headquarters || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, headquarters: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="trustScore" className="block text-sm font-semibold text-gray-700 mb-1">
+                  Trust Score (0-100)
+                </label>
+                <input
+                  id="trustScore"
+                  name="trustScore"
+                  type="number"
+                  min="0"
+                  max="100"
+                  placeholder="85"
+                  value={formData.trustScore || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, trustScore: e.target.value ? parseInt(e.target.value) : undefined })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="networkId" className="block text-sm font-semibold text-gray-700 mb-1">
+              Network ID (Region)
+            </label>
+            <select
+              id="networkId"
+              name="networkId"
+              value={formData.networkId || ''}
+              onChange={(e) =>
+                setFormData({ ...formData, networkId: e.target.value || undefined })
+              }
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">No Network ID</option>
+              {regions.map((region) => (
+                <option key={region.id} value={region.networkId}>
+                  {region.name} ({region.networkId})
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-500">
+              Select the region/network ID for this store. <a href="/admin/regions" target="_blank" className="text-blue-600 hover:underline">Manage regions</a>
+            </p>
           </div>
 
           <div>
@@ -389,6 +637,199 @@ export default function EditStorePage() {
             </button>
           </div>
         </form>
+
+        {/* Store FAQ Management Section */}
+        <div id="store-faqs" className="bg-white rounded-lg border border-gray-200 p-6 mt-8 scroll-mt-4">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800">Store FAQs</h2>
+              <p className="text-sm text-gray-600 mt-1">Manage FAQs specific to this store</p>
+            </div>
+            <button
+              onClick={() => {
+                setShowFaqForm(true);
+                setEditingFaqId(null);
+                setFaqFormData({
+                  question: '',
+                  answer: '',
+                  order: storeFaqs.length,
+                  isActive: true,
+                });
+              }}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-semibold"
+            >
+              Add FAQ
+            </button>
+          </div>
+
+          {/* FAQ Form */}
+          {showFaqForm && (
+            <div className="bg-gray-50 p-4 rounded-lg mb-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                {editingFaqId ? 'Edit FAQ' : 'Add New FAQ'}
+              </h3>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!faqFormData.question || !faqFormData.answer) {
+                    alert('Please fill in question and answer');
+                    return;
+                  }
+
+                  if (editingFaqId) {
+                    const result = await updateStoreFAQ(editingFaqId, faqFormData);
+                    if (result.success) {
+                      alert('FAQ updated successfully!');
+                      const faqsData = await getStoreFAQs(storeId);
+                      setStoreFaqs(faqsData);
+                      setShowFaqForm(false);
+                      setEditingFaqId(null);
+                      setFaqFormData({ question: '', answer: '', order: 0, isActive: true });
+                    }
+                  } else {
+                    const result = await createStoreFAQ({
+                      storeId,
+                      question: faqFormData.question,
+                      answer: faqFormData.answer,
+                      order: faqFormData.order || 0,
+                      isActive: faqFormData.isActive !== false,
+                    });
+                    if (result.success) {
+                      alert('FAQ created successfully!');
+                      const faqsData = await getStoreFAQs(storeId);
+                      setStoreFaqs(faqsData);
+                      setShowFaqForm(false);
+                      setFaqFormData({ question: '', answer: '', order: 0, isActive: true });
+                    }
+                  }
+                }}
+                className="space-y-4"
+              >
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    Question
+                  </label>
+                  <input
+                    type="text"
+                    value={faqFormData.question || ''}
+                    onChange={(e) => setFaqFormData({ ...faqFormData, question: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    Answer
+                  </label>
+                  <textarea
+                    value={faqFormData.answer || ''}
+                    onChange={(e) => setFaqFormData({ ...faqFormData, answer: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={4}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">
+                      Order
+                    </label>
+                    <input
+                      type="number"
+                      value={faqFormData.order || 0}
+                      onChange={(e) => setFaqFormData({ ...faqFormData, order: parseInt(e.target.value) || 0 })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="flex items-center pt-6">
+                    <input
+                      type="checkbox"
+                      checked={faqFormData.isActive !== false}
+                      onChange={(e) => setFaqFormData({ ...faqFormData, isActive: e.target.checked })}
+                      className="w-4 h-4 rounded mr-2"
+                    />
+                    <label className="text-gray-700">Active</label>
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                  <button
+                    type="submit"
+                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-semibold"
+                  >
+                    {editingFaqId ? 'Update FAQ' : 'Create FAQ'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowFaqForm(false);
+                      setEditingFaqId(null);
+                      setFaqFormData({ question: '', answer: '', order: 0, isActive: true });
+                    }}
+                    className="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-300 transition font-semibold"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* FAQs List */}
+          {storeFaqs.length > 0 ? (
+            <div className="space-y-4">
+              {storeFaqs.map((faq) => (
+                <div key={faq.id} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h4 className="font-semibold text-gray-900">{faq.question}</h4>
+                        {!faq.isActive && (
+                          <span className="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded">Inactive</span>
+                        )}
+                      </div>
+                      <p className="text-gray-700 text-sm">{faq.answer}</p>
+                      <p className="text-xs text-gray-500 mt-2">Order: {faq.order || 0}</p>
+                    </div>
+                    <div className="flex gap-2 ml-4">
+                      <button
+                        onClick={async () => {
+                          setEditingFaqId(faq.id || null);
+                          setFaqFormData({
+                            question: faq.question,
+                            answer: faq.answer,
+                            order: faq.order || 0,
+                            isActive: faq.isActive,
+                          });
+                          setShowFaqForm(true);
+                        }}
+                        className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (confirm('Are you sure you want to delete this FAQ?')) {
+                            const result = await deleteStoreFAQ(faq.id!);
+                            if (result.success) {
+                              alert('FAQ deleted successfully!');
+                              const faqsData = await getStoreFAQs(storeId);
+                              setStoreFaqs(faqsData);
+                            }
+                          }
+                        }}
+                        className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 text-center py-8">No FAQs added yet. Click "Add FAQ" to create one.</p>
+          )}
+        </div>
       </div>
     </div>
   );

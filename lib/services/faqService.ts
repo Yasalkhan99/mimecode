@@ -1,14 +1,4 @@
-import {
-  collection,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
-  getDocs,
-  getDoc,
-  Timestamp,
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { Timestamp } from 'firebase/firestore';
 
 export interface FAQ {
   id?: string;
@@ -16,21 +6,33 @@ export interface FAQ {
   answer: string;
   order?: number; // For ordering FAQs
   isActive: boolean;
-  createdAt?: Timestamp;
-  updatedAt?: Timestamp;
+  createdAt?: Timestamp | number; // Can be Timestamp or number (milliseconds)
+  updatedAt?: Timestamp | number; // Can be Timestamp or number (milliseconds)
 }
 
-const faqs = 'faqs';
+// Use environment variable to separate collections between projects
+// Default to 'faqs-mimecode' for this new project
+const faqs = process.env.NEXT_PUBLIC_FAQS_COLLECTION || 'faqs-mimecode';
 
 // Create a new FAQ
 export async function createFAQ(faq: Omit<FAQ, 'id'>) {
   try {
-    const docRef = await addDoc(collection(db, faqs), {
-      ...faq,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
+    const res = await fetch('/api/faqs/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        faq,
+        collection: faqs,
+      }),
     });
-    return { success: true, id: docRef.id };
+
+    const json = await res.json();
+    if (!res.ok) {
+      console.error('Server create failed', { status: res.status, body: json });
+      return { success: false, error: json.error || 'Failed to create FAQ' };
+    }
+
+    return { success: true, id: json.id };
   } catch (error) {
     console.error('Error creating FAQ:', error);
     return { success: false, error };
@@ -40,25 +42,15 @@ export async function createFAQ(faq: Omit<FAQ, 'id'>) {
 // Get all FAQs (ordered by order field, then by createdAt)
 export async function getFAQs(): Promise<FAQ[]> {
   try {
-    // Get all FAQs without composite index query (sort in memory instead)
-    const querySnapshot = await getDocs(collection(db, faqs));
-    const faqsList = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    } as FAQ));
+    const res = await fetch(`/api/faqs/get?collection=${encodeURIComponent(faqs)}`);
+    const json = await res.json();
     
-    // Sort in memory: first by order, then by createdAt
-    return faqsList.sort((a, b) => {
-      const orderA = a.order || 0;
-      const orderB = b.order || 0;
-      if (orderA !== orderB) {
-        return orderA - orderB;
-      }
-      // If order is same, sort by createdAt
-      const createdAtA = a.createdAt?.toMillis() || 0;
-      const createdAtB = b.createdAt?.toMillis() || 0;
-      return createdAtA - createdAtB;
-    });
+    if (!res.ok) {
+      console.error('Error getting FAQs:', json.error);
+      return [];
+    }
+
+    return json.faqs || [];
   } catch (error) {
     console.error('Error getting FAQs:', error);
     return [];
@@ -68,27 +60,15 @@ export async function getFAQs(): Promise<FAQ[]> {
 // Get active FAQs only
 export async function getActiveFAQs(): Promise<FAQ[]> {
   try {
-    // Get all FAQs without composite index query (filter and sort in memory)
-    const querySnapshot = await getDocs(collection(db, faqs));
-    const faqsList = querySnapshot.docs
-      .map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      } as FAQ))
-      .filter((faq) => faq.isActive !== false);
+    const res = await fetch(`/api/faqs/get?collection=${encodeURIComponent(faqs)}&activeOnly=true`);
+    const json = await res.json();
     
-    // Sort in memory: first by order, then by createdAt
-    return faqsList.sort((a, b) => {
-      const orderA = a.order || 0;
-      const orderB = b.order || 0;
-      if (orderA !== orderB) {
-        return orderA - orderB;
-      }
-      // If order is same, sort by createdAt
-      const createdAtA = a.createdAt?.toMillis() || 0;
-      const createdAtB = b.createdAt?.toMillis() || 0;
-      return createdAtA - createdAtB;
-    });
+    if (!res.ok) {
+      console.error('Error getting active FAQs:', json.error);
+      return [];
+    }
+
+    return json.faqs || [];
   } catch (error) {
     console.error('Error getting active FAQs:', error);
     return [];
@@ -98,15 +78,15 @@ export async function getActiveFAQs(): Promise<FAQ[]> {
 // Get a single FAQ by ID
 export async function getFAQById(id: string): Promise<FAQ | null> {
   try {
-    const docRef = doc(db, faqs, id);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      return {
-        id: docSnap.id,
-        ...docSnap.data(),
-      } as FAQ;
+    const res = await fetch(`/api/faqs/get?collection=${encodeURIComponent(faqs)}&id=${encodeURIComponent(id)}`);
+    const json = await res.json();
+    
+    if (!res.ok) {
+      console.error('Error getting FAQ:', json.error);
+      return null;
     }
-    return null;
+
+    return json.faq || null;
   } catch (error) {
     console.error('Error getting FAQ:', error);
     return null;
@@ -116,11 +96,22 @@ export async function getFAQById(id: string): Promise<FAQ | null> {
 // Update an FAQ
 export async function updateFAQ(id: string, faq: Partial<Omit<FAQ, 'id'>>) {
   try {
-    const docRef = doc(db, faqs, id);
-    await updateDoc(docRef, {
-      ...faq,
-      updatedAt: Timestamp.now(),
+    const res = await fetch('/api/faqs/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id,
+        updates: faq,
+        collection: faqs,
+      }),
     });
+
+    const json = await res.json();
+    if (!res.ok) {
+      console.error('Server update failed', { status: res.status, body: json });
+      return { success: false, error: json.error || 'Failed to update FAQ' };
+    }
+
     return { success: true };
   } catch (error) {
     console.error('Error updating FAQ:', error);
@@ -131,8 +122,21 @@ export async function updateFAQ(id: string, faq: Partial<Omit<FAQ, 'id'>>) {
 // Delete an FAQ
 export async function deleteFAQ(id: string) {
   try {
-    const docRef = doc(db, faqs, id);
-    await deleteDoc(docRef);
+    const res = await fetch('/api/faqs/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id,
+        collection: faqs,
+      }),
+    });
+
+    const json = await res.json();
+    if (!res.ok) {
+      console.error('Server delete failed', { status: res.status, body: json });
+      return { success: false, error: json.error || 'Failed to delete FAQ' };
+    }
+
     return { success: true };
   } catch (error) {
     console.error('Error deleting FAQ:', error);

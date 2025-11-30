@@ -23,13 +23,13 @@ export default function BlogDetailPage() {
         const data = await getNewsById(id);
         if (data) {
           setArticle(data);
-          document.title = `${data.title} - AvailCoupon`;
+          document.title = `${data.title} - MimeCode`;
         } else {
-          document.title = 'Blog Not Found - AvailCoupon';
+          document.title = 'Blog Not Found - MimeCode';
         }
       } catch (error) {
         console.error('Error fetching article:', error);
-        document.title = 'Error - AvailCoupon';
+        document.title = 'Error - MimeCode';
       } finally {
         setLoading(false);
       }
@@ -201,7 +201,7 @@ export default function BlogDetailPage() {
                             Coupons have evolved significantly from simple paper cutouts to sophisticated digital codes that can save you hundreds of dollars annually. Understanding how to effectively use coupons is the first step toward becoming a savvy shopper.
                           </p>
                           <p>
-                            Modern coupon platforms like AvailCoupon offer a wide range of discounts from top retailers. These platforms aggregate the best deals, making it easier than ever to find savings on your favorite products and services.
+                            Modern coupon platforms like MimeCode offer a wide range of discounts from top retailers. These platforms aggregate the best deals, making it easier than ever to find savings on your favorite products and services.
                           </p>
                           <p>
                             The key to maximizing your savings lies in understanding different types of coupons, knowing when to use them, and combining them with other promotional offers for maximum benefit.
@@ -389,7 +389,7 @@ export default function BlogDetailPage() {
                             Ready to Start Saving?
                           </p>
                           <p className="text-base sm:text-lg opacity-90">
-                            Explore our collection of verified coupons and exclusive deals to start saving on your next purchase. Join thousands of smart shoppers who are already maximizing their savings with AvailCoupon.
+                            Explore our collection of verified coupons and exclusive deals to start saving on your next purchase. Join thousands of smart shoppers who are already maximizing their savings with MimeCode.
                           </p>
                         </div>
                       </div>

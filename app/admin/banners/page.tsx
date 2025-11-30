@@ -18,6 +18,8 @@ export default function BannersPage() {
   const [extractedUrl, setExtractedUrl] = useState<string | null>(null);
   const [layoutPosition, setLayoutPosition] = useState<number | null>(null);
   const [fileInputKey, setFileInputKey] = useState(0);
+  const [uploadingToCloudinary, setUploadingToCloudinary] = useState(false);
+  const [uploadedCloudinaryUrl, setUploadedCloudinaryUrl] = useState<string | null>(null);
 
   const fetchBanners = async () => {
     setLoading(true);
@@ -51,15 +53,27 @@ export default function BannersPage() {
     
     if (uploadMethod === 'file') {
       if (!imageFile) return;
-      const result = await createBanner(title, imageFile, layoutPosition);
+      
+      // Check if file is already uploaded to Cloudinary
+      if (!uploadedCloudinaryUrl) {
+        alert('Please wait for the file to upload to Cloudinary first.');
+        return;
+      }
+
+      // Create banner using the already uploaded Cloudinary URL
+      // Use the URL directly - it's already correct from Cloudinary
+      const result = await createBannerFromUrl(title, uploadedCloudinaryUrl, layoutPosition);
       if (result.success) {
         fetchBanners();
         setShowForm(false);
         setTitle('');
         setImageFile(null);
         setImagePreview(null);
+        setUploadedCloudinaryUrl(null);
         setLayoutPosition(null);
         setFileInputKey(prev => prev + 1);
+      } else {
+        alert(`Banner creation failed: ${result.error || 'Unknown error'}`);
       }
     } else {
       if (!imageUrl.trim()) return;
@@ -116,6 +130,7 @@ export default function BannersPage() {
     setImageFile(null);
     setImagePreview(null);
     setExtractedUrl(null);
+    setUploadedCloudinaryUrl(null);
     setUploadMethod('file');
     setFileInputKey(prev => prev + 1);
   };
@@ -288,34 +303,131 @@ export default function BannersPage() {
                 )}
                 {imagePreview && (
                   <div className="mt-2">
-                    <Image src={imagePreview} alt="Banner preview" width={300} height={96} className="h-24 object-contain" />
+                    {imagePreview.includes('res.cloudinary.com') || imagePreview.includes('storage.googleapis.com') ? (
+                      <img 
+                        src={imagePreview} 
+                        alt="Banner preview" 
+                        className="h-24 object-contain" 
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <Image src={imagePreview} alt="Banner preview" width={300} height={96} className="h-24 object-contain" />
+                    )}
                   </div>
                 )}
               </div>
             ) : uploadMethod === 'file' ? (
               <div>
-                <label htmlFor="image" className="block text-gray-700 text-sm font-semibold mb-2">Banner Image (PNG/JPG/SVG)</label>
+                <label htmlFor="image" className="block text-gray-700 text-sm font-semibold mb-2">
+                  Banner Image (PNG/JPG/SVG) - Will upload to Cloudinary automatically
+                </label>
                 <input
                   id="image"
                   name="image"
                   type="file"
-                  accept="image/png,image/jpeg,image/svg+xml"
-                  onChange={(e) => {
+                  accept="image/png,image/jpeg,image/jpg,image/svg+xml"
+                  onChange={async (e) => {
                     const file = e.target.files?.[0] ?? null;
                     setImageFile(file);
+                    
                     if (file) {
+                      // Show local preview immediately
                       setImagePreview(URL.createObjectURL(file));
+                      setUploadedCloudinaryUrl(null);
+                      
+                      // Automatically upload to Cloudinary
+                      setUploadingToCloudinary(true);
+                      try {
+                        // Convert file to base64
+                        const base64 = await new Promise<string>((resolve, reject) => {
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            const result = reader.result as string;
+                            const base64 = result.split(',')[1]; // Remove data URL prefix
+                            resolve(base64);
+                          };
+                          reader.onerror = reject;
+                          reader.readAsDataURL(file);
+                        });
+
+                        // Upload to Cloudinary via API
+                        const uploadResponse = await fetch('/api/banners/upload-cloudinary', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            fileName: file.name,
+                            contentType: file.type || 'image/png',
+                            base64: base64,
+                          }),
+                        });
+
+                        const uploadData = await uploadResponse.json();
+
+                        if (uploadData.success && uploadData.imageUrl) {
+                          // Use the Cloudinary URL directly - don't extract it
+                          // The URL from Cloudinary is already correct and includes version/folder
+                          const cloudinaryUrl = typeof uploadData.imageUrl === 'string' 
+                            ? uploadData.imageUrl 
+                            : String(uploadData.imageUrl);
+                          
+                          setUploadedCloudinaryUrl(cloudinaryUrl);
+                          setImagePreview(cloudinaryUrl);
+                          console.log('✅ File uploaded to Cloudinary:', cloudinaryUrl);
+                        } else {
+                          alert(`Cloudinary upload failed: ${uploadData.error || 'Unknown error'}`);
+                          setUploadedCloudinaryUrl(null);
+                        }
+                      } catch (error) {
+                        console.error('Error uploading to Cloudinary:', error);
+                        alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                        setUploadedCloudinaryUrl(null);
+                      } finally {
+                        setUploadingToCloudinary(false);
+                      }
                     } else {
                       setImagePreview(null);
+                      setUploadedCloudinaryUrl(null);
                     }
                   }}
                   className="w-full"
                   required={uploadMethod === 'file'}
+                  disabled={uploadingToCloudinary}
                   key={`file-input-${fileInputKey}`}
                 />
+                {uploadingToCloudinary && (
+                  <div className="mt-2 p-2 bg-blue-50 rounded text-sm text-blue-700">
+                    <div className="flex items-center gap-2">
+                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Uploading to Cloudinary...
+                    </div>
+                  </div>
+                )}
+                {uploadedCloudinaryUrl && (
+                  <div className="mt-2 p-2 bg-green-50 rounded text-sm text-green-700">
+                    ✅ File uploaded successfully to Cloudinary
+                  </div>
+                )}
                 {imagePreview && (
                   <div className="mt-2">
-                    <Image src={imagePreview} alt="Banner preview" width={300} height={96} className="h-24 object-contain" />
+                    {imagePreview.includes('res.cloudinary.com') || imagePreview.includes('storage.googleapis.com') ? (
+                      <img 
+                        src={imagePreview} 
+                        alt="Banner preview" 
+                        className="h-24 object-contain" 
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <Image src={imagePreview} alt="Banner preview" width={300} height={96} className="h-24 object-contain" />
+                    )}
                   </div>
                 )}
               </div>
@@ -342,7 +454,19 @@ export default function BannersPage() {
                 )}
                 {imagePreview && (
                   <div className="mt-2">
-                    <Image src={imagePreview} alt="Banner preview" width={300} height={96} className="h-24 object-contain" />
+                    {imagePreview.includes('res.cloudinary.com') || imagePreview.includes('storage.googleapis.com') ? (
+                      <img 
+                        src={imagePreview} 
+                        alt="Banner preview" 
+                        className="h-24 object-contain" 
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <Image src={imagePreview} alt="Banner preview" width={300} height={96} className="h-24 object-contain" />
+                    )}
                   </div>
                 )}
               </div>
@@ -351,9 +475,10 @@ export default function BannersPage() {
             <div className="flex gap-3">
               <button
                 type="submit"
-                className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold"
+                disabled={uploadingToCloudinary}
+                className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {editingBanner ? 'Update Banner' : 'Create Banner'}
+                {uploadingToCloudinary ? 'Uploading...' : editingBanner ? 'Update Banner' : 'Create Banner'}
               </button>
               {editingBanner && (
                 <button
@@ -428,7 +553,19 @@ export default function BannersPage() {
                       </select>
                     </td>
                     <td className="px-6 py-4">
-                      <Image src={banner.imageUrl} alt={banner.title} width={120} height={64} className="h-16 object-contain" />
+                      {banner.imageUrl.includes('res.cloudinary.com') || banner.imageUrl.includes('storage.googleapis.com') ? (
+                        <img 
+                          src={banner.imageUrl} 
+                          alt={banner.title} 
+                          className="h-16 object-contain" 
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <Image src={banner.imageUrl} alt={banner.title} width={120} height={64} className="h-16 object-contain" />
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">

@@ -2,42 +2,84 @@
 
 import { useEffect, useState } from 'react';
 import { getNews, NewsArticle } from '@/lib/services/newsService';
+import { getBannersWithLayout, Banner } from '@/lib/services/bannerService';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
 import NewsletterSubscription from '@/app/components/NewsletterSubscription';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function BlogsPage() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+  const [direction, setDirection] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredArticles, setFilteredArticles] = useState<NewsArticle[]>([]);
 
-  useEffect(() => {
-    document.title = 'Blogs & Articles - AvailCoupon';
+  // Helper function to get timestamp in milliseconds
+  const getTimestamp = (timestamp: any): number => {
+    if (!timestamp) return 0;
     
-    const fetchArticles = async () => {
+    // If it's already a number (milliseconds)
+    if (typeof timestamp === 'number') {
+      return timestamp;
+    }
+    
+    // If it's a Firestore Timestamp object with toMillis method
+    if (timestamp.toMillis && typeof timestamp.toMillis === 'function') {
+      return timestamp.toMillis();
+    }
+    
+    // If it's a Firestore Timestamp object with seconds/nanoseconds
+    if (timestamp.seconds) {
+      return timestamp.seconds * 1000 + Math.floor((timestamp.nanoseconds || 0) / 1000000);
+    }
+    
+    // If it's a Date object
+    if (timestamp instanceof Date) {
+      return timestamp.getTime();
+    }
+    
+    // If it's an ISO string
+    if (typeof timestamp === 'string') {
+      const date = new Date(timestamp);
+      return isNaN(date.getTime()) ? 0 : date.getTime();
+    }
+    
+    return 0;
+  };
+
+  useEffect(() => {
+    document.title = 'Blogs & Articles - MimeCode';
+    
+    const fetchData = async () => {
       setLoading(true);
       try {
-        const data = await getNews();
+        const [articlesData, bannersData] = await Promise.all([
+          getNews(),
+          getBannersWithLayout()
+        ]);
         // Sort by date (newest first) or createdAt
-        const sorted = data.sort((a, b) => {
-          if (a.createdAt && b.createdAt) {
-            return b.createdAt.toMillis() - a.createdAt.toMillis();
-          }
-          return 0;
+        const sorted = articlesData.sort((a, b) => {
+          const timeA = getTimestamp(a.createdAt);
+          const timeB = getTimestamp(b.createdAt);
+          return timeB - timeA; // Newest first
         });
         setArticles(sorted);
         setFilteredArticles(sorted);
+        const bannersList = bannersData.filter(Boolean) as Banner[];
+        setBanners(bannersList.slice(0, 4)); // Get first 4 banners
       } catch (error) {
-        console.error('Error fetching articles:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
     };
     
-    fetchArticles();
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -66,16 +108,192 @@ export default function BlogsPage() {
     return null;
   };
 
+  // Auto-slide banners
+  useEffect(() => {
+    if (banners.length <= 1) return;
+    
+    const interval = setInterval(() => {
+      setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
+      setDirection(1);
+    }, 5000); // Change banner every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [banners.length]);
+
+  // Swipe handlers
+  const handlePrev = () => {
+    setDirection(-1);
+    setCurrentBannerIndex((prev) => (prev - 1 + banners.length) % banners.length);
+  };
+
+  const handleNext = () => {
+    setDirection(1);
+    setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
+  };
+
+  const slideVariants = {
+    enter: (direction: number) => ({
+      x: direction > 0 ? '100%' : '-100%',
+      opacity: 0,
+      scale: 0.9
+    }),
+    center: {
+      zIndex: 1,
+      x: 0,
+      opacity: 1,
+      scale: 1
+    },
+    exit: (direction: number) => ({
+      zIndex: 0,
+      x: direction < 0 ? '100%' : '-100%',
+      opacity: 0,
+      scale: 0.9
+    })
+  };
+
+  const swipeConfidenceThreshold = 10000;
+  const swipePower = (offset: number, velocity: number) => {
+    return Math.abs(offset) * velocity;
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
+      
+      {/* Hero Banner Section - Retail Store Style */}
+      {banners.length > 0 && (
+        <section className="relative w-full bg-white py-4 sm:py-6 md:py-8">
+          {/* Container with padding and max-width */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+            {/* Hero Slider with rounded corners */}
+            <div className="relative h-[300px] md:h-[350px] lg:h-[400px] w-full rounded-xl overflow-hidden">
+            <AnimatePresence initial={false} custom={direction} mode="wait">
+              {banners.map((banner, index) => {
+                if (index !== currentBannerIndex) return null;
+                
+                return (
+                  <motion.div
+                    key={banner.id || `banner-${index}`}
+                    custom={direction}
+                    variants={slideVariants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{
+                      x: { type: "spring", stiffness: 300, damping: 30 },
+                      opacity: { duration: 0.4 }
+                    }}
+                    drag="x"
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={0.1}
+                    onDragEnd={(e, { offset, velocity }) => {
+                      const swipe = swipePower(offset.x, velocity.x);
+                      if (swipe < -swipeConfidenceThreshold) {
+                        handleNext();
+                      } else if (swipe > swipeConfidenceThreshold) {
+                        handlePrev();
+                      }
+                    }}
+                    className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing rounded-xl"
+                  >
+                    <Link href="#" className="block w-full h-full rounded-xl overflow-hidden bg-gray-50">
+                      {banner.imageUrl.includes('res.cloudinary.com') || banner.imageUrl.includes('storage.googleapis.com') ? (
+                        <Image
+                          src={banner.imageUrl}
+                          alt={`Banner ${index + 1}`}
+                          fill
+                          className="object-contain rounded-xl"
+                          priority={index === 0}
+                          sizes="100vw"
+                        />
+                      ) : (
+                        <img
+                          src={banner.imageUrl}
+                          alt={`Banner ${index + 1}`}
+                          className="w-full h-full object-contain rounded-xl"
+                          style={{ display: 'block', maxWidth: '100%', maxHeight: '100%' }}
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                          }}
+                        />
+                      )}
+                    </Link>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+
+            {/* Minimal Navigation - Bottom Right */}
+            {banners.length > 1 && (
+              <>
+                {/* Arrow Navigation */}
+                <div className="absolute bottom-6 right-6 z-20 flex items-center gap-3">
+                  <motion.button
+                    onClick={handlePrev}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    className="w-10 h-10 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-300 group"
+                    aria-label="Previous banner"
+                  >
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </motion.button>
+                  <motion.button
+                    onClick={handleNext}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    className="w-10 h-10 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-300 group"
+                    aria-label="Next banner"
+                  >
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </motion.button>
+                </div>
+
+                {/* Dots Indicator - Bottom Center */}
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+                  {banners.map((_, index) => (
+                    <button
+                      key={`banner-dot-${index}`}
+                      onClick={() => {
+                        setDirection(index > currentBannerIndex ? 1 : -1);
+                        setCurrentBannerIndex(index);
+                      }}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${
+                        index === currentBannerIndex
+                          ? 'bg-white w-8'
+                          : 'bg-white/50 hover:bg-white/80 w-1.5'
+                      }`}
+                      aria-label={`Go to banner ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Fallback if no banners */}
+      {banners.length === 0 && !loading && (
+        <section className="relative w-full overflow-hidden bg-gradient-to-br from-[#ABC443]/10 via-white to-[#9BB03A]/10 py-20 md:py-32">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 text-gray-900">Welcome to MimeCode</h1>
+            <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-2xl mx-auto">Discover the best deals and savings</p>
+          </div>
+        </section>
+      )}
       
       {/* Hero Section */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="w-full bg-gradient-to-r from-orange-50 via-pink-50 to-purple-50 py-12 sm:py-16 md:py-20"
+        className="w-full bg-gradient-to-r from-[#ABC443]/10 via-[#41361A]/5 to-[#ABC443]/10 py-12 sm:py-16 md:py-20"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
           <div className="text-center">
@@ -86,7 +304,7 @@ export default function BlogsPage() {
               className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4"
             >
               <span className="text-gray-900">Recent</span>{' '}
-              <span className="text-orange-600">News & Articles</span>
+              <span className="text-[#ABC443]">News & Articles</span>
             </motion.h1>
             <motion.p 
               initial={{ opacity: 0, y: 20 }}
@@ -118,7 +336,7 @@ export default function BlogsPage() {
                 placeholder="Search articles..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-3 pl-12 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all text-gray-900"
+                className="w-full px-4 py-3 pl-12 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ABC443] focus:border-[#ABC443] transition-all text-gray-900"
               />
               <svg 
                 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" 
@@ -180,7 +398,7 @@ export default function BlogsPage() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setSearchQuery('')}
-                  className="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+                  className="bg-gradient-to-r from-[#ABC443] to-[#41361A] hover:from-[#41361A] hover:to-[#ABC443] text-white font-semibold px-6 py-3 rounded-lg transition-all duration-300"
                 >
                   Clear Search
                 </motion.button>
@@ -223,7 +441,7 @@ export default function BlogsPage() {
                         duration: 0.4,
                         ease: [0.4, 0, 0.2, 1]
                       }}
-                      className="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden group border border-gray-100 hover:border-orange-200 flex flex-col"
+                      className="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden group border border-gray-100 hover:border-[#ABC443]/30 flex flex-col"
                     >
                       {/* Image */}
                       <motion.div 
@@ -242,8 +460,8 @@ export default function BlogsPage() {
                               const parent = target.parentElement;
                               if (parent) {
                                 parent.innerHTML = `
-                                  <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-100 to-pink-100">
-                                    <svg class="w-16 h-16 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#ABC443]/20 to-[#41361A]/20">
+                                    <svg class="w-16 h-16 text-[#ABC443]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                     </svg>
                                   </div>
@@ -252,8 +470,8 @@ export default function BlogsPage() {
                             }}
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-100 to-pink-100">
-                            <svg className="w-16 h-16 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#ABC443]/20 to-[#41361A]/20">
+                            <svg className="w-16 h-16 text-[#ABC443]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                           </div>
@@ -265,7 +483,7 @@ export default function BlogsPage() {
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: 0.2 }}
-                            className="absolute top-4 right-4 bg-gradient-to-r from-pink-500 to-orange-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg"
+                            className="absolute top-4 right-4 bg-gradient-to-r from-[#ABC443] to-[#41361A] text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg"
                           >
                             {formatDate(article.date, article.createdAt)}
                           </motion.div>
@@ -283,7 +501,7 @@ export default function BlogsPage() {
                       <div className="p-6 flex flex-col flex-grow">
                         {/* Title */}
                         <motion.h3 
-                          whileHover={{ color: '#ea580c' }}
+                          whileHover={{ color: '#ABC443' }}
                           className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 transition-colors"
                         >
                           {article.title || 'Untitled Article'}
@@ -303,7 +521,7 @@ export default function BlogsPage() {
                             >
                               <Link
                                 href={`/blogs/${article.id}`}
-                                className="inline-flex items-center gap-2 bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white font-semibold px-5 py-2.5 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg w-full justify-center"
+                                className="inline-flex items-center gap-2 bg-gradient-to-r from-[#ABC443] to-[#41361A] hover:from-[#41361A] hover:to-[#ABC443] text-white font-semibold px-5 py-2.5 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg w-full justify-center"
                               >
                                 Read More
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
