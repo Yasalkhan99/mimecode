@@ -112,10 +112,11 @@ export default function Home() {
     const getStoreForCoupon = (coupon: Coupon) => {
       // Try to find store by storeIds first
       if (coupon.storeIds && coupon.storeIds.length > 0 && stores.length > 0) {
+        const firstStoreId = coupon.storeIds[0];
         const store = stores.find(s => {
-          return s.id === coupon.storeIds[0] || 
-                 (typeof s.id === 'string' && coupon.storeIds[0] && s.id.includes(coupon.storeIds[0])) ||
-                 (typeof coupon.storeIds[0] === 'string' && s.id && coupon.storeIds[0].includes(s.id));
+          return s.id === firstStoreId || 
+                 (typeof s.id === 'string' && firstStoreId && s.id.includes(firstStoreId)) ||
+                 (typeof firstStoreId === 'string' && s.id && firstStoreId.includes(s.id));
         });
         if (store) return store;
       }
@@ -635,10 +636,11 @@ export default function Home() {
                 const getStoreForCoupon = () => {
                   // Try to find store by storeIds first
                   if (coupon.storeIds && coupon.storeIds.length > 0 && allStores.length > 0) {
+                    const firstStoreId = coupon.storeIds[0];
                     const store = allStores.find(s => {
-                      return s.id === coupon.storeIds[0] || 
-                             (typeof s.id === 'string' && coupon.storeIds[0] && s.id.includes(coupon.storeIds[0])) ||
-                             (typeof coupon.storeIds[0] === 'string' && s.id && coupon.storeIds[0].includes(s.id));
+                      return s.id === firstStoreId || 
+                             (typeof s.id === 'string' && firstStoreId && s.id.includes(firstStoreId)) ||
+                             (typeof firstStoreId === 'string' && s.id && firstStoreId.includes(s.id));
                     });
                     if (store) return store;
                   }
