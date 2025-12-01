@@ -629,7 +629,7 @@ export async function getLatestCoupons(): Promise<(Coupon | null)[]> {
             }
             
             return 0;
-          });
+          };
           
           const dateA = getDate(a);
           const dateB = getDate(b);
