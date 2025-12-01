@@ -74,9 +74,27 @@ export default function StoreDetailPage() {
               getActiveStoreFAQs(storeData.id),
               getStores()
             ]);
-            // Filter only active coupons
-            const activeCoupons = storeCoupons.filter(coupon => coupon.isActive);
-            setCoupons(activeCoupons);
+            // Show all coupons (active and inactive) - Filter expired ones only
+            const now = new Date();
+            const validCoupons = storeCoupons.filter(coupon => {
+              // Keep coupon if no expiry date
+              if (!coupon.expiryDate) return true;
+              
+              // Parse expiry date
+              let expiryDate: Date | null = null;
+              if (coupon.expiryDate instanceof Date) {
+                expiryDate = coupon.expiryDate;
+              } else if (typeof coupon.expiryDate === 'string') {
+                expiryDate = new Date(coupon.expiryDate);
+                if (isNaN(expiryDate.getTime())) return true; // Invalid date = keep
+              } else if (coupon.expiryDate && typeof (coupon.expiryDate as any).toDate === 'function') {
+                expiryDate = (coupon.expiryDate as any).toDate();
+              }
+              
+              // Keep if not expired
+              return !expiryDate || expiryDate >= now;
+            });
+            setCoupons(validCoupons);
             setStoreFaqs(faqsData);
             setAllStores(storesData);
           }

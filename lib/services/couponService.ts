@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { extractOriginalCloudinaryUrl } from '@/lib/utils/cloudinary';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 
 export interface Coupon {
   id?: string;
@@ -439,17 +440,20 @@ export async function applyCoupon(code: string) {
     if (coupon.expiryDate) {
       const now = new Date();
       // Handle expiryDate - can be string, Date, or Firestore Timestamp
-      let expiryTime: Date | null = null;
+      let expiryTime: Date;
       if (coupon.expiryDate instanceof Date) {
         expiryTime = coupon.expiryDate;
-      } else if (coupon.expiryDate && typeof (coupon.expiryDate as any).toDate === 'function') {
-        expiryTime = (coupon.expiryDate as any).toDate();
+      } else if (coupon.expiryDate instanceof Timestamp || (coupon.expiryDate && typeof (coupon.expiryDate as any).toDate === 'function')) {
+        expiryTime = (coupon.expiryDate as Timestamp).toDate();
       } else if (typeof coupon.expiryDate === 'string') {
         expiryTime = new Date(coupon.expiryDate);
       } else if (typeof coupon.expiryDate === 'number') {
         expiryTime = new Date(coupon.expiryDate);
+      } else {
+        // Fallback: try to convert to string first, then to Date
+        expiryTime = new Date(String(coupon.expiryDate));
       }
-      if (expiryTime && now > expiryTime) {
+      if (now > expiryTime) {
         return { valid: false, message: 'Coupon has expired' };
       }
     }
@@ -567,70 +571,95 @@ export async function getPopularCoupons(): Promise<(Coupon | null)[]> {
   }
 }
 
-// Get latest coupons - returns most recently uploaded coupons (sorted by created_at)
+// Get latest coupons - prioritizes coupons with isLatest=true and latestLayoutPosition
+// Falls back to most recently uploaded coupons if positions not assigned
 export async function getLatestCoupons(): Promise<(Coupon | null)[]> {
   try {
     // Get active coupons (already filtered for active and not expired)
     const allCoupons = await getActiveCoupons();
     
-    // Sort by created_at descending (most recent first)
-    // Handle different date formats
-    const sortedCoupons = allCoupons.sort((a, b) => {
-      const getDate = (coupon: Coupon): number => {
-        if (!coupon.createdAt) return 0;
-        
-        // If it's a number (timestamp in milliseconds)
-        if (typeof coupon.createdAt === 'number') {
-          return coupon.createdAt;
-        }
-        
-        // If it's a Date object
-        if (coupon.createdAt instanceof Date) {
-          return coupon.createdAt.getTime();
-        }
-        
-        // If it's a Firestore Timestamp (has toDate method)
-        if (coupon.createdAt && typeof (coupon.createdAt as any).toDate === 'function') {
-          return (coupon.createdAt as any).toDate().getTime();
-        }
-        
-        // If it's a string, try to parse it
-        if (typeof coupon.createdAt === 'string') {
-          const parsed = new Date(coupon.createdAt).getTime();
-          return isNaN(parsed) ? 0 : parsed;
-        }
-        
-        return 0;
-      };
-      
-      const dateA = getDate(a);
-      const dateB = getDate(b);
-      
-      // Sort descending (newest first)
-      return dateB - dateA;
+    // Filter to only code type coupons
+    const codeCoupons = allCoupons.filter(coupon => 
+      coupon.couponType === 'code' || !coupon.couponType
+    );
+    
+    // Separate coupons with assigned layout positions
+    const couponsWithPosition = codeCoupons.filter(c => 
+      c.isLatest && c.latestLayoutPosition !== null && c.latestLayoutPosition !== undefined
+    );
+    
+    // Create array with 8 slots (1-8)
+    const result: (Coupon | null)[] = Array(8).fill(null);
+    
+    // Fill assigned positions first
+    couponsWithPosition.forEach(coupon => {
+      const position = coupon.latestLayoutPosition;
+      if (position !== null && position !== undefined && position >= 1 && position <= 8) {
+        const index = position - 1; // Convert to 0-based index
+        result[index] = coupon;
+      }
     });
     
-    // Filter to only code type coupons and take first 8
-    const latestCodeCoupons = sortedCoupons
-      .filter(coupon => coupon.couponType === 'code' || !coupon.couponType) // Include code type or undefined
-      .slice(0, 8);
+    // Fill remaining empty slots with most recent coupons (sorted by created_at)
+    const emptySlots = result.map((coupon, index) => coupon === null ? index : -1)
+      .filter(index => index !== -1);
     
-    // Pad with nulls to always return 8 items
-    const result: (Coupon | null)[] = [...latestCodeCoupons];
-    while (result.length < 8) {
-      result.push(null);
+    if (emptySlots.length > 0) {
+      // Get coupons without assigned positions, sorted by created_at
+      const unassignedCoupons = codeCoupons
+        .filter(c => !c.isLatest || !c.latestLayoutPosition)
+        .sort((a, b) => {
+          const getDate = (coupon: Coupon): number => {
+            if (!coupon.createdAt) return 0;
+            
+            if (typeof coupon.createdAt === 'number') {
+              return coupon.createdAt;
+            }
+            
+            if (coupon.createdAt instanceof Date) {
+              return coupon.createdAt.getTime();
+            }
+            
+            if (coupon.createdAt && typeof (coupon.createdAt as any).toDate === 'function') {
+              return (coupon.createdAt as any).toDate().getTime();
+            }
+            
+            if (typeof coupon.createdAt === 'string') {
+              const parsed = new Date(coupon.createdAt).getTime();
+              return isNaN(parsed) ? 0 : parsed;
+            }
+            
+            return 0;
+          };
+          
+          const dateA = getDate(a);
+          const dateB = getDate(b);
+          
+          return dateB - dateA; // Sort descending (newest first)
+        });
+      
+      // Fill empty slots with most recent coupons
+      let unassignedIndex = 0;
+      emptySlots.forEach(slotIndex => {
+        if (unassignedIndex < unassignedCoupons.length) {
+          result[slotIndex] = unassignedCoupons[unassignedIndex];
+          unassignedIndex++;
+        }
+      });
     }
     
-    console.log(`📊 Latest coupons: Found ${latestCodeCoupons.length} recent code coupons`);
-    if (latestCodeCoupons.length > 0) {
-      console.log(`📋 Latest coupon dates:`, latestCodeCoupons.slice(0, 3).map(c => ({
-        title: c.title || c.code,
-        createdAt: c.createdAt,
-        dateType: typeof c.createdAt
+    const assignedCount = couponsWithPosition.length;
+    const filledCount = result.filter(c => c !== null).length;
+    
+    console.log(`📊 Latest coupons: ${assignedCount} with assigned positions, ${filledCount} total filled slots`);
+    if (couponsWithPosition.length > 0) {
+      console.log(`📋 Assigned positions:`, couponsWithPosition.map(c => ({
+        code: c.code,
+        position: c.latestLayoutPosition
       })));
     }
     
-    return result.slice(0, 8);
+    return result;
   } catch (error) {
     console.error('Error getting latest coupons:', error);
     return Array(8).fill(null);

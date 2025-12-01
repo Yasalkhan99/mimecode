@@ -607,12 +607,13 @@ function CouponsContent() {
                           }
                           
                           // Fallback 2: Try to get favicon from store URL if coupon URL not available
-                          const firstStoreId = coupon.storeIds?.[0];
-                          if (firstStoreId && stores.length > 0) {
+                          if (coupon.storeIds && coupon.storeIds.length > 0 && stores.length > 0) {
+                            const firstStoreId = coupon.storeIds[0];
                             const store = stores.find(s => {
-                              return s.id === firstStoreId ||
+                              // Try matching by ID (can be UUID or Store Id string)
+                              return s.id === firstStoreId || 
                                      (typeof s.id === 'string' && firstStoreId && s.id.includes(firstStoreId)) ||
-                                     (typeof firstStoreId === 'string' && s.id && firstStoreId.includes(String(s.id)));
+                                     (typeof firstStoreId === 'string' && s.id && firstStoreId.includes(s.id));
                             });
                             // Try websiteUrl, or Tracking Url, or Store Display Url from store data
                             const storeUrl = store?.websiteUrl || (store as any)?.['Tracking Url'] || (store as any)?.['Store Display Url'];
