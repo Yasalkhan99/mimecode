@@ -1,8 +1,8 @@
 // Server-side coupons read route
-// Uses Firebase Firestore (migrated from Supabase)
+// Uses Supabase (migrated from Firebase)
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminFirestore } from '@/lib/firebase-admin';
+import { supabaseAdmin } from '@/lib/supabase';
 
 // Helper function to normalize URL - add https:// if missing
 const normalizeUrl = (url: string | null | undefined): string | null => {
@@ -61,8 +61,12 @@ const convertToAPIFormat = (doc: any, docId: string, storeData?: any) => {
 
 export async function GET(req: NextRequest) {
   try {
-    const firestore = getAdminFirestore();
-    const collectionName = process.env.NEXT_PUBLIC_COUPONS_COLLECTION || 'coupons-mimecode';
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin client not initialized');
+    }
+
+    const tableName = 'coupons';
+    const storesTableName = 'stores';
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
@@ -72,10 +76,13 @@ export async function GET(req: NextRequest) {
 
     // Get coupon by ID
     if (id) {
-      const docRef = firestore.collection(collectionName).doc(id);
-      const docSnap = await docRef.get();
+      const { data: couponData, error: couponError } = await supabaseAdmin
+        .from(tableName)
+        .select('*')
+        .eq('id', id)
+        .single();
       
-      if (!docSnap.exists) {
+      if (couponError || !couponData) {
         return NextResponse.json({
           success: true,
           coupon: null,
@@ -84,78 +91,68 @@ export async function GET(req: NextRequest) {
       
       // Get store data for fallback URL
       let storeData = null;
-      const couponData = docSnap.data();
-      if (couponData && (couponData['Store  Id'] || couponData.storeIds?.[0])) {
-        const storeIdToFetch = couponData['Store  Id'] || couponData.storeIds?.[0];
-        const storesCollection = process.env.NEXT_PUBLIC_STORES_COLLECTION || 'stores-mimecode';
-        const storeDoc = await firestore.collection(storesCollection).doc(storeIdToFetch).get();
-        if (storeDoc.exists) {
-          storeData = storeDoc.data();
+      const storeIdToFetch = couponData['Store  Id'] || couponData.storeIds?.[0];
+      if (storeIdToFetch) {
+        const { data: store } = await supabaseAdmin
+          .from(storesTableName)
+          .select('*')
+          .eq('id', storeIdToFetch)
+          .single();
+        if (store) {
+          storeData = store;
         }
       }
       
       return NextResponse.json({
         success: true,
-        coupon: convertToAPIFormat(docSnap, id, storeData),
+        coupon: convertToAPIFormat({ data: () => couponData }, id, storeData),
       });
     }
 
-    // Get all coupons
-    let query: any = firestore.collection(collectionName);
+    // Get all coupons with filters
+    let query = supabaseAdmin.from(tableName).select('*');
     
-    // Apply filters
+    // Apply category filter
     if (categoryId) {
-      query = query.where('category_id', '==', categoryId).where('categoryId', '==', categoryId);
+      query = query.or(`category_id.eq.${categoryId},categoryId.eq.${categoryId}`);
     }
     
-    if (storeId) {
-      // Firestore doesn't support OR queries easily, so we'll filter in memory
-      // For now, check both 'Store  Id' and storeIds array
+    // Fetch coupons
+    const { data: coupons, error: couponsError } = await query;
+    
+    if (couponsError) {
+      throw couponsError;
     }
 
-    const snapshot = await query.get();
-    console.log(`📊 Fetched ${snapshot.size} coupons from Firestore`);
+    console.log(`📊 Fetched ${coupons?.length || 0} coupons from Supabase`);
 
     // Get unique store IDs for batch fetch
     const storeIds = new Set<string>();
-    snapshot.docs.forEach((doc: any) => {
-      const data = doc.data();
-      if (data['Store  Id']) storeIds.add(data['Store  Id']);
-      if (data.storeIds && Array.isArray(data.storeIds)) {
-        data.storeIds.forEach((id: string) => storeIds.add(id));
+    coupons?.forEach((coupon: any) => {
+      if (coupon['Store  Id']) storeIds.add(coupon['Store  Id']);
+      if (coupon.storeIds && Array.isArray(coupon.storeIds)) {
+        coupon.storeIds.forEach((id: string) => storeIds.add(id));
       }
     });
     
     // Fetch store data for all unique store IDs
     const storeDataMap = new Map();
     if (storeIds.size > 0) {
-      const storesCollection = process.env.NEXT_PUBLIC_STORES_COLLECTION || 'stores-mimecode';
-      const storePromises = Array.from(storeIds).map(async (storeId) => {
-        try {
-          const storeDoc = await firestore.collection(storesCollection).doc(storeId).get();
-          if (storeDoc.exists) {
-            return { id: storeId, data: storeDoc.data() };
-          }
-        } catch (error) {
-          console.warn(`Failed to fetch store ${storeId}:`, error);
-        }
-        return null;
-      });
+      const { data: stores } = await supabaseAdmin
+        .from(storesTableName)
+        .select('*')
+        .in('id', Array.from(storeIds));
       
-      const storeResults = await Promise.all(storePromises);
-      storeResults.forEach(result => {
-        if (result) {
-          storeDataMap.set(result.id, result.data);
-        }
+      stores?.forEach(store => {
+        storeDataMap.set(store.id, store);
       });
     }
 
     // Convert coupons with store data fallback
-    let convertedCoupons = snapshot.docs.map((doc: any) => {
-      const data = doc.data();
-      const storeId = data['Store  Id'] || data.storeIds?.[0];
-      const storeData = storeId ? storeDataMap.get(storeId) : null;
-      return convertToAPIFormat(doc, doc.id, storeData);
+    let convertedCoupons = (coupons || []).map((coupon: any) => {
+      const couponStoreId = coupon['Store  Id'] || coupon.storeIds?.[0];
+      const storeData = couponStoreId ? storeDataMap.get(couponStoreId) : null;
+      return convertToAPIFormat({ data: () => coupon }, coupon.id, storeData);
     });
 
     // Apply storeId filter if provided
@@ -224,7 +221,7 @@ export async function GET(req: NextRequest) {
       coupons: convertedCoupons,
     });
   } catch (error: any) {
-    console.error('Firebase get coupons error:', error);
+    console.error('Supabase get coupons error:', error);
     return NextResponse.json(
       {
         success: false,

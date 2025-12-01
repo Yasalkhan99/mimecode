@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { extractOriginalCloudinaryUrl } from '@/lib/utils/cloudinary';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 
 export interface Coupon {
   id?: string;
