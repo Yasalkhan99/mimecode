@@ -442,14 +442,15 @@ export async function applyCoupon(code: string) {
       let expiryTime: Date;
       if (coupon.expiryDate instanceof Date) {
         expiryTime = coupon.expiryDate;
-      } else if (coupon.expiryDate && typeof coupon.expiryDate.toDate === 'function') {
-        expiryTime = coupon.expiryDate.toDate();
+      } else if (coupon.expiryDate instanceof Timestamp || (coupon.expiryDate && typeof (coupon.expiryDate as any).toDate === 'function')) {
+        expiryTime = (coupon.expiryDate as Timestamp).toDate();
       } else if (typeof coupon.expiryDate === 'string') {
         expiryTime = new Date(coupon.expiryDate);
       } else if (typeof coupon.expiryDate === 'number') {
         expiryTime = new Date(coupon.expiryDate);
       } else {
-        expiryTime = new Date(coupon.expiryDate);
+        // Fallback: try to convert to string first, then to Date
+        expiryTime = new Date(String(coupon.expiryDate));
       }
       if (now > expiryTime) {
         return { valid: false, message: 'Coupon has expired' };
