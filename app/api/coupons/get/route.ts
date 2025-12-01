@@ -118,7 +118,7 @@ export async function GET(req: NextRequest) {
 
     // Get unique store IDs for batch fetch
     const storeIds = new Set<string>();
-    snapshot.docs.forEach(doc => {
+    snapshot.docs.forEach((doc: any) => {
       const data = doc.data();
       if (data['Store  Id']) storeIds.add(data['Store  Id']);
       if (data.storeIds && Array.isArray(data.storeIds)) {
@@ -151,7 +151,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Convert coupons with store data fallback
-    let convertedCoupons = snapshot.docs.map(doc => {
+    let convertedCoupons = snapshot.docs.map((doc: any) => {
       const data = doc.data();
       const storeId = data['Store  Id'] || data.storeIds?.[0];
       const storeData = storeId ? storeDataMap.get(storeId) : null;
