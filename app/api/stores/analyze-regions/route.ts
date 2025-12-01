@@ -205,6 +205,10 @@ const getRegionFromDomain = (domain: string | null): string | null => {
 
 export async function POST(req: NextRequest) {
   try {
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin client not initialized');
+    }
+
     const firestore = getAdminFirestore();
     const regionsCollection = process.env.NEXT_PUBLIC_REGIONS_COLLECTION || 'regions-mimecode';
     
