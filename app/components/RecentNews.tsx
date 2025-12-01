@@ -60,11 +60,11 @@ export default function RecentNews() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 md:mb-8 gap-3 sm:gap-4">
           <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold animate-slide-in-left">
             <span className="text-gray-900">Recent</span>{' '}
-            <span className="text-orange-600">News & Articles</span>
+            <span className="text-[#ABC443]">News & Articles</span>
           </h2>
           <Link
             href="/blogs"
-            className="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap text-sm sm:text-base animate-slide-in-right"
+            className="bg-gradient-to-r from-[#ABC443] to-[#41361A] hover:from-[#41361A] hover:to-[#ABC443] text-white font-semibold px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 rounded-lg transition-all duration-300 flex items-center gap-2 whitespace-nowrap text-sm sm:text-base animate-slide-in-right"
           >
             See All Blogs
             <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -107,7 +107,7 @@ export default function RecentNews() {
                 <div className="w-full sm:w-1/2 p-3 sm:p-4 md:p-5 flex flex-col relative">
                   {/* Date Badge - Top Right */}
                   {article.date && (
-                    <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-pink-500 text-white text-[10px] sm:text-xs font-semibold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
+                    <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-[#ABC443] text-white text-[10px] sm:text-xs font-semibold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
                       {article.date}
                     </div>
                   )}
@@ -126,7 +126,7 @@ export default function RecentNews() {
                   {article.id ? (
                     <Link
                       href={`/blogs/${article.id}`}
-                      className="inline-flex items-center gap-1 sm:gap-2 border-2 border-orange-600 text-orange-600 bg-white hover:bg-orange-600 hover:text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-colors font-semibold text-xs sm:text-sm w-fit mt-auto"
+                      className="inline-flex items-center gap-1 sm:gap-2 border-2 border-[#ABC443] text-[#ABC443] bg-white hover:bg-[#ABC443] hover:text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-colors font-semibold text-xs sm:text-sm w-fit mt-auto"
                     >
                       READ MORE
                       <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">

@@ -12,7 +12,7 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    document.title = 'Notifications - AvailCoupon';
+    document.title = 'Notifications - MimeCode';
     loadNotifications();
     
     // Listen for updates

@@ -18,7 +18,7 @@ export default function FAQsPage() {
 
   useEffect(() => {
     // Set page title
-    document.title = 'FAQs - AvailCoupon';
+    document.title = 'FAQs - MimeCode';
     
     const fetchData = async () => {
       setLoading(true);
@@ -82,7 +82,7 @@ export default function FAQsPage() {
             </div>
           </div>
         ) : (
-          <div className="w-full aspect-[1728/547] min-h-[200px] sm:min-h-[250px] bg-gradient-to-r from-pink-100 to-orange-100"></div>
+          <div className="w-full aspect-[1728/547] min-h-[200px] sm:min-h-[250px] bg-gradient-to-r from-[#ABC443]/20 to-[#41361A]/20"></div>
         )}
       </div>
 
@@ -110,14 +110,14 @@ export default function FAQsPage() {
                   {/* Question */}
                   <button
                     onClick={() => toggleFAQ(index)}
-                    className="w-full px-4 sm:px-6 py-4 sm:py-5 text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 rounded-lg"
+                    className="w-full px-4 sm:px-6 py-4 sm:py-5 text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-[#ABC443] focus:ring-offset-2 rounded-lg"
                   >
                     <h3 className="text-base sm:text-lg font-semibold text-gray-900 pr-4 flex-1">
                       {faq.question}
                     </h3>
                     <div className="flex-shrink-0">
                       <svg
-                        className={`w-5 h-5 sm:w-6 sm:h-6 text-orange-600 transition-transform duration-300 ${
+                        className={`w-5 h-5 sm:w-6 sm:h-6 text-[#ABC443] transition-transform duration-300 ${
                           openIndex === index ? 'transform rotate-180' : ''
                         }`}
                         fill="none"
@@ -154,7 +154,7 @@ export default function FAQsPage() {
           )}
 
           {/* Additional Help Section */}
-          <div className="mt-12 sm:mt-16 bg-gradient-to-r from-orange-50 via-pink-50 to-purple-50 rounded-lg p-6 sm:p-8 text-center">
+          <div className="mt-12 sm:mt-16 bg-gradient-to-r from-[#ABC443]/10 via-[#ABC443]/5 to-[#41361A]/10 rounded-lg p-6 sm:p-8 text-center">
             <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">
               Still have questions?
             </h3>
@@ -163,7 +163,7 @@ export default function FAQsPage() {
             </p>
             <button
               onClick={() => setIsContactModalOpen(true)}
-              className="inline-block px-6 sm:px-8 py-3 bg-gradient-to-r from-orange-500 to-pink-500 text-white font-semibold rounded-lg hover:from-orange-600 hover:to-pink-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+              className="inline-block px-6 sm:px-8 py-3 bg-gradient-to-r from-[#ABC443] to-[#41361A] text-white font-semibold rounded-lg hover:from-[#41361A] hover:to-[#ABC443] transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
             >
               Contact Support
             </button>

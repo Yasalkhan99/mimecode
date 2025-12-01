@@ -1,22 +1,25 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
 
 export default function NewsletterSubscription() {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) {
-      alert('Please enter your email address');
+      setMessage({ type: 'error', text: 'Please enter a valid email address' });
       return;
     }
     
     setIsSubmitting(true);
+    setMessage(null);
     
     try {
-      // Save subscription to Firestore and send email via Resend (API route handles both)
       const response = await fetch('/api/newsletter/subscribe', {
         method: 'POST',
         headers: {
@@ -28,141 +31,101 @@ export default function NewsletterSubscription() {
       const data = await response.json();
 
       if (data.success) {
-        alert('Thank you for subscribing! Your email has been saved successfully.');
+        setMessage({ type: 'success', text: 'Successfully subscribed! Check your inbox.' });
         setEmail('');
       } else {
-        alert(data.error || 'Failed to subscribe. Please try again.');
+        setMessage({ type: 'error', text: data.error || 'Something went wrong. Please try again.' });
       }
     } catch (error: any) {
       console.error('Error submitting newsletter:', error);
-      alert('An error occurred. Please try again later.');
+      setMessage({ type: 'error', text: 'Network error. Please try again.' });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="w-full bg-white pt-6 sm:pt-8 md:pt-12 lg:pt-16 pb-4 sm:pb-6 md:pb-8 relative animate-fade-in-up">
-      <div 
-        className="relative w-full"
-        style={{ 
-          height: '160px', 
-          background: 'linear-gradient(135deg, rgba(255, 148, 61, 0.2) 0%, rgba(244, 117, 79, 0.15) 100%)'
-        }}
-      >
-        {/* Decorative Background Elements */}
-        <div className="absolute inset-0 pointer-events-none">
-          {/* Golden circles */}
-          <div className="absolute top-3 left-8 w-3 h-3 bg-yellow-400 rounded-full opacity-60"></div>
-          <div className="absolute top-6 left-20 w-2 h-2 bg-yellow-400 rounded-full opacity-50"></div>
-          <div className="absolute top-4 right-32 w-2.5 h-2.5 bg-yellow-400 rounded-full opacity-60"></div>
+    <div className="w-full bg-white pt-6 sm:pt-8 md:pt-12 lg:pt-16 pb-4 sm:pb-6 md:pb-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="bg-white border border-gray-300 rounded-lg overflow-hidden shadow-sm"
+        >
+          {/* Header Bar */}
+          <div className="bg-[#16a34a] py-3 px-4 text-center">
+            <h3 className="text-white font-bold text-sm sm:text-base">Daily Exclusive Deals</h3>
+          </div>
           
-          {/* Decorative arcs and dots pattern */}
-          <div className="absolute top-0 right-0 w-48 h-full opacity-20">
-            <div className="w-full h-full relative">
-              {/* Concentric arcs */}
-              <svg className="absolute top-3 right-8" width="50" height="50" viewBox="0 0 50 50">
-                <path d="M7,25 Q25,7 43,25" stroke="#ff6b35" strokeWidth="1.5" fill="none" opacity="0.6"/>
-                <path d="M9,25 Q25,9 41,25" stroke="#ff6b35" strokeWidth="1.5" fill="none" opacity="0.4"/>
-              </svg>
-              {/* Grid of dots */}
-              <div className="absolute top-10 right-10 grid grid-cols-4 gap-1">
-                {[...Array(12)].map((_, i) => (
-                  <div key={i} className="w-1 h-1 bg-orange-300 rounded-full"></div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="w-full h-full px-4 sm:px-6 md:px-8 lg:px-12 relative z-10 flex flex-col md:flex-row items-center justify-center gap-4 sm:gap-6 md:gap-8">
-          {/* Text Content - Mobile: centered, Desktop: left aligned */}
-          <div className="flex flex-col justify-center text-center md:text-left animate-slide-in-left w-full md:w-auto pt-6 sm:pt-0">
-            <h2 
-              className="mb-1"
-              style={{
-                fontFamily: 'var(--font-barlow), sans-serif',
-                fontWeight: 700,
-                fontSize: 'clamp(18px, 4vw, 24px)',
-                lineHeight: '1.2',
-                color: '#303030',
-                textTransform: 'none',
-              }}
-            >
-              Subscribe Our Newsletter To Get The Best
+          {/* Content Area */}
+          <div className="p-6 md:p-8">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-6">
+              Get <span className="text-[#16a34a]">Exclusive Coupons</span> and <span className="text-[#16a34a]">Best Deals</span> Delivered to Your Inbox
             </h2>
-            <p 
-              style={{
-                fontFamily: 'var(--font-barlow), sans-serif',
-                fontWeight: 700,
-                fontSize: 'clamp(18px, 4vw, 24px)',
-                lineHeight: '1.2',
-                color: '#303030',
-                textTransform: 'none',
-              }}
+            
+            <form
+              onSubmit={handleSubmit}
+              className="flex flex-col sm:flex-row gap-3 mb-4"
             >
-              Deals Right In Your Email
-            </p>
-          </div>
-
-          {/* Email Form - Mobile: stacked, Desktop: side by side */}
-          <div className="flex-shrink-0 w-full md:w-auto animate-slide-in-right">
-            <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-2 sm:gap-3 w-full md:w-auto">
               <input
                 type="email"
+                placeholder="Email Address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter Email..."
-                className="w-full md:w-64 px-4 sm:px-5 py-3 md:py-2.5 bg-white rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-800 placeholder-gray-400 text-sm"
+                className="flex-1 px-4 py-3 border border-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#16a34a] focus:border-[#16a34a] text-gray-900 placeholder-gray-500"
+                disabled={isSubmitting}
                 required
               />
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-6 py-3 md:py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed text-sm w-full md:w-auto"
+                className="bg-[#16a34a] hover:bg-[#15803d] text-white font-bold px-6 py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
               >
-                <span>Send</span>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
+                {isSubmitting ? 'Subscribing...' : 'Unlock Deals'}
               </button>
             </form>
+            
+            {/* Disclaimer Text */}
+            <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+              By clicking unlock deals you confirm that you are 16 years of age or older and you agree to our{' '}
+              <Link href="/terms-and-conditions" className="underline hover:text-gray-900">
+                Terms of Service
+              </Link>
+              {' '}and{' '}
+              <Link href="/privacy-policy" className="underline hover:text-gray-900">
+                Privacy Policy
+              </Link>
+              . You may unsubscribe at any time.
+            </p>
+            
+            {message && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`mt-4 px-4 py-3 rounded-lg ${
+                  message.type === 'success'
+                    ? 'bg-green-50 border border-green-200 text-green-700'
+                    : 'bg-red-50 border border-red-200 text-red-700'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {message.type === 'success' ? (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  )}
+                  <span className="text-sm font-medium">{message.text}</span>
+                </div>
+              </motion.div>
+            )}
           </div>
-        </div>
-
-        {/* Left Side Illustration - Golden Bell (Half above, half inside) - Behind text */}
-        <div 
-          className="hidden sm:block absolute left-8 pointer-events-none"
-          style={{
-            top: '80px', // Half above section (160px / 2 = 80px)
-            width: '144px', // w-36 = 144px
-            height: '160px', // Full section height
-            zIndex: 1,
-          }}
-        >
-          <img
-            src="/Image.svg"
-            alt="Bell illustration"
-            className="w-full h-full object-contain"
-          />
-        </div>
-
-        {/* Right Side Illustration - Documents and Envelope (Half above, half inside) */}
-        <div 
-          className="hidden sm:block absolute right-8 pointer-events-none"
-          style={{
-            top: '-80px', // Half above section (160px / 2 = 80px)
-            width: '144px', // w-36 = 144px
-            height: '160px', // Full section height
-            zIndex: 1,
-          }}
-        >
-          <img
-            src="/Image (1).svg"
-            alt="Newsletter illustration"
-            className="w-full h-full object-contain"
-          />
-        </div>
+        </motion.div>
       </div>
     </div>
   );

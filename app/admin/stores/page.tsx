@@ -11,19 +11,25 @@ import {
   isSlugUnique,
 } from '@/lib/services/storeService';
 import { getCategories, Category } from '@/lib/services/categoryService';
+import { getActiveRegions, Region } from '@/lib/services/regionService';
 import { extractOriginalCloudinaryUrl, isCloudinaryUrl } from '@/lib/utils/cloudinary';
 
 export default function StoresPage() {
   const [stores, setStores] = useState<Store[]>([]);
+  const [filteredStores, setFilteredStores] = useState<Store[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [regions, setRegions] = useState<Region[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [searchNetworkId, setSearchNetworkId] = useState<string>('');
   const [formData, setFormData] = useState<Partial<Store>>({
     name: '',
     subStoreName: '',
     slug: '',
     description: '',
     logoUrl: '',
+    voucherText: '',
+    networkId: '',
     isTrending: false,
     layoutPosition: null,
     categoryId: null,
@@ -72,18 +78,30 @@ export default function StoresPage() {
     setLoading(true);
     const data = await getStores();
     setStores(data);
+    // Apply current search filter if any
+    if (searchNetworkId) {
+      const filtered = data.filter(store => 
+        store.networkId?.toLowerCase().includes(searchNetworkId.toLowerCase())
+      );
+      setFilteredStores(filtered);
+    } else {
+      setFilteredStores(data);
+    }
     setLoading(false);
   };
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      const [storesData, categoriesData] = await Promise.all([
+      const [storesData, categoriesData, regionsData] = await Promise.all([
         getStores(),
-        getCategories()
+        getCategories(),
+        getActiveRegions()
       ]);
       setStores(storesData);
+      setFilteredStores(storesData);
       setCategories(categoriesData);
+      setRegions(regionsData);
       setLoading(false);
     };
     load();
@@ -128,6 +146,8 @@ export default function StoresPage() {
       slug: formData.slug || '',
       description: formData.description || '',
       logoUrl: logoUrlToSave,
+      voucherText: formData.voucherText || undefined,
+      networkId: formData.networkId || undefined,
       isTrending: formData.isTrending || false,
       layoutPosition: layoutPositionToSave,
       categoryId: formData.categoryId || null,
@@ -143,6 +163,8 @@ export default function StoresPage() {
         slug: '',
         description: '',
         logoUrl: '',
+        voucherText: '',
+        networkId: '',
         isTrending: false,
         layoutPosition: null,
         categoryId: null,
@@ -450,6 +472,51 @@ export default function StoresPage() {
             </div>
 
             <div>
+              <label htmlFor="voucherText" className="block text-gray-700 text-sm font-semibold mb-2">
+                Voucher Text
+              </label>
+              <input
+                id="voucherText"
+                name="voucherText"
+                type="text"
+                placeholder="e.g., Upto 58% Voucher, Get 20% Off, etc."
+                value={formData.voucherText || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, voucherText: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Voucher text that will be displayed on the store card (e.g., "Upto 58% Voucher")
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="networkId" className="block text-gray-700 text-sm font-semibold mb-2">
+                Network ID (Region)
+              </label>
+              <select
+                id="networkId"
+                name="networkId"
+                value={formData.networkId || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, networkId: e.target.value || undefined })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">No Network ID</option>
+                {regions.map((region) => (
+                  <option key={region.id} value={region.networkId}>
+                    {region.name} ({region.networkId})
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-gray-500">
+                Select the region/network ID for this store. <Link href="/admin/regions" className="text-blue-600 hover:underline">Manage regions</Link>
+              </p>
+            </div>
+
+            <div>
               <label htmlFor="categoryId" className="block text-gray-700 text-sm font-semibold mb-2">
                 Category
               </label>
@@ -564,6 +631,9 @@ export default function StoresPage() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b">
                 <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold">
+                    Store ID
+                  </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold">
                     Logo
                   </th>
@@ -572,6 +642,12 @@ export default function StoresPage() {
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold">
                     Description
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">
+                    Voucher Text
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">
+                    Network ID
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold">
                     Trending
@@ -585,8 +661,13 @@ export default function StoresPage() {
                 </tr>
               </thead>
               <tbody>
-                {stores.map((store) => (
+                {filteredStores.map((store) => (
                   <tr key={store.id} className="border-b hover:bg-gray-50">
+                    <td className="px-4 py-4">
+                      <div className="font-mono text-xs text-gray-600 max-w-[120px] truncate" title={store.id}>
+                        {store.id}
+                      </div>
+                    </td>
                     <td className="px-6 py-4">
                       {store.logoUrl ? (
                         <img
@@ -608,6 +689,12 @@ export default function StoresPage() {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600 max-w-md truncate">
                       {store.description}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-blue-600 font-medium">
+                      {store.voucherText || '-'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-700 font-mono">
+                      {store.networkId || '-'}
                     </td>
                     <td className="px-6 py-4">
                       <button

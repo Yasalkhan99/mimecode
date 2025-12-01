@@ -1,6 +1,11 @@
 import admin from 'firebase-admin';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
+import { createRequire } from 'module';
+
+// Create require function for ES modules (Next.js compatible)
+// Use process.cwd() as base for require resolution
+const require = createRequire(process.cwd() + '/');
 
 // Initialize Firebase Admin SDK
 // Supports both JSON file path and environment variable configuration
@@ -19,9 +24,17 @@ if (!admin.apps.length) {
       
       console.log('📁 Resolved file path:', filePath);
       
-      // Read and parse the JSON file
-      const fileContent = readFileSync(filePath, 'utf8');
-      const serviceAccount = JSON.parse(fileContent);
+      // Use require() to load JSON file directly (standard Firebase pattern)
+      // Fallback to readFileSync if require() fails (for compatibility)
+      let serviceAccount;
+      try {
+        serviceAccount = require(filePath);
+      } catch (requireError) {
+        // Fallback to readFileSync if require() doesn't work
+        console.log('⚠️ require() failed, trying readFileSync...');
+        const fileContent = readFileSync(filePath, 'utf8');
+        serviceAccount = JSON.parse(fileContent);
+      }
       
       console.log('✅ Service account JSON loaded successfully');
       console.log('📋 Project ID:', serviceAccount.project_id);
@@ -36,7 +49,7 @@ if (!admin.apps.length) {
       console.error('❌ Failed to initialize from service account file:', error);
       console.error('Error details:', error instanceof Error ? error.stack : String(error));
       if (error instanceof Error) {
-        if (error.message.includes('ENOENT')) {
+        if (error.message.includes('ENOENT') || error.message.includes('Cannot find module')) {
           console.error('💡 File not found. Please check the file path in FIREBASE_SERVICE_ACCOUNT_PATH');
         } else if (error.message.includes('Unexpected token')) {
           console.error('💡 Invalid JSON format in service account file');
@@ -49,10 +62,19 @@ if (!admin.apps.length) {
   if (!admin.apps.length && process.env.FIREBASE_ADMIN_SA) {
     try {
       console.log('🔧 Attempting to initialize Firebase Admin from FIREBASE_ADMIN_SA...');
-      const serviceAccountString = process.env.FIREBASE_ADMIN_SA;
+      let serviceAccountString = process.env.FIREBASE_ADMIN_SA;
       
       if (!serviceAccountString || serviceAccountString.trim() === '') {
         throw new Error('FIREBASE_ADMIN_SA is empty');
+      }
+      
+      // Remove surrounding quotes if present (common issue with .env files)
+      serviceAccountString = serviceAccountString.trim();
+      if ((serviceAccountString.startsWith('"') && serviceAccountString.endsWith('"')) ||
+          (serviceAccountString.startsWith("'") && serviceAccountString.endsWith("'"))) {
+        serviceAccountString = serviceAccountString.slice(1, -1);
+        // Unescape quotes if they were escaped
+        serviceAccountString = serviceAccountString.replace(/\\"/g, '"').replace(/\\'/g, "'");
       }
       
       let serviceAccount;
@@ -60,6 +82,7 @@ if (!admin.apps.length) {
         serviceAccount = JSON.parse(serviceAccountString);
       } catch (parseError) {
         console.error('❌ Failed to parse FIREBASE_ADMIN_SA as JSON:', parseError);
+        console.error('💡 Tip: Check if FIREBASE_ADMIN_SA has proper JSON format. Consider using FIREBASE_SERVICE_ACCOUNT_PATH instead.');
         throw new Error(`Invalid JSON in FIREBASE_ADMIN_SA: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
       }
       

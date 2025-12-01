@@ -57,6 +57,57 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
     }
   };
 
+  // Helper function to extract domain from URL
+  const extractDomain = (url: string | null | undefined): string | null => {
+    if (!url) return null;
+    
+    let cleanUrl = url.trim();
+    
+    // Remove protocol if present
+    cleanUrl = cleanUrl.replace(/^https?:\/\//, '');
+    
+    // Remove www. if present
+    cleanUrl = cleanUrl.replace(/^www\./, '');
+    
+    // Remove trailing slashes and paths
+    cleanUrl = cleanUrl.split('/')[0];
+    
+    // Remove trailing dots
+    cleanUrl = cleanUrl.replace(/\.+$/, '');
+    
+    return cleanUrl || null;
+  };
+
+  // Helper function to get favicon/logo from website URL
+  const getLogoFromWebsite = (websiteUrl: string | null | undefined): string | null => {
+    const domain = extractDomain(websiteUrl);
+    if (!domain) return null;
+    
+    // Use Google's favicon service as fallback (reliable and fast)
+    // Size 128 gives good quality logo
+    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+  };
+
+  // Get logo URL with fallback to coupon URL favicon
+  const getCouponLogoUrl = (): string | null => {
+    // If logo exists and is a full URL, use it
+    if (coupon.logoUrl) {
+      if (coupon.logoUrl.startsWith('http://') || coupon.logoUrl.startsWith('https://')) {
+        return coupon.logoUrl;
+      }
+      if (coupon.logoUrl.includes('cloudinary.com')) {
+        return coupon.logoUrl;
+      }
+    }
+    
+    // Fallback: Try to get favicon from coupon URL
+    if (coupon.url) {
+      return getLogoFromWebsite(coupon.url);
+    }
+    
+    return null;
+  };
+
   // Animation variants
   const backdropVariants = {
     hidden: { opacity: 0 },
@@ -135,10 +186,10 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
             style={{ perspective: 1000 }}
           >
             {/* Glowing background effect */}
-            <div className="absolute inset-0 bg-gradient-to-br from-pink-500 via-pink-600 to-red-500 rounded-2xl blur-xl opacity-50 -z-10" />
+            <div className="absolute inset-0 bg-gradient-to-br from-[#ABC443] via-[#9BB03A] to-[#ABC443] rounded-2xl blur-xl opacity-50 -z-10" />
             
             {/* Popup Card */}
-            <div className="relative bg-gradient-to-br from-pink-500 via-pink-600 to-red-500 rounded-2xl shadow-2xl overflow-hidden border border-white/20">
+            <div className="relative bg-gradient-to-br from-[#ABC443] via-[#9BB03A] to-[#ABC443] rounded-2xl shadow-2xl overflow-hidden border border-white/20">
               {/* Decorative top border */}
               <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white/40 to-transparent" />
               
@@ -187,7 +238,31 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                     }}
                     className="text-white text-xl sm:text-2xl font-extrabold tracking-tight"
                   >
-                    {coupon.storeName || coupon.code || 'Coupon'}
+                    {(() => {
+                      // Helper to strip HTML tags
+                      const stripHtml = (html: string) => {
+                        if (!html) return '';
+                        const tmp = document.createElement('DIV');
+                        tmp.innerHTML = html;
+                        return tmp.textContent || tmp.innerText || '';
+                      };
+                      
+                      // Get coupon title - prefer title, then description, then generate from discount
+                      if (coupon.title) {
+                        return stripHtml(coupon.title);
+                      }
+                      if (coupon.description) {
+                        return stripHtml(coupon.description);
+                      }
+                      // Generate title from discount
+                      if (coupon.discount && coupon.discount > 0) {
+                        const discountText = coupon.discountType === 'percentage' 
+                          ? `${coupon.discount}% Off`
+                          : `$${coupon.discount} Off`;
+                        return discountText;
+                      }
+                      return coupon.code || 'Coupon';
+                    })()}
                   </motion.h2>
                   <div className="mt-1.5 h-0.5 w-16 bg-white/30 rounded-full mx-auto" />
                 </motion.div>
@@ -201,52 +276,56 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                   className="bg-white/95 backdrop-blur-sm rounded-2xl p-4 mb-4 shadow-xl border border-white/40 relative overflow-hidden"
                 >
                   {/* Decorative corner accents - smaller */}
-                  <div className="absolute top-0 left-0 w-12 h-12 bg-gradient-to-br from-pink-100 to-transparent rounded-br-full opacity-40" />
-                  <div className="absolute bottom-0 right-0 w-12 h-12 bg-gradient-to-tl from-red-100 to-transparent rounded-tl-full opacity-40" />
+                  <div className="absolute top-0 left-0 w-12 h-12 bg-gradient-to-br from-[#ABC443]/20 to-transparent rounded-br-full opacity-40" />
+                  <div className="absolute bottom-0 right-0 w-12 h-12 bg-gradient-to-tl from-[#9BB03A]/20 to-transparent rounded-tl-full opacity-40" />
                   
-                  {coupon.logoUrl ? (
-                    <div className="flex flex-col items-center relative z-10">
-                      <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        className="w-28 h-28 mb-2 rounded-xl overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center shadow-inner border border-gray-200"
-                      >
-                        <img
-                          src={coupon.logoUrl}
-                          alt={coupon.storeName || 'Store logo'}
-                          className="w-full h-full object-contain p-2"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            if (target.parentElement && coupon.storeName) {
-                              target.parentElement.innerHTML = `<span class="text-4xl font-bold text-gray-400">${coupon.storeName.charAt(0)}</span>`;
-                            }
-                          }}
-                        />
-                      </motion.div>
-                      <p className="text-gray-800 text-sm font-bold text-center">
-                        {coupon.storeName || 'Store'}
-                      </p>
-                      {coupon.url && (
-                        <p className="text-gray-500 text-xs mt-0.5 text-center">
-                          {getDomainFromUrl(coupon.url)}
+                  {(() => {
+                    const logoUrl = getCouponLogoUrl();
+                    
+                    return logoUrl ? (
+                      <div className="flex flex-col items-center relative z-10">
+                        <motion.div
+                          whileHover={{ scale: 1.05 }}
+                          className="w-28 h-28 mb-2 rounded-xl overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center shadow-inner border border-gray-200"
+                        >
+                          <img
+                            src={logoUrl}
+                            alt={coupon.storeName || 'Store logo'}
+                            className="w-full h-full object-contain p-2"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              if (target.parentElement && coupon.storeName) {
+                                target.parentElement.innerHTML = `<span class="text-4xl font-bold text-gray-400">${coupon.storeName.charAt(0)}</span>`;
+                              }
+                            }}
+                          />
+                        </motion.div>
+                        <p className="text-gray-800 text-sm font-bold text-center">
+                          {coupon.storeName || 'Store'}
                         </p>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center relative z-10">
-                      <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        className="w-28 h-28 mb-2 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center shadow-inner border border-gray-300"
-                      >
-                        <span className="text-4xl font-bold text-gray-400">
-                          {coupon.storeName?.charAt(0) || '?'}
-                        </span>
-                      </motion.div>
-                      <p className="text-gray-800 text-sm font-bold text-center">
-                        {coupon.storeName || 'Store'}
-                      </p>
-                    </div>
-                  )}
+                        {coupon.url && (
+                          <p className="text-gray-500 text-xs mt-0.5 text-center">
+                            {getDomainFromUrl(coupon.url)}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center relative z-10">
+                        <motion.div
+                          whileHover={{ scale: 1.05 }}
+                          className="w-28 h-28 mb-2 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center shadow-inner border border-gray-300"
+                        >
+                          <span className="text-4xl font-bold text-gray-400">
+                            {coupon.storeName?.charAt(0) || '?'}
+                          </span>
+                        </motion.div>
+                        <p className="text-gray-800 text-sm font-bold text-center">
+                          {coupon.storeName || 'Store'}
+                        </p>
+                      </div>
+                    );
+                  })()}
                 </motion.div>
 
                 {/* Coupon Code Section with enhanced styling - Only show for code type */}
@@ -256,9 +335,9 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                     variants={itemVariants}
                     initial="hidden"
                     animate="visible"
-                    whileHover={{ scale: 1.03, boxShadow: "0 20px 40px rgba(236, 72, 153, 0.4)" }}
+                    whileHover={{ scale: 1.03, boxShadow: "0 20px 40px rgba(171, 196, 67, 0.4)" }}
                     whileTap={{ scale: 0.97 }}
-                    className="relative bg-gradient-to-r from-pink-600 via-red-500 to-red-600 rounded-2xl p-5 mb-4 shadow-xl cursor-pointer overflow-hidden border border-white/20"
+                    className="relative bg-gradient-to-r from-[#41361A] via-[#5A4A2A] to-[#41361A] rounded-2xl p-5 mb-4 shadow-xl cursor-pointer overflow-hidden border border-white/20"
                     onClick={handleCopyCode}
                   >
                     {/* Shimmer effect */}
@@ -314,7 +393,7 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                     variants={itemVariants}
                     initial="hidden"
                     animate="visible"
-                    className="relative bg-gradient-to-r from-pink-600 via-red-500 to-red-600 rounded-2xl p-5 mb-4 shadow-xl overflow-hidden border border-white/20"
+                    className="relative bg-gradient-to-r from-[#41361A] via-[#5A4A2A] to-[#41361A] rounded-2xl p-5 mb-4 shadow-xl overflow-hidden border border-white/20"
                   >
                     <div className="relative z-10 text-center">
                       <motion.div
@@ -349,7 +428,7 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                       handleCopyCode();
                       onContinue();
                     }}
-                    className="relative bg-white text-pink-600 font-bold py-3.5 px-6 rounded-xl hover:bg-gray-50 transition-all shadow-xl text-base overflow-hidden group"
+                    className="relative bg-white text-[#ABC443] font-bold py-3.5 px-6 rounded-xl hover:bg-gray-50 transition-all shadow-xl text-base overflow-hidden group"
                   >
                     {/* Button shine effect */}
                     <motion.div

@@ -12,7 +12,7 @@ export default function FavoritesPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    document.title = 'My Favorites - AvailCoupon';
+    document.title = 'My Favorites - MimeCode';
     loadFavorites();
     
     // Listen for updates

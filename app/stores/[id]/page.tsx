@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getStoreById, getStoreBySlug, Store } from '@/lib/services/storeService';
+import { getStoreById, getStoreBySlug, getStores, Store } from '@/lib/services/storeService';
 import { getCouponsByStoreId, Coupon } from '@/lib/services/couponService';
+import { getActiveStoreFAQs, StoreFAQ } from '@/lib/services/storeFaqService';
 import Navbar from '@/app/components/Navbar';
 import NewsletterSubscription from '@/app/components/NewsletterSubscription';
 import Footer from '@/app/components/Footer';
@@ -17,14 +18,38 @@ export default function StoreDetailPage() {
 
   const [store, setStore] = useState<Store | null>(null);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [allStores, setAllStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPopup, setShowPopup] = useState(false);
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
+  const [activeTab, setActiveTab] = useState<'coupons' | 'store-info' | 'faqs'>('coupons');
+  const [filterTab, setFilterTab] = useState<'all' | 'coupons' | 'deals' | 'products'>('all');
+  const [storeFaqs, setStoreFaqs] = useState<StoreFAQ[]>([]);
+  const [userFeedback, setUserFeedback] = useState<'yes' | 'no' | null>(null);
+
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      const offset = 100; // Offset for sticky header
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - offset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+      
+      // Update active tab for visual feedback
+      if (sectionId === 'coupons-section') setActiveTab('coupons');
+      else if (sectionId === 'store-info-section') setActiveTab('store-info');
+      else if (sectionId === 'faqs-section') setActiveTab('faqs');
+    }
+  };
 
   useEffect(() => {
     // Set page title
     if (store) {
-      document.title = `${store.name} - AvailCoupon`;
+      document.title = `${store.name} - MimeCode`;
     }
   }, [store]);
 
@@ -44,10 +69,16 @@ export default function StoreDetailPage() {
           
           // Fetch coupons for this store
           if (storeData.id) {
-            const storeCoupons = await getCouponsByStoreId(storeData.id);
+            const [storeCoupons, faqsData, storesData] = await Promise.all([
+              getCouponsByStoreId(storeData.id),
+              getActiveStoreFAQs(storeData.id),
+              getStores()
+            ]);
             // Filter only active coupons
             const activeCoupons = storeCoupons.filter(coupon => coupon.isActive);
             setCoupons(activeCoupons);
+            setStoreFaqs(faqsData);
+            setAllStores(storesData);
           }
         } else {
           // Store not found - could redirect to 404 or stores page
@@ -64,6 +95,42 @@ export default function StoreDetailPage() {
       fetchStoreData();
     }
   }, [idOrSlug]);
+
+  // Update active tab based on scroll position
+  useEffect(() => {
+    const observerOptions = {
+      root: null,
+      rootMargin: '-100px 0px -50% 0px',
+      threshold: 0
+    };
+
+    const observerCallback = (entries: IntersectionObserverEntry[]) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const sectionId = entry.target.id;
+          if (sectionId === 'coupons-section') setActiveTab('coupons');
+          else if (sectionId === 'store-info-section') setActiveTab('store-info');
+          else if (sectionId === 'faqs-section') setActiveTab('faqs');
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(observerCallback, observerOptions);
+
+    const couponsSection = document.getElementById('coupons-section');
+    const storeInfoSection = document.getElementById('store-info-section');
+    const faqsSection = document.getElementById('faqs-section');
+
+    if (couponsSection) observer.observe(couponsSection);
+    if (storeInfoSection) observer.observe(storeInfoSection);
+    if (faqsSection) observer.observe(faqsSection);
+
+    return () => {
+      if (couponsSection) observer.unobserve(couponsSection);
+      if (storeInfoSection) observer.unobserve(storeInfoSection);
+      if (faqsSection) observer.unobserve(faqsSection);
+    };
+  }, [coupons.length, storeFaqs.length]);
 
   const copyToClipboard = (text: string) => {
     if (navigator.clipboard && window.isSecureContext) {
@@ -174,7 +241,7 @@ export default function StoreDetailPage() {
         <Navbar />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mb-4"></div>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#ABC443] mb-4"></div>
             <p className="text-gray-600">Loading store...</p>
           </div>
         </div>
@@ -193,7 +260,7 @@ export default function StoreDetailPage() {
             <p className="text-gray-600 mb-6">The store you're looking for doesn't exist.</p>
             <Link
               href="/stores"
-              className="inline-block px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+              className="inline-block px-6 py-3 bg-gradient-to-r from-[#ABC443] to-[#41361A] hover:from-[#41361A] hover:to-[#ABC443] text-white rounded-lg transition-all duration-300"
             >
               Browse All Stores
             </Link>
@@ -204,90 +271,378 @@ export default function StoreDetailPage() {
     );
   }
 
+  const getCurrentDate = () => {
+    const date = new Date();
+    return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  };
+
+  const getTrustedPartnerYear = () => {
+    // Get store creation year or default to 2017
+    if (store?.createdAt) {
+      try {
+        const createdAt = store.createdAt.toDate ? store.createdAt.toDate() : (typeof store.createdAt === 'number' ? new Date(store.createdAt) : new Date());
+        return createdAt.getFullYear();
+      } catch {
+        return 2017;
+      }
+    }
+    return 2017;
+  };
+
+  // Filter coupons based on selected tab
+  const codeCoupons = coupons.filter(c => c.couponType === 'code');
+  const dealCoupons = coupons.filter(c => c.couponType === 'deal');
+  const filteredCoupons = filterTab === 'all' ? coupons : 
+                         filterTab === 'coupons' ? codeCoupons :
+                         filterTab === 'deals' ? dealCoupons : [];
+
+  // Get related stores (exclude current store)
+  const relatedStores = allStores
+    .filter(s => s.id !== store?.id)
+    .slice(0, 12);
+
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
       
-      {/* Store Header Section */}
-      <div className="w-full bg-gradient-to-r from-orange-50 via-pink-50 to-purple-50 py-8 sm:py-12 md:py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-          <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
-            {/* Store Logo */}
-            {store.logoUrl && (
-              <div className="flex-shrink-0">
-                <div className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center justify-center">
-                  <img
-                    src={store.logoUrl}
-                    alt={store.name}
-                    className="max-w-full max-h-full object-contain"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-            
-            {/* Store Info */}
-            <div className="flex-1 text-center sm:text-left">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-2">
-                {store.subStoreName || store.name}
-              </h1>
-              {store.voucherText && (
-                <div className="inline-block bg-gradient-to-r from-orange-500 to-pink-500 text-white text-sm sm:text-base font-bold px-4 py-2 rounded-full shadow-lg mb-4">
-                  {store.voucherText}
-                </div>
-              )}
-              {store.description && (
-                <p className="text-gray-600 text-base sm:text-lg max-w-2xl">
-                  {store.description}
-                </p>
-              )}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {/* Commission Disclosure */}
+        <p className="text-xs sm:text-sm text-gray-500 mb-4">
+          When you buy through links on our site, we may earn a commission.
+        </p>
+
+        {/* Store Header Section */}
+        <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6 mb-6">
+          {/* Store Logo */}
+          {store.logoUrl && (
+            <div className="flex-shrink-0">
+              <img
+                src={store.logoUrl}
+                alt={store.name}
+                className="w-24 h-24 sm:w-32 sm:h-32 object-contain"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                }}
+              />
             </div>
+          )}
+          
+          {/* Store Info */}
+          <div className="flex-1">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+              Verified {store.subStoreName || store.name} Coupons & Promo Codes
+            </h1>
+            <p className="text-sm sm:text-base text-gray-600 mb-1">
+              Trusted Partner since {getTrustedPartnerYear()}
+            </p>
+            <p className="text-sm sm:text-base text-gray-600">
+              {coupons.length} Coupons Validated by Our Experts on {getCurrentDate()}
+            </p>
+          </div>
+        </div>
+
+        {/* Tabs Navigation - Scroll to Sections */}
+        <div className="border-b border-gray-200 mb-6 sticky top-0 bg-white z-10 pb-2">
+          <div className="flex space-x-6 sm:space-x-8">
+            <button
+              onClick={() => scrollToSection('coupons-section')}
+              className={`pb-3 px-1 text-sm sm:text-base font-semibold transition-colors border-b-2 ${
+                activeTab === 'coupons'
+                  ? 'border-[#16a34a] text-[#16a34a]'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Coupons
+            </button>
+            <button
+              onClick={() => scrollToSection('store-info-section')}
+              className={`pb-3 px-1 text-sm sm:text-base font-semibold transition-colors border-b-2 ${
+                activeTab === 'store-info'
+                  ? 'border-[#16a34a] text-[#16a34a]'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Store Info
+            </button>
+            <button
+              onClick={() => scrollToSection('faqs-section')}
+              className={`pb-3 px-1 text-sm sm:text-base font-semibold transition-colors border-b-2 ${
+                activeTab === 'faqs'
+                  ? 'border-[#16a34a] text-[#16a34a]'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              FAQs
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Coupons Section */}
-      <div className="w-full px-4 sm:px-6 md:px-8 py-8 sm:py-12">
-        <div className="max-w-3xl mx-auto">
-          <div className="mb-6 sm:mb-8">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-              Available <span className="text-orange-600">Coupons</span>
-            </h2>
-            <p className="text-gray-600">
-              {coupons.length > 0 
-                ? `Found ${coupons.length} active coupon${coupons.length !== 1 ? 's' : ''}`
-                : 'No active coupons available at the moment'}
-            </p>
-          </div>
+      {/* Main Layout with Sidebar */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 sm:pb-12">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+          {/* Left Sidebar */}
+          <aside className="w-full lg:w-80 flex-shrink-0">
+            <div className="sticky top-6 space-y-6">
+              {/* Store Logo Circle */}
+              {store.logoUrl && (
+                <div className="flex justify-center">
+                  <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border-4 border-gray-200">
+                    <img
+                      src={store.logoUrl}
+                      alt={store.name}
+                      className="w-full h-full object-contain p-2"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
 
-          {coupons.length === 0 ? (
-            <div className="text-center py-12 bg-gray-50 rounded-xl">
-              <p className="text-gray-500 text-lg">No coupons available for this store right now.</p>
-              <Link
-                href="/stores"
-                className="inline-block mt-4 px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
-              >
-                Browse Other Stores
-              </Link>
+              {/* Visit Store Button */}
+              {store.websiteUrl && (
+                <a
+                  href={store.websiteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full bg-[#16a34a] hover:bg-[#15803d] text-white font-bold text-center py-3 px-4 rounded-lg transition-colors"
+                >
+                  Visit Store
+                </a>
+              )}
+
+              {/* Rating Section */}
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  {[...Array(5)].map((_, i) => (
+                    <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-sm text-gray-600">0 reviews</p>
+              </div>
+
+              {/* User Feedback Box */}
+              <div className="bg-gray-800 text-white p-4 rounded-lg">
+                <p className="text-sm mb-3">Enjoying {store.name} offers on our website?</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setUserFeedback('yes')}
+                    className={`flex-1 py-2 px-3 rounded text-sm font-semibold transition-colors ${
+                      userFeedback === 'yes' ? 'bg-green-600' : 'bg-white text-gray-900 hover:bg-gray-100'
+                    }`}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    onClick={() => setUserFeedback('no')}
+                    className={`flex-1 py-2 px-3 rounded text-sm font-semibold transition-colors ${
+                      userFeedback === 'no' ? 'bg-red-600' : 'bg-white text-gray-900 hover:bg-gray-100'
+                    }`}
+                  >
+                    No
+                  </button>
+                </div>
+              </div>
+
+              {/* Store Stats */}
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <p className="text-sm font-semibold text-gray-900 mb-2">
+                  Get latest {store.name} Coupons and Deals here!
+                </p>
+                <p className="text-xs text-gray-600 mb-3">Verified and updated</p>
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-700">
+                    Active Coupons: <span className="font-bold">{codeCoupons.length}</span>
+                  </p>
+                  <p className="text-sm text-gray-700">
+                    Active Deals: <span className="font-bold">{dealCoupons.length}</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Why Trust Us Section */}
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <h3 className="text-lg font-bold text-gray-900 mb-3">Why Trust Us?</h3>
+                <div className="space-y-2 text-sm text-gray-700 leading-relaxed">
+                  <p>
+                    At MimeCode, we are committed to providing you with the best deals and savings opportunities. Our dedicated team works tirelessly to ensure that every coupon and deal we feature is verified, up-to-date, and reliable.
+                  </p>
+                  <p>
+                    We understand the importance of saving money, and that's why we make it our mission to help you find the best discounts from your favorite stores.
+                  </p>
+                  <p className="text-xs text-gray-500 mt-3">
+                    Last updated: {getCurrentDate()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Related Stores Section */}
+              {relatedStores.length > 0 && (
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <h3 className="text-lg font-bold text-gray-900 mb-3">Related Stores</h3>
+                  <div className="grid grid-cols-3 gap-3">
+                    {relatedStores.map((relatedStore) => (
+                      <Link
+                        key={relatedStore.id}
+                        href={`/stores/${relatedStore.slug || relatedStore.id}`}
+                        className="group flex flex-col items-center p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                        title={relatedStore.name}
+                      >
+                        {relatedStore.logoUrl ? (
+                          <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-50 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                            <img
+                              src={relatedStore.logoUrl}
+                              alt={relatedStore.name}
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  parent.innerHTML = `<span class="text-xs font-semibold text-gray-500">${relatedStore.name.charAt(0)}</span>`;
+                                }
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                            <span className="text-xs font-semibold text-gray-600">
+                              {relatedStore.name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                        <span className="text-xs text-gray-700 text-center line-clamp-2 group-hover:text-[#16a34a] transition-colors">
+                          {relatedStore.name}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:gap-6">
-            {coupons.map((coupon) => {
-              const isExpired = coupon.expiryDate && coupon.expiryDate.toDate() < new Date();
-              const isRevealed = false; // For store page, we don't track revealed state
+          </aside>
+
+          {/* Main Content Area */}
+          <div className="flex-1 min-w-0">
+            {/* Filter Tabs */}
+            <div className="border-b border-gray-200 mb-6">
+              <div className="flex space-x-4 sm:space-x-6">
+                <button
+                  onClick={() => setFilterTab('all')}
+                  className={`pb-3 px-1 text-sm sm:text-base font-semibold transition-colors border-b-2 ${
+                    filterTab === 'all'
+                      ? 'border-[#16a34a] text-[#16a34a]'
+                      : 'border-transparent text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setFilterTab('coupons')}
+                  className={`pb-3 px-1 text-sm sm:text-base font-semibold transition-colors border-b-2 ${
+                    filterTab === 'coupons'
+                      ? 'border-[#16a34a] text-[#16a34a]'
+                      : 'border-transparent text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Coupons({codeCoupons.length})
+                </button>
+                <button
+                  onClick={() => setFilterTab('deals')}
+                  className={`pb-3 px-1 text-sm sm:text-base font-semibold transition-colors border-b-2 ${
+                    filterTab === 'deals'
+                      ? 'border-[#16a34a] text-[#16a34a]'
+                      : 'border-transparent text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Deals({dealCoupons.length})
+                </button>
+                <button
+                  onClick={() => setFilterTab('products')}
+                  className={`pb-3 px-1 text-sm sm:text-base font-semibold transition-colors border-b-2 ${
+                    filterTab === 'products'
+                      ? 'border-[#16a34a] text-[#16a34a]'
+                      : 'border-transparent text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Products(0)
+                </button>
+              </div>
+            </div>
+
+            {/* Coupons List */}
+            <div id="coupons-section" className="w-full scroll-mt-24">
+            {filteredCoupons.length === 0 ? (
+              <div className="text-center py-12 bg-gray-50 rounded-xl">
+                <p className="text-gray-500 text-lg">No {filterTab === 'all' ? 'coupons' : filterTab} available for this store right now.</p>
+                <Link
+                  href="/stores"
+                  className="inline-block mt-4 px-6 py-3 bg-[#ABC443] text-white rounded-lg hover:bg-[#9BB03A] transition-colors"
+                >
+                  Browse Other Stores
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-4">
+            {filteredCoupons.map((coupon, index) => {
+              // Add email subscription after first 2-3 coupons
+              const showEmailSubscription = index === Math.floor(filteredCoupons.length / 2) && filteredCoupons.length > 3;
+              // Handle expiryDate - can be string, Date, or Firestore Timestamp
+              const getExpiryDate = (expiryDate: any): Date | null => {
+                if (!expiryDate) return null;
+                // If it's already a Date object
+                if (expiryDate instanceof Date) return expiryDate;
+                // If it's a Firestore Timestamp object (has toDate method)
+                if (expiryDate && typeof expiryDate.toDate === 'function') {
+                  return expiryDate.toDate();
+                }
+                // If it's a string, try to parse it
+                if (typeof expiryDate === 'string') {
+                  const parsed = new Date(expiryDate);
+                  return isNaN(parsed.getTime()) ? null : parsed;
+                }
+                // If it's a number (timestamp in milliseconds)
+                if (typeof expiryDate === 'number') {
+                  return new Date(expiryDate);
+                }
+                return null;
+              };
+              const expiryDateObj = getExpiryDate(coupon.expiryDate);
+              const isExpired = expiryDateObj ? expiryDateObj < new Date() : false;
+              
+              const getCodePreview = (coupon: Coupon): string => {
+                if (coupon.buttonText && coupon.buttonText.trim() !== '') {
+                  return coupon.buttonText;
+                }
+                if ((coupon.couponType || 'deal') === 'code' && coupon.code) {
+                  return 'Get Code';
+                }
+                return 'Get Deal';
+              };
+
+              const getLastTwoDigits = (coupon: Coupon): string | null => {
+                if ((coupon.couponType || 'deal') === 'code' && coupon.code) {
+                  const code = coupon.code.trim();
+                  if (code.length >= 2) {
+                    return code.slice(-2);
+                  }
+                }
+                return null;
+              };
               
               return (
                 <div
                   key={coupon.id}
-                  className="bg-white rounded-lg p-3 sm:p-4 shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-orange-400 transform hover:-translate-y-1 flex flex-row items-center gap-3 sm:gap-5 cursor-pointer"
+                  className="bg-white rounded-lg p-3 sm:p-4 shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-[#ABC443] transform hover:-translate-y-1 flex flex-row items-center gap-3 sm:gap-5"
                   style={{
                     overflow: 'visible',
                     minHeight: '88px'
                   }}
-                  onClick={() => handleCouponClick(coupon)}
                 >
                   {/* Logo Section */}
                   <div className="flex-shrink-0">
@@ -307,10 +662,26 @@ export default function StoreDetailPage() {
                           }}
                         />
                       </div>
+                    ) : store?.logoUrl ? (
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50">
+                        <img
+                          src={store.logoUrl}
+                          alt={store.name}
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            const parent = target.parentElement;
+                            if (parent) {
+                              const initial = store.name?.charAt(0) || '?';
+                              parent.innerHTML = `<span class="text-sm font-semibold text-gray-500">${initial}</span>`;
+                            }
+                          }}
+                        />
+                      </div>
                     ) : (
                       <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-gray-200 flex items-center justify-center">
                         <span className="text-xs sm:text-sm font-semibold text-gray-500">
-                          {coupon.code?.charAt(0) || coupon.storeName?.charAt(0) || '?'}
+                          {coupon.code?.charAt(0) || coupon.storeName?.charAt(0) || store?.name?.charAt(0) || '?'}
                         </span>
                       </div>
                     )}
@@ -320,7 +691,25 @@ export default function StoreDetailPage() {
                   <div className="flex-1 min-w-0 flex flex-row items-center justify-between gap-3 sm:gap-4">
                     <div className="flex-1 min-w-0">
                       <h3 className="text-sm sm:text-base font-bold text-gray-900 break-words mb-0.5">
-                        {coupon.storeName || coupon.code}
+                        {(() => {
+                          // Helper to strip HTML tags
+                          const stripHtml = (html: string) => {
+                            if (!html) return '';
+                            const tmp = document.createElement('DIV');
+                            tmp.innerHTML = html;
+                            return tmp.textContent || tmp.innerText || '';
+                          };
+                          
+                          // Get coupon title - prefer title, then description, then generate from discount
+                          if (coupon.title) return stripHtml(coupon.title);
+                          if (coupon.description) return stripHtml(coupon.description);
+                          if (coupon.discount && coupon.discount > 0) {
+                            return coupon.discountType === 'percentage' 
+                              ? `${coupon.discount}% Off`
+                              : `$${coupon.discount} Off`;
+                          }
+                          return coupon.code || coupon.storeName || store?.name || 'Coupon';
+                        })()}
                       </h3>
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1 text-green-600">
@@ -356,28 +745,24 @@ export default function StoreDetailPage() {
                             e.stopPropagation();
                             handleCouponClick(coupon);
                           }}
-                          className="bg-gradient-to-r from-pink-500 via-pink-400 to-orange-500 border-2 border-dashed border-white/60 rounded-lg px-4 py-2.5 sm:px-6 sm:py-3 flex items-center justify-between text-white font-semibold hover:from-pink-600 hover:via-pink-500 hover:to-orange-600 hover:border-white/80 transition-all duration-300 group relative overflow-hidden shadow-md hover:shadow-lg whitespace-nowrap"
-                          style={{ borderStyle: 'dashed', borderWidth: '2px' }}
+                          className="bg-[#ABC443] hover:bg-[#9BB03A] text-white font-semibold rounded-lg px-4 py-2.5 sm:px-6 sm:py-3 flex items-center justify-between transition-all duration-300 shadow-md hover:shadow-lg whitespace-nowrap group relative overflow-hidden"
                         >
                           <span className="flex-1 flex items-center justify-center">
-                            {isRevealed && coupon.couponType === 'code' && coupon.code ? (
-                              <span className="font-bold text-sm sm:text-base drop-shadow-sm">
-                                {coupon.code}
+                            {coupon.couponType === 'code' && coupon.code ? (
+                              <span className="text-sm sm:text-base">
+                                {getCodePreview(coupon)}
                               </span>
                             ) : (
-                              <span className="drop-shadow-sm text-sm sm:text-base">
-                                {coupon.couponType === 'code' ? 'Get Code' : 'Get Deal'}
+                              <span className="text-sm sm:text-base">
+                                {getCodePreview(coupon)}
                               </span>
                             )}
                           </span>
-                          {getLastTwoDigits(coupon) && !isRevealed && (
-                            <div className="w-0 opacity-0 group-hover:w-20 group-hover:opacity-100 transition-all duration-300 ease-out flex items-center justify-center border-l-2 border-dashed border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-gradient-to-r from-transparent to-orange-600/20" style={{ borderStyle: 'dashed' }}>
-                              <span className="text-white font-bold text-xs drop-shadow-md">...{getLastTwoDigits(coupon)}</span>
+                          {getLastTwoDigits(coupon) && (
+                            <div className="w-0 opacity-0 group-hover:w-20 group-hover:opacity-100 transition-all duration-300 ease-out flex items-center justify-center border-l-2 border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-white/10">
+                              <span className="text-white font-bold text-xs">...{getLastTwoDigits(coupon)}</span>
                             </div>
                           )}
-                          <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
                         </button>
                       )}
                     </div>
@@ -387,6 +772,84 @@ export default function StoreDetailPage() {
             })}
             </div>
           )}
+            </div>
+
+            {/* Discover More Tags */}
+            {store && (
+              <div className="mt-8 flex flex-wrap gap-2">
+                <span className="text-sm font-semibold text-gray-700 mr-2">Discover more:</span>
+                {['online stores', 'shopping', store.name, 'Online shopping', 'shopping online', 'coupons', 'deals', 'discounts', 'savings'].map((tag, index) => (
+                  <button
+                    key={index}
+                    className="text-xs sm:text-sm text-gray-600 hover:text-[#16a34a] hover:underline transition-colors"
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* More Information Section */}
+            <div id="store-info-section" className="mt-12 bg-white rounded-lg shadow-md p-6 sm:p-8">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">
+                More Information On {store.name} Coupons
+              </h2>
+              <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed space-y-4">
+                <p>
+                  At MimeCode, we are dedicated to helping you save money with incredible savings opportunities from {store.name}. Whether you're looking for your preferred item or exploring new products, our verified coupons and deals make it easy to shop more while spending less.
+                </p>
+                <p>
+                  The expanding e-commerce market offers numerous opportunities for savings, and we've developed simple strategies to help you maximize your discounts. Our team works around the clock to ensure all {store.name} coupons are verified, up-to-date, and ready to use.
+                </p>
+                <p>
+                  <strong>Seasonal Deals & Savings:</strong> Keep an eye out for special promotions during November deals, holiday deals, Black Friday, Cyber Monday, Christmas, New Year's, Easter, Thanksgiving, Winter Sale, Summer Sale, Halloween, Chinese Sale, Mother's Day, and Father's Day. These are the best times to find incredible discounts on {store.name} products.
+                </p>
+                {store.description && (
+                  <p>
+                    {store.description}
+                  </p>
+                )}
+                {store.aboutText && (
+                  <div className="mt-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">About {store.name}</h3>
+                    <p className="whitespace-pre-line">{store.aboutText}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* FAQs Section */}
+            <div id="faqs-section" className="mt-12">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">FAQs</h2>
+              {storeFaqs.length > 0 ? (
+                <div className="space-y-4">
+                  {storeFaqs.map((faq, index) => (
+                    <div
+                      key={faq.id || index}
+                      className="bg-white rounded-lg shadow-md p-6 border border-gray-200"
+                    >
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        {faq.question}
+                      </h3>
+                      <p className="text-gray-700 leading-relaxed">
+                        {faq.answer}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white rounded-lg shadow-md p-8 text-center">
+                  <p className="text-gray-600 text-lg mb-4">No FAQs available for this store at the moment.</p>
+                  <Link
+                    href="/faqs"
+                    className="inline-block px-6 py-3 bg-[#16a34a] text-white rounded-lg hover:bg-[#15803d] transition-colors"
+                  >
+                    View General FAQs
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -394,7 +857,7 @@ export default function StoreDetailPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 pb-8">
         <Link
           href="/stores"
-          className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 font-semibold"
+          className="inline-flex items-center gap-2 text-[#16a34a] hover:text-[#15803d] font-semibold"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />

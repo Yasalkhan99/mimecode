@@ -10,23 +10,55 @@ export interface Store {
   description: string;
   logoUrl?: string;
   voucherText?: string; // e.g., "Upto 58% Voucher"
+  networkId?: string; // Network location ID to identify store location
   isTrending?: boolean;
   layoutPosition?: number | null; // Position in trending stores layout (1-8)
   categoryId?: string | null; // Category ID for this store
+  // Detailed Store Info fields
+  websiteUrl?: string; // Store's official website URL
+  aboutText?: string; // Detailed about section for Store Info tab
+  features?: string[]; // List of store features (e.g., ["Free Shipping", "24/7 Support"])
+  shippingInfo?: string; // Shipping information
+  returnPolicy?: string; // Return policy information
+  contactInfo?: string; // Contact information
+  trustScore?: number; // Trust score (0-100)
+  establishedYear?: number; // Year store was established
+  headquarters?: string; // Headquarters location
   createdAt?: Timestamp;
+  updatedAt?: Timestamp;
 }
 
-const stores = 'stores';
+// Use environment variable to separate collections between projects
+// Default to 'stores-mimecode' for this new project
+const stores = process.env.NEXT_PUBLIC_STORES_COLLECTION || 'stores-mimecode';
 
 export async function getStores(): Promise<Store[]> {
   try {
-    const querySnapshot = await getDocs(collection(db, stores));
-    return querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    } as Store));
+    // Try server-side API first (bypasses security rules)
+    try {
+      const res = await fetch(`/api/stores/get?collection=${encodeURIComponent(stores)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.stores) {
+          return data.stores as Store[];
+        }
+      } else {
+        // If API returns error, don't fallback to client-side (will cause permission errors)
+        console.warn('Server API returned error, not falling back to client-side');
+        return [];
+      }
+    } catch (apiError) {
+      console.warn('Server API failed:', apiError);
+      // Don't fallback to client-side to avoid permission errors
+      return [];
+    }
+
+    // Removed client-side fallback to avoid permission errors
+    // All store operations should go through server-side API routes
+    return [];
   } catch (error) {
     console.error('Error getting stores:', error);
+    // Return empty array instead of throwing to prevent app crash
     return [];
   }
 }
@@ -58,11 +90,45 @@ export async function getTrendingStores(): Promise<(Store | null)[]> {
 
 export async function createStore(store: Omit<Store, 'id'>) {
   try {
-    const docRef = await addDoc(collection(db, stores), {
-      ...store,
-      createdAt: Timestamp.now(),
+    // Use server-side API route to create store (bypasses security rules)
+    const res = await fetch('/api/stores/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        store,
+        collection: stores,
+      }),
     });
-    return { success: true, id: docRef.id };
+
+    let json: any = {};
+    let resText = '';
+    try {
+      resText = await res.text();
+      try {
+        json = JSON.parse(resText || '{}');
+      } catch (e) {
+        json = { text: resText };
+      }
+    } catch (e) {
+      console.error('Failed to read server response body', e);
+    }
+
+    if (!res.ok) {
+      console.error('Server create failed', { status: res.status, body: json });
+      // Fallback to client-side create (requires proper Firestore rules)
+      try {
+        const docRef = await addDoc(collection(db, stores), {
+          ...store,
+          createdAt: Timestamp.now(),
+        });
+        return { success: true, id: docRef.id };
+      } catch (fallbackError) {
+        console.error('Client-side create fallback failed', fallbackError);
+        return { success: false, error: json.error || json.text || 'Failed to create store' };
+      }
+    }
+
+    return { success: true, id: json.id };
   } catch (error) {
     console.error('Error creating store:', error);
     return { success: false, error };
@@ -71,6 +137,21 @@ export async function createStore(store: Omit<Store, 'id'>) {
 
 export async function getStoreById(id: string): Promise<Store | null> {
   try {
+    // Try server-side API first (bypasses security rules)
+    try {
+      const res = await fetch(`/api/stores/get?collection=${encodeURIComponent(stores)}&id=${encodeURIComponent(id)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.store) {
+          return data.store as Store;
+        }
+        return null;
+      }
+    } catch (apiError) {
+      console.warn('Server API failed, trying client-side:', apiError);
+    }
+
+    // Fallback to client-side read (requires proper Firestore rules)
     const docRef = doc(db, stores, id);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
@@ -86,6 +167,21 @@ export async function getStoreById(id: string): Promise<Store | null> {
 // Get store by slug
 export async function getStoreBySlug(slug: string): Promise<Store | null> {
   try {
+    // Try server-side API first (bypasses security rules)
+    try {
+      const res = await fetch(`/api/stores/get?collection=${encodeURIComponent(stores)}&slug=${encodeURIComponent(slug)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.store) {
+          return data.store as Store;
+        }
+        return null;
+      }
+    } catch (apiError) {
+      console.warn('Server API failed, trying client-side:', apiError);
+    }
+
+    // Fallback to client-side read (requires proper Firestore rules)
     const q = query(
       collection(db, stores),
       where('slug', '==', slug)
@@ -102,36 +198,214 @@ export async function getStoreBySlug(slug: string): Promise<Store | null> {
   }
 }
 
+// Get store by network ID (location identifier)
+export async function getStoreByNetworkId(networkId: string): Promise<Store | null> {
+  try {
+    // Try server-side API first (bypasses security rules)
+    try {
+      const res = await fetch(`/api/stores/get?collection=${encodeURIComponent(stores)}&networkId=${encodeURIComponent(networkId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.store) {
+          return data.store as Store;
+        }
+        return null;
+      }
+    } catch (apiError) {
+      console.warn('Server API failed, trying client-side:', apiError);
+    }
+
+    // Fallback to client-side read (requires proper Firestore rules)
+    const q = query(
+      collection(db, stores),
+      where('networkId', '==', networkId)
+    );
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+      const doc = querySnapshot.docs[0];
+      return { id: doc.id, ...doc.data() } as Store;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting store by network ID:', error);
+    return null;
+  }
+}
+
+// Get stores by network ID (in case multiple stores share same network ID)
+export async function getStoresByNetworkId(networkId: string): Promise<Store[]> {
+  try {
+    // Try server-side API first (bypasses security rules)
+    try {
+      const res = await fetch(`/api/stores/get?collection=${encodeURIComponent(stores)}&networkId=${encodeURIComponent(networkId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          // If single store returned, return as array
+          if (data.store) {
+            return [data.store as Store];
+          }
+          // If stores array returned
+          if (data.stores && Array.isArray(data.stores)) {
+            return data.stores as Store[];
+          }
+        }
+        return [];
+      }
+    } catch (apiError) {
+      console.warn('Server API failed, trying client-side:', apiError);
+    }
+
+    // Fallback to client-side read (requires proper Firestore rules)
+    const q = query(
+      collection(db, stores),
+      where('networkId', '==', networkId)
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Store[];
+  } catch (error) {
+    console.error('Error getting stores by network ID:', error);
+    return [];
+  }
+}
+
 // Check if slug is unique (excluding current store ID if editing)
 export async function isSlugUnique(slug: string, excludeStoreId?: string): Promise<boolean> {
   try {
-    const q = query(
-      collection(db, stores),
-      where('slug', '==', slug)
-    );
-    const querySnapshot = await getDocs(q);
-    
-    if (querySnapshot.empty) {
-      return true; // Slug is unique
+    // Trim and validate slug
+    const trimmedSlug = slug?.trim();
+    if (!trimmedSlug) {
+      console.warn('Empty slug provided');
+      return false;
     }
-    
-    // If editing, check if the slug belongs to the current store
-    if (excludeStoreId) {
-      const existingStore = querySnapshot.docs.find(doc => doc.id === excludeStoreId);
-      return !!existingStore; // Return true if slug belongs to current store (it's valid to keep your own slug)
+
+    // Use server-side API route to check slug uniqueness (bypasses security rules)
+    const res = await fetch('/api/stores/check-slug', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        slug: trimmedSlug,
+        excludeStoreId,
+        collection: stores,
+      }),
+    });
+
+    let json: any = {};
+    let resText = '';
+    try {
+      resText = await res.text();
+      try {
+        json = JSON.parse(resText || '{}');
+      } catch (e) {
+        json = { text: resText };
+      }
+    } catch (e) {
+      console.error('Failed to read server response body', e);
     }
-    
-    return false; // Slug already exists for another store
+
+    // Log for debugging
+    console.log('Slug uniqueness check:', {
+      slug: trimmedSlug,
+      excludeStoreId,
+      responseStatus: res.status,
+      responseData: json
+    });
+
+    if (res.ok && json.success === true) {
+      // Explicitly check isUnique property
+      const isUnique = json.isUnique === true;
+      console.log(`Slug "${trimmedSlug}" is ${isUnique ? 'unique' : 'already taken'}`);
+      return isUnique;
+    }
+
+    // If API failed, log error but try fallback
+    console.warn('Server API failed, trying client-side fallback:', {
+      status: res.status,
+      error: json.error || json.text || 'Unknown error'
+    });
+
+    // Fallback to client-side check (requires proper Firestore rules)
+    try {
+      const q = query(
+        collection(db, stores),
+        where('slug', '==', trimmedSlug)
+      );
+      const querySnapshot = await getDocs(q);
+      
+      if (querySnapshot.empty) {
+        console.log(`Slug "${trimmedSlug}" is unique (client-side check)`);
+        return true; // Slug is unique
+      }
+      
+      // If editing, check if the slug belongs to the current store
+      if (excludeStoreId) {
+        const existingStore = querySnapshot.docs.find(doc => doc.id === excludeStoreId);
+        const isOwnSlug = !!existingStore;
+        console.log(`Slug "${trimmedSlug}" ${isOwnSlug ? 'belongs to current store' : 'belongs to another store'}`);
+        return isOwnSlug; // Return true if slug belongs to current store (it's valid to keep your own slug)
+      }
+      
+      console.log(`Slug "${trimmedSlug}" already exists for another store`);
+      return false; // Slug already exists for another store
+    } catch (fallbackError) {
+      console.error('Client-side fallback also failed:', fallbackError);
+      // If both fail, return true to allow creation (better than blocking)
+      // User can manually check if slug is duplicate
+      console.warn('Both server and client-side checks failed, allowing slug creation');
+      return true;
+    }
   } catch (error) {
     console.error('Error checking slug uniqueness:', error);
-    return false;
+    // If error occurs, return true to allow creation (better than blocking)
+    // User can manually check if slug is duplicate
+    console.warn('Error in slug check, allowing slug creation');
+    return true;
   }
 }
 
 export async function updateStore(id: string, updates: Partial<Store>) {
   try {
-    const docRef = doc(db, stores, id);
-    await updateDoc(docRef, updates);
+    // Use server-side API route to update store (bypasses security rules)
+    const res = await fetch('/api/stores/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id,
+        updates,
+        collection: stores,
+      }),
+    });
+
+    let json: any = {};
+    let resText = '';
+    try {
+      resText = await res.text();
+      try {
+        json = JSON.parse(resText || '{}');
+      } catch (e) {
+        json = { text: resText };
+      }
+    } catch (e) {
+      console.error('Failed to read server response body', e);
+    }
+
+    if (!res.ok) {
+      console.error('Server update failed', { status: res.status, body: json });
+      // Fallback to client-side update (requires proper Firestore rules)
+      try {
+        const { updateDoc } = await import('firebase/firestore');
+        const docRef = doc(db, stores, id);
+        await updateDoc(docRef, updates);
+        return { success: true };
+      } catch (fallbackError) {
+        console.error('Client-side update fallback failed', fallbackError);
+        return { success: false, error: json.error || json.text || 'Failed to update store' };
+      }
+    }
+
     return { success: true };
   } catch (error) {
     console.error('Error updating store:', error);
@@ -141,8 +415,42 @@ export async function updateStore(id: string, updates: Partial<Store>) {
 
 export async function deleteStore(id: string) {
   try {
-    const docRef = doc(db, stores, id);
-    await deleteDoc(docRef);
+    // Use server-side API route to delete store (bypasses security rules)
+    const res = await fetch('/api/stores/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id,
+        collection: stores,
+      }),
+    });
+
+    let json: any = {};
+    let resText = '';
+    try {
+      resText = await res.text();
+      try {
+        json = JSON.parse(resText || '{}');
+      } catch (e) {
+        json = { text: resText };
+      }
+    } catch (e) {
+      console.error('Failed to read server response body', e);
+    }
+
+    if (!res.ok) {
+      console.error('Server delete failed', { status: res.status, body: json });
+      // Fallback to client-side delete (requires proper Firestore rules)
+      try {
+        const docRef = doc(db, stores, id);
+        await deleteDoc(docRef);
+        return { success: true };
+      } catch (fallbackError) {
+        console.error('Client-side delete fallback failed', fallbackError);
+        return { success: false, error: json.error || json.text || 'Failed to delete store' };
+      }
+    }
+
     return { success: true };
   } catch (error) {
     console.error('Error deleting store:', error);
@@ -153,6 +461,20 @@ export async function deleteStore(id: string) {
 // Get stores by category ID
 export async function getStoresByCategoryId(categoryId: string): Promise<Store[]> {
   try {
+    // Try server-side API first (bypasses security rules)
+    try {
+      const res = await fetch(`/api/stores/get?collection=${encodeURIComponent(stores)}&categoryId=${encodeURIComponent(categoryId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.stores) {
+          return data.stores as Store[];
+        }
+      }
+    } catch (apiError) {
+      console.warn('Server API failed, trying client-side:', apiError);
+    }
+
+    // Fallback to client-side read (requires proper Firestore rules)
     const q = query(
       collection(db, stores),
       where('categoryId', '==', categoryId)

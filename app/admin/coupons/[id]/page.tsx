@@ -194,11 +194,18 @@ export default function EditCouponPage() {
                                 }
                                 setSelectedStoreIds(newSelected);
                                 
-                                // Auto-populate storeName from first selected store
+                                // Auto-populate storeName and logoUrl from first selected store
                                 if (newSelected.length > 0) {
                                   const firstStore = stores.find(s => s.id === newSelected[0]);
                                   if (firstStore) {
-                                    setFormData({ ...formData, storeName: firstStore.name });
+                                    const updates: Partial<Coupon> = { storeName: firstStore.name };
+                                    // Auto-set logo from store if store has a logo
+                                    if (firstStore.logoUrl && firstStore.logoUrl.trim() !== '') {
+                                      updates.logoUrl = firstStore.logoUrl;
+                                      setLogoUrl(firstStore.logoUrl);
+                                      handleLogoUrlChange(firstStore.logoUrl);
+                                    }
+                                    setFormData({ ...formData, ...updates });
                                   }
                                 } else {
                                   setFormData({ ...formData, storeName: '' });
@@ -239,7 +246,14 @@ export default function EditCouponPage() {
                           if (newSelected.length > 0) {
                             const firstStore = stores.find(s => s.id === newSelected[0]);
                             if (firstStore) {
-                              setFormData({ ...formData, storeName: firstStore.name });
+                              const updates: Partial<Coupon> = { storeName: firstStore.name };
+                              // Auto-set logo from store if store has a logo
+                              if (firstStore.logoUrl && firstStore.logoUrl.trim() !== '') {
+                                updates.logoUrl = firstStore.logoUrl;
+                                setLogoUrl(firstStore.logoUrl);
+                                handleLogoUrlChange(firstStore.logoUrl);
+                              }
+                              setFormData({ ...formData, ...updates });
                             }
                           } else {
                             setFormData({ ...formData, storeName: '' });
@@ -294,6 +308,26 @@ export default function EditCouponPage() {
             </div>
             <p className="mt-1 text-xs text-gray-500">
               Select whether this is a coupon code or a deal. Frontend will show "Get Code" for codes and "Get Deal" for deals.
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="buttonText" className="block text-sm font-semibold text-gray-700 mb-1">
+              Custom "Get Code" Button Text (Optional)
+            </label>
+            <input
+              id="buttonText"
+              name="buttonText"
+              type="text"
+              placeholder="e.g., Get Code, Get Deal, Claim Now, Shop Now"
+              value={formData.buttonText || ''}
+              onChange={(e) =>
+                setFormData({ ...formData, buttonText: e.target.value })
+              }
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Customize the button text. If left empty, it will default to "Get Code" for codes and "Get Deal" for deals.
             </p>
           </div>
 
@@ -440,6 +474,29 @@ export default function EditCouponPage() {
             </select>
             <p className="mt-1 text-xs text-gray-500">
               Assign this coupon to a category
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="dealScope" className="block text-sm font-semibold text-gray-700 mb-1">
+              Deal Scope (For Featured Deals Badge)
+            </label>
+            <select
+              id="dealScope"
+              name="dealScope"
+              value={formData.dealScope || ''}
+              onChange={(e) => {
+                const dealScope = e.target.value || undefined;
+                setFormData({ ...formData, dealScope: dealScope as 'sitewide' | 'online-only' | undefined });
+              }}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Default (SITEWIDE)</option>
+              <option value="sitewide">SITEWIDE</option>
+              <option value="online-only">ONLINE ONLY</option>
+            </select>
+            <p className="mt-1 text-xs text-gray-500">
+              Select the scope of this deal. This will show as a badge on the Featured Deals section.
             </p>
           </div>
 

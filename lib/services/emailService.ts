@@ -1,29 +1,36 @@
-import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
+import { Timestamp } from 'firebase/firestore';
 
 export interface EmailSettings {
   id?: string;
   email1: string; // First email address
   email2: string; // Second email address
   email3: string; // Third email address
-  updatedAt?: Timestamp;
+  updatedAt?: Timestamp | number; // Can be Timestamp or number (milliseconds)
 }
 
-const emailSettingsCollection = 'emailSettings';
+// Use environment variable to separate collections between projects
+// Default to 'emailSettings-mimecode' for this new project
+const emailSettingsCollection = process.env.NEXT_PUBLIC_EMAIL_SETTINGS_COLLECTION || 'emailSettings-mimecode';
 const emailSettingsDocId = 'main'; // Single document for email settings
 
-// Get email settings
+// Get email settings (client-side - uses API route)
 export async function getEmailSettings(): Promise<EmailSettings | null> {
   try {
-    const docRef = doc(db, emailSettingsCollection, emailSettingsDocId);
-    const docSnap = await getDoc(docRef);
+    const res = await fetch(`/api/email-settings/get?collection=${encodeURIComponent(emailSettingsCollection)}&docId=${encodeURIComponent(emailSettingsDocId)}`);
+    const json = await res.json();
     
-    if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() } as EmailSettings;
+    if (!res.ok) {
+      console.error('Error getting email settings:', json.error);
+      // Return default on error
+      return {
+        id: emailSettingsDocId,
+        email1: 'admin@mimecode.com',
+        email2: '',
+        email3: '',
+      };
     }
-    
-    // Return default if no settings exist
-    return {
+
+    return json.settings || {
       id: emailSettingsDocId,
       email1: 'admin@availcoupon.com',
       email2: '',
@@ -40,18 +47,28 @@ export async function getEmailSettings(): Promise<EmailSettings | null> {
   }
 }
 
-// Update email settings
+
+// Update email settings (client-side - uses API route)
 export async function updateEmailSettings(email1: string, email2: string, email3: string): Promise<{ success: boolean; error?: any }> {
   try {
-    const docRef = doc(db, emailSettingsCollection, emailSettingsDocId);
-    
-    await setDoc(docRef, {
-      email1: email1.trim(),
-      email2: email2.trim(),
-      email3: email3.trim(),
-      updatedAt: Timestamp.now(),
-    }, { merge: true });
-    
+    const res = await fetch('/api/email-settings/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email1,
+        email2,
+        email3,
+        collection: emailSettingsCollection,
+        docId: emailSettingsDocId,
+      }),
+    });
+
+    const json = await res.json();
+    if (!res.ok) {
+      console.error('Server update failed', { status: res.status, body: json });
+      return { success: false, error: json.error || 'Failed to update email settings' };
+    }
+
     return { success: true };
   } catch (error) {
     console.error('Error updating email settings:', error);

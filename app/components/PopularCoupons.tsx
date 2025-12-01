@@ -54,8 +54,13 @@ export default function PopularCoupons() {
     }
   };
 
-  // Get last 2 digits of code for code type coupons
+  // Get code preview text
   const getCodePreview = (coupon: Coupon): string => {
+    // Use custom button text if provided
+    if (coupon.buttonText && coupon.buttonText.trim() !== '') {
+      return coupon.buttonText;
+    }
+    // Default to type-based text
     if ((coupon.couponType || 'deal') === 'code' && coupon.code) {
       return 'Get Code';
     }
@@ -225,18 +230,21 @@ export default function PopularCoupons() {
   };
 
 
+  // Ensure we always have 8 slots
+  const displayCoupons = [...Array(8)].map((_, index) => coupons[index] || null);
+
   return (
-    <div className="w-full px-2 sm:px-4 md:px-6 py-6 sm:py-8 md:py-12 lg:py-16 bg-white animate-fade-in-up">
+    <div className="w-full px-2 sm:px-4 md:px-6 py-6 sm:py-8 md:py-12 lg:py-16 bg-white">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
-          <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold animate-slide-in-left">
+          <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold">
             <span className="text-gray-900">Popular</span>{' '}
-            <span className="text-orange-600">Coupons</span>
+            <span className="text-[#ABC443]">Coupons</span>
           </h2>
           <Link
             href="/coupons"
-            className="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap text-sm sm:text-base animate-slide-in-right"
+            className="bg-[#ABC443] hover:bg-[#9BB03A] text-white font-semibold px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap text-sm sm:text-base"
           >
             See All Coupons
             <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -251,7 +259,7 @@ export default function PopularCoupons() {
             onClick={() => setActiveTab('latest')}
             className={`flex items-center gap-2 px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 rounded-lg font-semibold transition-all flex-shrink-0 text-sm sm:text-base ${
               activeTab === 'latest'
-                ? 'bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-md'
+                ? 'bg-gradient-to-r from-[#ABC443] to-[#9BB03A] text-white shadow-md'
                 : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
             }`}
           >
@@ -265,7 +273,7 @@ export default function PopularCoupons() {
               </svg>
             )}
             {activeTab === 'latest' && (
-              <span className="bg-white text-red-600 text-xs font-bold px-2 py-0.5 rounded">LATEST</span>
+              <span className="bg-white text-[#ABC443] text-xs font-bold px-2 py-0.5 rounded">LATEST</span>
             )}
             <span>Latest Coupons</span>
           </button>
@@ -274,7 +282,7 @@ export default function PopularCoupons() {
             onClick={() => setActiveTab('popular')}
             className={`flex items-center gap-2 px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 rounded-lg font-semibold transition-all flex-shrink-0 text-sm sm:text-base ${
               activeTab === 'popular'
-                ? 'bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-md'
+                ? 'bg-gradient-to-r from-[#ABC443] to-[#9BB03A] text-white shadow-md'
                 : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
             }`}
           >
@@ -334,7 +342,7 @@ export default function PopularCoupons() {
             {/* Mobile: Horizontal Scrolling Carousel */}
             <div className="md:hidden overflow-x-auto pb-4 -mx-3 sm:-mx-4 px-3 sm:px-4 scrollbar-hide">
               <div className="flex gap-3 min-w-max">
-                {coupons.map((coupon, index) => (
+                {displayCoupons.map((coupon, index) => (
                   coupon ? (
                     <div
                       key={coupon.id}
@@ -402,8 +410,8 @@ export default function PopularCoupons() {
                           onClick={(e) => handleToggleFavorite(e, coupon)}
                           className={`p-2 rounded-lg transition-colors ${
                             coupon.id && isFavorite(coupon.id)
-                              ? 'bg-pink-100 text-pink-600'
-                              : 'bg-gray-100 text-gray-600 hover:bg-pink-100 hover:text-pink-600'
+                              ? 'bg-[#ABC443]/20 text-[#ABC443]'
+                              : 'bg-gray-100 text-gray-600 hover:bg-[#ABC443]/20 hover:text-[#ABC443]'
                           }`}
                           title={coupon.id && isFavorite(coupon.id) ? 'Remove from favorites' : 'Add to favorites'}
                         >
@@ -416,23 +424,22 @@ export default function PopularCoupons() {
                       {/* Get Deal Button */}
                       <button 
                         onClick={(e) => handleGetDeal(coupon, e)}
-                        className="w-full bg-gradient-to-r from-pink-500 via-pink-400 to-orange-500 border-2 border-dashed border-white/60 rounded-lg px-4 py-2.5 sm:px-6 sm:py-3 flex items-center justify-between text-white font-semibold hover:from-pink-600 hover:via-pink-500 hover:to-orange-600 hover:border-white/80 transition-all duration-300 group relative overflow-hidden shadow-md hover:shadow-lg whitespace-nowrap"
-                        style={{ borderStyle: 'dashed', borderWidth: '2px' }}
+                        className="w-full bg-[#ABC443] hover:bg-[#9BB03A] text-white font-semibold rounded-lg px-4 py-2.5 sm:px-6 sm:py-3 flex items-center justify-between transition-all duration-300 shadow-md hover:shadow-lg whitespace-nowrap group relative overflow-hidden"
                       >
                         <span className="flex-1 flex items-center justify-center">
                           {coupon.id && revealedCoupons.has(coupon.id) && coupon.couponType === 'code' && coupon.code ? (
-                            <span className="font-bold text-sm sm:text-base drop-shadow-sm">
+                            <span className="font-bold text-sm sm:text-base">
                               {coupon.code}
                             </span>
                           ) : (
-                            <span className="drop-shadow-sm text-sm sm:text-base">
+                            <span className="text-sm sm:text-base">
                               {getCodePreview(coupon)}
                             </span>
                           )}
                         </span>
                         {getLastTwoDigits(coupon) && !(coupon.id && revealedCoupons.has(coupon.id)) && (
-                          <div className="w-0 opacity-0 group-hover:w-20 group-hover:opacity-100 transition-all duration-300 ease-out flex items-center justify-center border-l-2 border-dashed border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-gradient-to-r from-transparent to-orange-600/20" style={{ borderStyle: 'dashed' }}>
-                            <span className="text-white font-bold text-xs drop-shadow-md">...{getLastTwoDigits(coupon)}</span>
+                          <div className="w-0 opacity-0 group-hover:w-20 group-hover:opacity-100 transition-all duration-300 ease-out flex items-center justify-center border-l-2 border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-white/10">
+                            <span className="text-white font-bold text-xs">...{getLastTwoDigits(coupon)}</span>
                           </div>
                         )}
                       </button>
@@ -454,9 +461,9 @@ export default function PopularCoupons() {
                 ))}
               </div>
             </div>
-            {/* Desktop: Grid Layout */}
+            {/* Desktop: Grid Layout - 8 Slots */}
             <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-            {coupons.map((coupon, index) => (
+            {displayCoupons.map((coupon, index) => (
               coupon ? (
                 <div
                   key={coupon.id}
@@ -489,7 +496,25 @@ export default function PopularCoupons() {
                       </div>
                     )}
                     <h3 className="text-sm sm:text-base font-bold text-gray-900 flex-1">
-                      {coupon.storeName || coupon.code}
+                      {(() => {
+                        // Helper to strip HTML tags
+                        const stripHtml = (html: string) => {
+                          if (!html) return '';
+                          const tmp = document.createElement('DIV');
+                          tmp.innerHTML = html;
+                          return tmp.textContent || tmp.innerText || '';
+                        };
+                        
+                        // Get coupon title - prefer title, then description, then generate from discount
+                        if (coupon.title) return stripHtml(coupon.title);
+                        if (coupon.description) return stripHtml(coupon.description);
+                        if (coupon.discount && coupon.discount > 0) {
+                          return coupon.discountType === 'percentage' 
+                            ? `${coupon.discount}% Off`
+                            : `$${coupon.discount} Off`;
+                        }
+                        return coupon.code || coupon.storeName || 'Coupon';
+                      })()}
                     </h3>
                   </div>
 
@@ -524,8 +549,8 @@ export default function PopularCoupons() {
                       onClick={(e) => handleToggleFavorite(e, coupon)}
                       className={`p-2 rounded-lg transition-colors ${
                         coupon.id && isFavorite(coupon.id)
-                          ? 'bg-pink-100 text-pink-600'
-                          : 'bg-gray-100 text-gray-600 hover:bg-pink-100 hover:text-pink-600'
+                          ? 'bg-[#ABC443]/10 text-[#ABC443]'
+                          : 'bg-gray-100 text-gray-600 hover:bg-[#ABC443]/10 hover:text-[#ABC443]'
                       }`}
                       title={coupon.id && isFavorite(coupon.id) ? 'Remove from favorites' : 'Add to favorites'}
                     >
@@ -538,23 +563,22 @@ export default function PopularCoupons() {
                   {/* Get Deal Button */}
                   <button 
                     onClick={(e) => handleGetDeal(coupon, e)}
-                    className="w-full bg-gradient-to-r from-pink-500 via-pink-400 to-orange-500 border-2 border-dashed border-white/60 rounded-lg px-4 py-2.5 sm:px-6 sm:py-3 flex items-center justify-between text-white font-semibold hover:from-pink-600 hover:via-pink-500 hover:to-orange-600 hover:border-white/80 transition-all duration-300 group relative overflow-hidden shadow-md hover:shadow-lg whitespace-nowrap"
-                    style={{ borderStyle: 'dashed', borderWidth: '2px' }}
+                    className="w-full bg-[#ABC443] hover:bg-[#9BB03A] text-white font-semibold rounded-lg px-4 py-2.5 sm:px-6 sm:py-3 flex items-center justify-between transition-all duration-300 shadow-md hover:shadow-lg whitespace-nowrap group relative overflow-hidden"
                   >
                     <span className="flex-1 flex items-center justify-center">
                       {coupon.id && revealedCoupons.has(coupon.id) && coupon.couponType === 'code' && coupon.code ? (
-                        <span className="font-bold text-sm sm:text-base drop-shadow-sm">
+                        <span className="font-bold text-sm sm:text-base">
                           {coupon.code}
                         </span>
                       ) : (
-                        <span className="drop-shadow-sm text-sm sm:text-base">
+                        <span className="text-sm sm:text-base">
                           {getCodePreview(coupon)}
                         </span>
                       )}
                     </span>
                     {getLastTwoDigits(coupon) && !(coupon.id && revealedCoupons.has(coupon.id)) && (
-                      <div className="w-0 opacity-0 group-hover:w-20 group-hover:opacity-100 transition-all duration-300 ease-out flex items-center justify-center border-l-2 border-dashed border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-gradient-to-r from-transparent to-orange-600/20" style={{ borderStyle: 'dashed' }}>
-                        <span className="text-white font-bold text-xs drop-shadow-md">...{getLastTwoDigits(coupon)}</span>
+                      <div className="w-0 opacity-0 group-hover:w-20 group-hover:opacity-100 transition-all duration-300 ease-out flex items-center justify-center border-l-2 border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-white/10">
+                        <span className="text-white font-bold text-xs">...{getLastTwoDigits(coupon)}</span>
                       </div>
                     )}
                   </button>

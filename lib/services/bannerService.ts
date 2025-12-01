@@ -7,10 +7,13 @@ export interface Banner {
   title: string;
   imageUrl: string;
   layoutPosition?: number | null; // Position in banner layout (1-5)
-  createdAt?: Timestamp;
+  createdAt?: Timestamp | Date | string | null; // Support multiple date formats (Firestore Timestamp, Date, or string from Supabase)
 }
 
-const banners = 'banners';
+// Use environment variable to separate collections between projects
+// Default to 'banners-mimecode' for this new project
+// NEXT_PUBLIC_ prefix makes it available on both client and server
+const banners = process.env.NEXT_PUBLIC_BANNERS_COLLECTION || 'banners-mimecode';
 
 export async function createBanner(title: string, imageFile: File, layoutPosition?: number | null) {
   // Client-side: convert file to base64 and POST to server API for upload
@@ -37,7 +40,7 @@ export async function createBanner(title: string, imageFile: File, layoutPositio
         fileName: imageFile.name,
         contentType: imageFile.type,
         base64,
-        collection: 'banners',
+        collection: banners,
         layoutPosition,
       }),
     });
@@ -63,7 +66,7 @@ export async function createBanner(title: string, imageFile: File, layoutPositio
         const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 
         if (apiKey && projectId) {
-          const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${encodeURIComponent('banners')}?key=${apiKey}`;
+          const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${encodeURIComponent(banners)}?key=${apiKey}`;
           const now = new Date().toISOString();
           const fields: any = {
             title: { stringValue: title || '' },
@@ -117,13 +120,26 @@ export async function createBanner(title: string, imageFile: File, layoutPositio
 
 export async function getBanners(): Promise<Banner[]> {
   try {
-    const querySnapshot = await getDocs(collection(db, banners));
-    return querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    } as Banner));
-  } catch (error) {
-    console.error('Error getting banners:', error);
+    // Use server-side API to fetch banners from Supabase
+    const res = await fetch('/api/banners/get');
+    
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.banners) {
+        return data.banners as Banner[];
+      }
+    }
+    
+    // If API returns error, check what type
+    const errorData = await res.json().catch(() => ({}));
+    
+    // If API fails for any reason, return empty array
+    console.warn('⚠️ Server API failed:', res.status, errorData.error || 'Unknown error');
+    return [];
+    
+  } catch (error: any) {
+    // For any error, just return empty array
+    console.warn('⚠️ Error getting banners:', error.message || error);
     return [];
   }
 }
@@ -158,7 +174,31 @@ export async function getBannersWithLayout(): Promise<(Banner | null)[]> {
 export async function getBannerByLayoutPosition(position: number): Promise<Banner | null> {
   try {
     const allBanners = await getBanners();
-    const banner = allBanners.find(b => b.layoutPosition === position);
+    console.log(`🔍 Looking for banner with layout position ${position} (type: ${typeof position})`);
+    console.log(`📊 Total banners fetched: ${allBanners.length}`);
+    console.log(`📋 Banners with layout positions:`, allBanners.map(b => ({ 
+      id: b.id, 
+      title: b.title, 
+      layoutPosition: b.layoutPosition,
+      layoutPositionType: typeof b.layoutPosition 
+    })));
+    
+    // Try both strict and loose comparison to handle type mismatches
+    const banner = allBanners.find(b => {
+      // Strict equality first
+      if (b.layoutPosition === position) return true;
+      // Loose comparison for type mismatches (string "5" vs number 5)
+      if (Number(b.layoutPosition) === Number(position)) return true;
+      return false;
+    });
+    
+    if (banner) {
+      console.log(`✅ Found banner for layout position ${position}:`, banner.title);
+    } else {
+      console.log(`❌ No banner found for layout position ${position}`);
+      console.log(`🔍 Available layout positions:`, allBanners.map(b => b.layoutPosition).filter(Boolean));
+    }
+    
     return banner || null;
   } catch (error) {
     console.error('Error getting banner by layout position:', error);
@@ -168,8 +208,42 @@ export async function getBannerByLayoutPosition(position: number): Promise<Banne
 
 export async function deleteBanner(id: string) {
   try {
-    const docRef = doc(db, banners, id);
-    await deleteDoc(docRef);
+    // Use server-side API route to delete banner (bypasses security rules)
+    const res = await fetch('/api/banners/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id,
+        collection: banners,
+      }),
+    });
+
+    let json: any = {};
+    let resText = '';
+    try {
+      resText = await res.text();
+      try {
+        json = JSON.parse(resText || '{}');
+      } catch (e) {
+        json = { text: resText };
+      }
+    } catch (e) {
+      console.error('Failed to read server response body', e);
+    }
+
+    if (!res.ok) {
+      console.error('Server delete failed', { status: res.status, body: json });
+      // Fallback to client-side delete (requires proper Firestore rules)
+      try {
+        const docRef = doc(db, banners, id);
+        await deleteDoc(docRef);
+        return { success: true };
+      } catch (fallbackError) {
+        console.error('Client-side delete fallback failed', fallbackError);
+        return { success: false, error: json.error || json.text || 'Failed to delete banner' };
+      }
+    }
+
     return { success: true };
   } catch (error) {
     console.error('Error deleting banner:', error);
@@ -180,20 +254,43 @@ export async function deleteBanner(id: string) {
 /**
  * Create a banner from a URL (e.g., Cloudinary URL)
  * Automatically extracts the original image URL if it's a Cloudinary URL
+ * Uses server-side API to bypass Firestore security rules
  */
 export async function createBannerFromUrl(title: string, imageUrl: string, layoutPosition?: number | null) {
   try {
     // Extract original URL if it's a Cloudinary URL
     const originalUrl = extractOriginalCloudinaryUrl(imageUrl);
     
-    const docRef = await addDoc(collection(db, 'banners'), {
-      title: title || '',
-      imageUrl: originalUrl,
-      layoutPosition: layoutPosition !== undefined ? layoutPosition : null,
-      createdAt: Timestamp.now(),
+    // Use server-side API route to create banner in Supabase
+    const res = await fetch('/api/banners/create-from-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title,
+        imageUrl: originalUrl,
+        layoutPosition,
+      }),
     });
-    
-    return { success: true, id: docRef.id, imageUrl: originalUrl };
+
+    let json: any = {};
+    let resText = '';
+    try {
+      resText = await res.text();
+      try {
+        json = JSON.parse(resText || '{}');
+      } catch (e) {
+        json = { text: resText };
+      }
+    } catch (e) {
+      console.error('Failed to read server response body', e);
+    }
+
+    if (!res.ok) {
+      console.error('Server create from URL failed', { status: res.status, body: json });
+      return { success: false, error: json.error || json.text || 'Failed to create banner' };
+    }
+
+    return { success: true, id: json.id, imageUrl: originalUrl };
   } catch (error) {
     console.error('Error creating banner from URL:', error);
     return { success: false, error };
@@ -203,9 +300,44 @@ export async function createBannerFromUrl(title: string, imageUrl: string, layou
 // Update banner layout position
 export async function updateBanner(id: string, updates: Partial<Banner>) {
   try {
-    const { updateDoc } = await import('firebase/firestore');
-    const docRef = doc(db, 'banners', id);
-    await updateDoc(docRef, updates);
+    // Use server-side API route to update banner (bypasses security rules)
+    const res = await fetch('/api/banners/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id,
+        updates,
+        collection: banners,
+      }),
+    });
+
+    let json: any = {};
+    let resText = '';
+    try {
+      resText = await res.text();
+      try {
+        json = JSON.parse(resText || '{}');
+      } catch (e) {
+        json = { text: resText };
+      }
+    } catch (e) {
+      console.error('Failed to read server response body', e);
+    }
+
+    if (!res.ok) {
+      console.error('Server update failed', { status: res.status, body: json });
+      // Fallback to client-side update (requires proper Firestore rules)
+      try {
+        const { updateDoc } = await import('firebase/firestore');
+        const docRef = doc(db, banners, id);
+        await updateDoc(docRef, updates);
+        return { success: true };
+      } catch (fallbackError) {
+        console.error('Client-side update fallback failed', fallbackError);
+        return { success: false, error: json.error || json.text || 'Failed to update banner' };
+      }
+    }
+
     return { success: true };
   } catch (error) {
     console.error('Error updating banner:', error);

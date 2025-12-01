@@ -30,11 +30,11 @@ export default function TrendingStores() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 md:mb-8 gap-3 sm:gap-4">
             <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold animate-slide-in-left">
               <span className="text-gray-900">Trending</span>{' '}
-              <span className="text-orange-600">Stores</span>
+              <span className="text-[#ABC443]">Stores</span>
             </h2>
             <Link
               href="/stores"
-              className="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap text-sm sm:text-base animate-slide-in-right"
+              className="bg-gradient-to-r from-[#ABC443] to-[#41361A] hover:from-[#41361A] hover:to-[#ABC443] text-white font-semibold px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 rounded-lg transition-all duration-300 flex items-center gap-2 whitespace-nowrap text-sm sm:text-base animate-slide-in-right"
             >
               All Stores
               <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -141,7 +141,7 @@ export default function TrendingStores() {
                           e.preventDefault();
                           window.location.href = `/stores/${store.slug || store.id}`;
                         }}
-                        className="w-full bg-gradient-to-r from-pink-500 via-pink-400 to-orange-500 border-2 border-dashed border-white/60 rounded-lg px-3 py-2 flex items-center justify-between text-white font-semibold hover:from-pink-600 hover:via-pink-500 hover:to-orange-600 hover:border-white/80 transition-all duration-300 group mt-auto text-xs relative overflow-hidden shadow-md hover:shadow-lg"
+                        className="w-full bg-gradient-to-r from-[#ABC443] via-[#ABC443]/90 to-[#41361A] border-2 border-dashed border-white/60 rounded-lg px-3 py-2 flex items-center justify-between text-white font-semibold hover:from-[#41361A] hover:via-[#ABC443]/90 hover:to-[#ABC443] hover:border-white/80 transition-all duration-300 group mt-auto text-xs relative overflow-hidden shadow-md hover:shadow-lg"
                         style={{ borderStyle: 'dashed', borderWidth: '2px' }}
                       >
                         <span className="flex-1 flex items-center justify-center truncate">
@@ -149,7 +149,7 @@ export default function TrendingStores() {
                             {store.voucherText || 'Upto 58% Voucher'}
                           </span>
                         </span>
-                        <div className="w-20 flex items-center justify-center border-l-2 border-dashed border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-gradient-to-r from-transparent to-orange-600/20" style={{ borderStyle: 'dashed' }}>
+                        <div className="w-20 flex items-center justify-center border-l-2 border-dashed border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-gradient-to-r from-transparent to-[#41361A]/20" style={{ borderStyle: 'dashed' }}>
                           <span className="text-white font-bold text-xs drop-shadow-md">Visit Store</span>
                         </div>
                       </button>
@@ -225,7 +225,7 @@ export default function TrendingStores() {
                       e.preventDefault();
                       window.location.href = `/stores/${store.slug || store.id}`;
                     }}
-                    className="w-full bg-gradient-to-r from-pink-500 via-pink-400 to-orange-500 border-2 border-dashed border-white/60 rounded-lg px-3 py-2.5 flex items-center justify-between text-white font-semibold hover:from-pink-600 hover:via-pink-500 hover:to-orange-600 hover:border-white/80 transition-all duration-300 group mt-auto relative overflow-hidden shadow-md hover:shadow-lg"
+                    className="w-full bg-gradient-to-r from-[#ABC443] via-[#ABC443]/90 to-[#41361A] border-2 border-dashed border-white/60 rounded-lg px-3 py-2.5 flex items-center justify-between text-white font-semibold hover:from-[#41361A] hover:via-[#ABC443]/90 hover:to-[#ABC443] hover:border-white/80 transition-all duration-300 group mt-auto relative overflow-hidden shadow-md hover:shadow-lg"
                     style={{ borderStyle: 'dashed', borderWidth: '2px' }}
                   >
                     <span className="flex-1 flex items-center justify-center">
@@ -233,7 +233,7 @@ export default function TrendingStores() {
                         {store.voucherText || 'Upto 58% Voucher'}
                       </span>
                     </span>
-                    <div className="w-24 flex items-center justify-center border-l-2 border-dashed border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-gradient-to-r from-transparent to-orange-600/20" style={{ borderStyle: 'dashed' }}>
+                    <div className="w-24 flex items-center justify-center border-l-2 border-dashed border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-gradient-to-r from-transparent to-[#41361A]/20" style={{ borderStyle: 'dashed' }}>
                       <span className="text-white font-bold text-xs sm:text-sm drop-shadow-md">Visit Store</span>
                     </div>
                   </button>

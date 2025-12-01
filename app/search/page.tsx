@@ -23,7 +23,7 @@ function SearchContent() {
   const [filteredStores, setFilteredStores] = useState<Store[]>([]);
 
   useEffect(() => {
-    document.title = query ? `Search: ${query} - AvailCoupon` : 'Search - AvailCoupon';
+    document.title = query ? `Search: ${query} - MimeCode` : 'Search - MimeCode';
     
     const fetchData = async () => {
       setLoading(true);

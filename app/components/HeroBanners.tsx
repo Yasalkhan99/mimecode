@@ -5,11 +5,13 @@ import { getBannersWithLayout, Banner } from '@/lib/services/bannerService';
 import { getCoupons, Coupon } from '@/lib/services/couponService';
 import { extractOriginalCloudinaryUrl } from '@/lib/utils/cloudinary';
 import Image from 'next/image';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function HeroBanners() {
   const [banners, setBanners] = useState<(Banner | null)[]>(Array(4).fill(null));
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
+  const [bannerSet, setBannerSet] = useState<{ imageUrl: string; title?: string }[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -18,6 +20,7 @@ export default function HeroBanners() {
           getBannersWithLayout(),
           getCoupons()
         ]);
+        console.log(' banner bannersData:', bannersData); // Debug log
         setBanners(bannersData);
         setCoupons(couponsData);
       } catch (error) {
@@ -29,203 +32,303 @@ export default function HeroBanners() {
     fetchData();
   }, []);
 
+  // Prepare banner data
+  useEffect(() => {
+    if (loading) return;
+
+    const couponsWithLogo = coupons.filter((coupon) => coupon.logoUrl);
+
+    const processLogoUrl = (rawUrl: string | undefined): string | undefined => {
+      if (!rawUrl) return undefined;
+      if (rawUrl.includes('/image/image/upload/') || rawUrl.match(/res\.cloudinary\.com\/image\//)) {
+        const fileName = rawUrl.split('/').pop() || '';
+        return `https://res.cloudinary.com/dyh3jmwtd/image/upload/${fileName}`;
+      }
+      const extracted = extractOriginalCloudinaryUrl(rawUrl);
+      if (extracted && extracted.includes('res.cloudinary.com') && !extracted.includes('/image/image/') && !extracted.match(/res\.cloudinary\.com\/image\//)) {
+        return extracted;
+      }
+      return rawUrl;
+    };
+
+    const allBanners = [
+      banners[0] && banners[0].imageUrl ? { imageUrl: banners[0].imageUrl, title: banners[0].title } : 
+      (couponsWithLogo[0]?.logoUrl ? { imageUrl: processLogoUrl(couponsWithLogo[0].logoUrl) || '', title: couponsWithLogo[0].code } : null),
+      banners[1] && banners[1].imageUrl ? { imageUrl: banners[1].imageUrl, title: banners[1].title } : 
+      (couponsWithLogo[1]?.logoUrl ? { imageUrl: processLogoUrl(couponsWithLogo[1].logoUrl) || '', title: couponsWithLogo[1].code } : null),
+      banners[2] && banners[2].imageUrl ? { imageUrl: banners[2].imageUrl, title: banners[2].title } : 
+      (couponsWithLogo[2]?.logoUrl ? { imageUrl: processLogoUrl(couponsWithLogo[2].logoUrl) || '', title: couponsWithLogo[2].code } : null),
+      banners[3] && banners[3].imageUrl ? { imageUrl: banners[3].imageUrl, title: banners[3].title } : 
+      (couponsWithLogo[3]?.logoUrl ? { imageUrl: processLogoUrl(couponsWithLogo[3].logoUrl) || '', title: couponsWithLogo[3].code } : null),
+    ].filter(Boolean) as { imageUrl: string; title?: string }[];
+
+    console.log(' banner allBanners:', allBanners); // Debug log
+    
+    if (allBanners.length > 0) {
+      setBannerSet(allBanners);
+    }
+  }, [banners, coupons, loading]);
+
+  // Shuffle banners every 4 seconds
+  useEffect(() => {
+    if (bannerSet.length <= 1) return;
+
+    const shuffleInterval = setInterval(() => {
+      setBannerSet((prev) => {
+        // Create a shuffled copy
+        const shuffled = [...prev];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+      });
+    }, 4000); // Shuffle every 4 seconds
+
+    return () => clearInterval(shuffleInterval);
+  }, [bannerSet.length]);
+
   if (loading) {
     return (
       <div className="w-full px-2 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
         <div className="flex flex-col md:flex-row gap-3 sm:gap-4 max-w-[1840px] mx-auto">
-          <div className="w-full md:w-[50.5%] aspect-[930/547] bg-gray-200 animate-pulse rounded-lg"></div>
-          <div className="w-full md:w-[24.9%] aspect-[459/547] bg-gray-200 animate-pulse rounded-lg"></div>
+          <div className="w-full md:w-[50.5%] aspect-[930/547] bg-gray-200 animate-pulse rounded-2xl"></div>
+          <div className="w-full md:w-[24.9%] aspect-[459/547] bg-gray-200 animate-pulse rounded-2xl"></div>
           <div className="w-full md:w-[24.5%] flex flex-col gap-3 sm:gap-4">
-            <div className="w-full aspect-[451/264] bg-gray-200 animate-pulse rounded-lg"></div>
-            <div className="w-full aspect-[451/264] bg-gray-200 animate-pulse rounded-lg"></div>
+            <div className="w-full aspect-[451/264] bg-gray-200 animate-pulse rounded-2xl"></div>
+            <div className="w-full aspect-[451/264] bg-gray-200 animate-pulse rounded-2xl"></div>
           </div>
         </div>
       </div>
     );
   }
 
-  // Get banners for different positions - all 4 cards in the grid
-  // Banner 1: 930px × 547px (aspect ratio: 930/547 ≈ 1.70)
-  // Banner 2: 459px × 547px (aspect ratio: 459/547 ≈ 0.84)
-  // Banner 3: 451px × 264px (aspect ratio: 451/264 ≈ 1.71)
-  // Banner 4: 451px × 264px (aspect ratio: 451/264 ≈ 1.71)
-  
-  // Use coupon logoUrl(s) for banner selection: fill banners from filtered coupons in order
-  const couponsWithLogo = coupons.filter((coupon) => coupon.logoUrl);
-
-  // helper to process a coupon logo URL: try to fix malformed cloudinary urls or extract original
-  const processLogoUrl = (rawUrl: string | undefined): string | undefined => {
-    if (!rawUrl) return undefined;
-    // malformed pattern: '/image/image/upload/' or 'res.cloudinary.com/image/'
-    if (rawUrl.includes('/image/image/upload/') || rawUrl.match(/res\.cloudinary\.com\/image\//)) {
-      const fileName = rawUrl.split('/').pop() || '';
-      return `https://res.cloudinary.com/dyh3jmwtd/image/upload/${fileName}`;
-    }
-    const extracted = extractOriginalCloudinaryUrl(rawUrl);
-    if (extracted && extracted.includes('res.cloudinary.com') && !extracted.includes('/image/image/') && !extracted.match(/res\.cloudinary\.com\/image\//)) {
-      return extracted;
-    }
-    // fallback to raw
-    return rawUrl;
+  // Get current 4 banners (or fill with null if less than 4)
+  const getBannerAt = (index: number) => {
+    return bannerSet[index] || null;
   };
 
-  // Use banners with layout positions (1-4)
-  // Layout 1: Large Left (index 0) - 930×547px
-  // Layout 2: Middle (index 1) - 459×547px
-  // Layout 3: Top Right (index 2) - 451×264px
-  // Layout 4: Bottom Right (index 3) - 451×264px
-  
-  // If no banner at position, fallback to coupons with logo
-  const largeLeftBanner = banners[0] ? { imageUrl: banners[0].imageUrl, title: banners[0].title } : 
-    (couponsWithLogo[0]?.logoUrl ? { imageUrl: processLogoUrl(couponsWithLogo[0].logoUrl) || '', title: couponsWithLogo[0].code } : null);
-  
-  const middleBanner = banners[1] ? { imageUrl: banners[1].imageUrl, title: banners[1].title } : 
-    (couponsWithLogo[1]?.logoUrl ? { imageUrl: processLogoUrl(couponsWithLogo[1].logoUrl) || '', title: couponsWithLogo[1].code } : null);
-  
-  const topRightBanner = banners[2] ? { imageUrl: banners[2].imageUrl, title: banners[2].title } : 
-    (couponsWithLogo[2]?.logoUrl ? { imageUrl: processLogoUrl(couponsWithLogo[2].logoUrl) || '', title: couponsWithLogo[2].code } : null);
-  
-  const bottomRightBanner = banners[3] ? { imageUrl: banners[3].imageUrl, title: banners[3].title } : 
-    (couponsWithLogo[3]?.logoUrl ? { imageUrl: processLogoUrl(couponsWithLogo[3].logoUrl) || '', title: couponsWithLogo[3].code } : null);
+  const largeLeftBanner = getBannerAt(0);
+  const middleBanner = getBannerAt(1);
+  const topRightBanner = getBannerAt(2);
+  const bottomRightBanner = getBannerAt(3);
 
-  return (
-    <div className="w-full px-2 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8 animate-fade-in-up">
-      {/* Main Banner Grid - Responsive across all devices */}
-      <div className="flex flex-col md:flex-row gap-2 sm:gap-3 md:gap-4 max-w-[1840px] mx-auto">
-        {/* Banner 1 - Large Left: 930px × 547px (50.5% width on medium+ screens) */}
-        <div className="w-full md:w-[50.5%] aspect-[930/547] min-h-[200px] sm:min-h-[300px]">
-          {largeLeftBanner ? (
-            <div className="relative w-full h-full rounded-lg overflow-hidden bg-pink-50 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center">
-              {largeLeftBanner.imageUrl.includes('res.cloudinary.com') || largeLeftBanner.imageUrl.includes('storage.googleapis.com') ? (
+  // Animation variants for shuffle effect
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15,
+        delayChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { 
+      opacity: 0, 
+      scale: 0.8,
+      y: 50,
+      rotate: -5
+    },
+    visible: { 
+      opacity: 1, 
+      scale: 1,
+      y: 0,
+      rotate: 0,
+      transition: {
+        type: "spring" as const,
+        stiffness: 100,
+        damping: 15
+      }
+    },
+    exit: {
+      opacity: 0,
+      scale: 0.8,
+      y: -50,
+      rotate: 5,
+      transition: {
+        duration: 0.4
+      }
+    }
+  };
+
+  const floatVariants = {
+    animate: {
+      y: [0, -10, 0],
+      transition: {
+        duration: 4,
+        repeat: Infinity,
+        ease: "easeInOut" as const
+      }
+    }
+  };
+
+  // Animated Banner Component with Framer Motion
+  const AnimatedBanner = ({ 
+    banner, 
+    shape = 'rounded-xl',
+    title,
+    index
+  }: { 
+    banner: { imageUrl: string; title?: string } | null; 
+    shape?: string;
+    title?: string;
+    index: number;
+  }) => {
+    return (
+      <motion.div
+        key={`banner-${index}-${banner?.imageUrl || 'empty'}`}
+        variants={itemVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        whileHover={{ 
+          scale: 1.05, 
+          y: -8,
+          transition: { duration: 0.3 }
+        }}
+        className="relative w-full h-full group"
+      >
+        <motion.div
+          variants={floatVariants}
+          animate="animate"
+          style={{ animationDelay: `${index * 0.5}s` }}
+          className={`relative w-full h-full ${shape} overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 shadow-lg`}
+        >
+          {/* Animated gradient overlay */}
+          <motion.div 
+            className="absolute inset-0 bg-gradient-to-br from-blue-500/0 via-purple-500/0 to-pink-500/0 z-10"
+            whileHover={{
+              background: [
+                'linear-gradient(135deg, rgba(59, 130, 246, 0) 0%, rgba(147, 51, 234, 0) 50%, rgba(236, 72, 153, 0) 100%)',
+                'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 50%, rgba(236, 72, 153, 0.1) 100%)',
+              ]
+            }}
+            transition={{ duration: 0.7 }}
+          />
+          
+          {/* Shine effect */}
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+            initial={{ x: '-100%', skewX: -12 }}
+            whileHover={{ x: '200%' }}
+            transition={{ duration: 1, ease: "easeInOut" }}
+          />
+
+          {banner ? (
+            <>
+              {banner.imageUrl.includes('res.cloudinary.com') || banner.imageUrl.includes('storage.googleapis.com') ? (
                 <Image
-                  src={largeLeftBanner.imageUrl}
-                  alt={largeLeftBanner?.title || 'Banner 1'}
+                  src={banner.imageUrl}
+                  alt={banner?.title || title || 'Banner'}
                   fill
                   className="object-contain w-full h-full"
-                  priority
                   sizes="(max-width: 640px) 100vw, (max-width: 768px) 100vw, (max-width: 1024px) 50vw, 50.5vw"
                   onError={(e) => {
-                    console.error('Image failed to load:', largeLeftBanner.imageUrl);
+                    console.error('Image failed to load:', banner.imageUrl);
                   }}
                 />
               ) : (
                 <img
-                  src={largeLeftBanner.imageUrl}
-                  alt={largeLeftBanner?.title || 'Banner 1'}
+                  src={banner.imageUrl}
+                  alt={banner?.title || title || 'Banner'}
                   className="w-full h-full object-contain"
                   style={{ display: 'block', maxWidth: '100%', maxHeight: '100%' }}
                   onError={(e) => {
-                    console.error('Image failed to load:', largeLeftBanner.imageUrl);
-                    console.error('Error:', e);
+                    console.error('Image failed to load:', banner.imageUrl);
                   }}
                 />
               )}
-            </div>
-          ) : (
-            <div className="w-full h-full rounded-lg bg-pink-50 flex items-center justify-center border-2 border-dashed border-pink-200">
-              <p className="text-gray-400 text-xs sm:text-sm">Banner 1</p>
-            </div>
-          )}
-        </div>
-
-        {/* Banner 2 - Middle: 459px × 547px (24.9% width on medium+ screens) */}
-        <div className="w-full md:w-[24.9%] aspect-[459/547] min-h-[200px] sm:min-h-[300px]">
-          {middleBanner ? (
-            <div className="relative w-full h-full rounded-lg overflow-hidden bg-black shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center">
-              {middleBanner.imageUrl.includes('res.cloudinary.com') || middleBanner.imageUrl.includes('storage.googleapis.com') ? (
-                <Image
-                  src={middleBanner.imageUrl}
-                  alt={middleBanner?.title || 'Banner 2'}
-                  fill
-                  className="object-cover w-full h-full"
-                  sizes="(max-width: 640px) 100vw, (max-width: 768px) 100vw, (max-width: 1024px) 25vw, 24.9vw"
-                />
-              ) : (
-                <img
-                  src={middleBanner.imageUrl}
-                  alt={middleBanner?.title || 'Banner 2'}
-                  className="w-full h-full object-contain"
-                  style={{ display: 'block', maxWidth: '100%', maxHeight: '100%' }}
-                  onError={(e) => {
-                    console.error('Middle banner image failed to load:', middleBanner.imageUrl);
-                    console.error('Error:', e);
-                  }}
-                />
+              
+              {/* Title overlay */}
+              {banner.title && (
+                <motion.div
+                  initial={{ y: '100%' }}
+                  whileHover={{ y: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent p-3 sm:p-4 z-20"
+                >
+                  <h3 className="text-white text-sm sm:text-base md:text-lg font-semibold tracking-wide text-center">
+                    {banner.title}
+                  </h3>
+                </motion.div>
               )}
-            </div>
+            </>
           ) : (
-            <div className="w-full h-full rounded-lg bg-black flex items-center justify-center border-2 border-dashed border-gray-700">
-              <p className="text-gray-400 text-white text-xs sm:text-sm">Banner 2</p>
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+              <div className="text-center">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                  className="w-16 h-16 mx-auto mb-3 border-4 border-gray-400 rounded-full flex items-center justify-center"
+                >
+                  <span className="text-gray-500 text-2xl">✦</span>
+                </motion.div>
+                <p className="text-gray-500 text-xs sm:text-sm">{title || 'Banner'}</p>
+              </div>
             </div>
           )}
-        </div>
+        </motion.div>
+      </motion.div>
+    );
+  };
 
-        {/* Right Side - Two Stacked Banners: 451px width (24.5% on medium+ screens) */}
-        <div className="w-full md:w-[24.5%] flex flex-col gap-3 sm:gap-4">
-          {/* Banner 3 - Top Right: 451px × 264px */}
-          <div className="w-full aspect-[451/264] min-h-[150px] sm:min-h-[180px]">
-            {topRightBanner ? (
-              <div className="relative w-full h-full rounded-lg overflow-hidden bg-orange-50 shadow-lg hover:shadow-xl transition-shadow">
-                {topRightBanner.imageUrl.includes('res.cloudinary.com') || topRightBanner.imageUrl.includes('storage.googleapis.com') ? (
-                  <Image
-                    src={topRightBanner.imageUrl}
-                    alt={topRightBanner?.title || 'Banner 3'}
-                    fill
-                    className="object-cover w-full h-full"
-                    sizes="(max-width: 640px) 100vw, (max-width: 768px) 100vw, (max-width: 1024px) 25vw, 24.5vw"
-                  />
-                ) : (
-                  <img
-                    src={topRightBanner.imageUrl}
-                    alt={topRightBanner?.title || 'Banner 3'}
-                    className="w-full h-full object-cover"
-                    style={{ display: 'block', width: '100%', height: '100%' }}
-                    onError={(e) => {
-                      console.error('Top right banner image failed to load:', topRightBanner.imageUrl);
-                    }}
-                  />
-                )}
-              </div>
-            ) : (
-              <div className="w-full h-full rounded-lg bg-orange-50 flex items-center justify-center border-2 border-dashed border-orange-200">
-                <p className="text-gray-400 text-xs">Banner 3</p>
-              </div>
-            )}
+  return (
+    <div className="w-full px-2 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={bannerSet.join('-')}
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="flex flex-col md:flex-row gap-3 sm:gap-4 max-w-[1840px] mx-auto"
+        >
+          {/* Banner 1 - Large Left */}
+          <div className="w-full md:w-[50.5%] aspect-[930/547] min-h-[200px] sm:min-h-[300px]">
+            <AnimatedBanner 
+              banner={largeLeftBanner} 
+              shape="rounded-tl-3xl rounded-br-3xl rounded-tr-lg rounded-bl-lg"
+              title="Banner 1"
+              index={0}
+            />
           </div>
 
-          {/* Banner 4 - Bottom Right: 451px × 264px */}
-          <div className="w-full aspect-[451/264] min-h-[150px] sm:min-h-[180px]">
-            {bottomRightBanner ? (
-              <div className="relative w-full h-full rounded-lg overflow-hidden bg-pink-50 shadow-lg hover:shadow-xl transition-shadow">
-                {bottomRightBanner.imageUrl.includes('res.cloudinary.com') || bottomRightBanner.imageUrl.includes('storage.googleapis.com') ? (
-                  <Image
-                    src={bottomRightBanner.imageUrl}
-                    alt={bottomRightBanner?.title || 'Banner 4'}
-                    fill
-                    className="object-cover w-full h-full"
-                    sizes="(max-width: 640px) 100vw, (max-width: 768px) 100vw, (max-width: 1024px) 25vw, 24.5vw"
-                  />
-                ) : (
-                  <img
-                    src={bottomRightBanner.imageUrl}
-                    alt={bottomRightBanner?.title || 'Banner 4'}
-                    className="w-full h-full object-cover"
-                    style={{ display: 'block', width: '100%', height: '100%' }}
-                    onError={(e) => {
-                      console.error('Bottom right banner image failed to load:', bottomRightBanner.imageUrl);
-                    }}
-                  />
-                )}
-              </div>
-            ) : (
-              <div className="w-full h-full rounded-lg bg-pink-50 flex items-center justify-center border-2 border-dashed border-pink-200">
-                <p className="text-gray-400 text-xs">Banner 4</p>
-              </div>
-            )}
+          {/* Banner 2 - Middle */}
+          <div className="w-full md:w-[24.9%] aspect-[459/547] min-h-[200px] sm:min-h-[300px]">
+            <AnimatedBanner 
+              banner={middleBanner} 
+              shape="rounded-full"
+              title="Banner 2"
+              index={1}
+            />
           </div>
-        </div>
-      </div>
+
+          {/* Right Side - Two Stacked Banners */}
+          <div className="w-full md:w-[24.5%] flex flex-col gap-3 sm:gap-4">
+            {/* Banner 3 - Top Right */}
+            <div className="w-full aspect-[451/264] min-h-[150px] sm:min-h-[180px]">
+              <AnimatedBanner 
+                banner={topRightBanner} 
+                shape="rounded-bl-3xl rounded-br-3xl rounded-tl-lg rounded-tr-lg"
+                title="Banner 3"
+                index={2}
+              />
+            </div>
+
+            {/* Banner 4 - Bottom Right */}
+            <div className="w-full aspect-[451/264] min-h-[150px] sm:min-h-[180px]">
+              <AnimatedBanner 
+                banner={bottomRightBanner} 
+                shape="rounded-tl-3xl rounded-tr-3xl rounded-bl-lg rounded-br-lg"
+                title="Banner 4"
+                index={3}
+              />
+            </div>
+          </div>
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }
-
