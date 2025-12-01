@@ -428,7 +428,7 @@ export default function RegionSpecificOffers() {
         let storesWithoutRegion = 0;
         
         storesData.forEach(store => {
-          const url = store.websiteUrl || store.url || '';
+          const url = store.websiteUrl || '';
           const domain = extractDomain(url);
           const regionName = getRegionFromDomain(domain);
           
