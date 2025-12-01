@@ -1183,21 +1183,22 @@ export default function Home() {
                         
                         // Create a temporary coupon object for stores to work with popup
                         const storeCoupon: Coupon = {
-                          id: `store-${store.id}`,
+                          id: `store-${store.id || 'unknown'}`,
                           title: storeName,
                           description: `Visit ${storeName} for great deals`,
                           storeName: storeName,
-                          storeIds: [store.id],
+                          storeIds: store.id ? [store.id] : [],
                           url: storeUrl || '',
                           logoUrl: logoUrl || '',
                           discount: 25,
                           discountType: 'percentage',
                           couponType: 'deal',
                           dealScope: 'sitewide',
-                          code: null,
-                          expiryDate: null,
-                          createdAt: new Date(),
-                          updatedAt: new Date()
+                          code: '',
+                          isActive: true,
+                          maxUses: 1000,
+                          currentUses: 0,
+                          expiryDate: null
                         };
                         
                         return (
@@ -1286,6 +1287,8 @@ export default function Home() {
                       }
 
                       // Featured Deal Card - Modern Style (for coupons)
+                      if (!coupon) return null;
+                      
                       // Handle expiryDate - can be string, Date, or Firestore Timestamp
                       const getExpiryDate = (expiryDate: any): Date | null => {
                         if (!expiryDate) return null;
@@ -1302,7 +1305,7 @@ export default function Home() {
                         }
                         return null;
                       };
-                      const expiryDateObj = getExpiryDate(coupon?.expiryDate);
+                      const expiryDateObj = getExpiryDate(coupon.expiryDate);
                       const isExpired = expiryDateObj ? expiryDateObj < new Date() : false;
                       
                       return (
