@@ -50,6 +50,8 @@ export default function Home() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const sliderRef = useRef<HTMLDivElement>(null);
   const featuredDealsSliderRef = useRef<HTMLDivElement>(null);
+  const storesOfSeasonSliderRef = useRef<HTMLDivElement>(null);
+  const [isStoresOfSeasonPaused, setIsStoresOfSeasonPaused] = useState(false);
 
   useEffect(() => {
     const hasSeenModal = localStorage.getItem('contactModalShown');
@@ -81,9 +83,10 @@ export default function Home() {
         setAllCoupons(couponsData); // Store all coupons for Featured Deals
         setLatestNews(newsData.slice(0, 4));
         
-        // Filter latest coupons: Get 8 unique store coupons from all coupons
-        // Use all coupons instead of just latestCouponsData to get variety from all stores
-        const filteredLatestCoupons = filterCouponsWithFavicons(couponsData, allStoresData);
+        // Filter latest coupons: Only show CODE type coupons (not deals)
+        // Get 8 unique store coupons from all code type coupons
+        const codeCouponsOnly = couponsData.filter(coupon => coupon.couponType === 'code');
+        const filteredLatestCoupons = filterCouponsWithFavicons(codeCouponsOnly, allStoresData);
         setLatestCouponsWithLayout(filteredLatestCoupons);
         setCategories(categoriesData.slice(0, 6));
         setAllStores(allStoresData);
@@ -838,7 +841,7 @@ export default function Home() {
                   className="flex gap-4 md:gap-5"
                   style={{ 
                     width: 'fit-content',
-                    animation: 'scrollLeft 30s linear infinite',
+                    animation: 'scrollLeft 900s linear infinite',
                     animationPlayState: isSliderPaused ? 'paused' : 'running',
                     willChange: 'transform'
                   }}
@@ -1116,7 +1119,7 @@ export default function Home() {
                     className="flex gap-4 md:gap-5"
                     style={{ 
                       width: 'fit-content',
-                      animation: 'scrollLeft 30s linear infinite',
+                      animation: 'scrollLeft 900s linear infinite',
                       animationPlayState: isFeaturedDealsPaused ? 'paused' : 'running',
                       willChange: 'transform'
                     }}
@@ -1567,18 +1570,38 @@ export default function Home() {
                     </h2>
                   </motion.div>
                   
-                  {/* Horizontal Scrollable Store Logos */}
-                  <div className="relative overflow-hidden mb-6 md:mb-8">
-                    <div className="flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide pb-4" style={{ scrollBehavior: 'smooth' }}>
-                      {(selectedCategoryId 
-                        ? allStores.filter(store => store && store.logoUrl && store.categoryId === selectedCategoryId)
-                        : allStores.filter(store => store && store.logoUrl)
-                      ).map((store, index) => (
-                        <Link
-                          key={store.id || `store-${index}`}
-                          href={`/stores/${store.slug || store.id}`}
-                          className="flex flex-col items-center flex-shrink-0 group"
-                        >
+                  {/* Horizontal Scrollable Store Logos - Auto Scroll */}
+                  <div 
+                    className="relative overflow-hidden mb-6 md:mb-8"
+                    onMouseEnter={() => setIsStoresOfSeasonPaused(true)}
+                    onMouseLeave={() => setIsStoresOfSeasonPaused(false)}
+                  >
+                    <div 
+                      ref={storesOfSeasonSliderRef}
+                      className="flex gap-4 md:gap-6 pb-4"
+                      style={{ 
+                        width: 'fit-content',
+                        animation: 'scrollLeft 900s linear infinite',
+                        animationPlayState: isStoresOfSeasonPaused ? 'paused' : 'running',
+                        willChange: 'transform'
+                      }}
+                    >
+                      {/* Duplicate stores 3 times for seamless infinite scroll */}
+                      {(() => {
+                        const storesWithLogos = selectedCategoryId 
+                          ? allStores.filter(store => store && store.logoUrl && store.categoryId === selectedCategoryId)
+                          : allStores.filter(store => store && store.logoUrl);
+                        
+                        return [...storesWithLogos, ...storesWithLogos, ...storesWithLogos].map((store, index) => {
+                          const copyNumber = Math.floor(index / storesWithLogos.length);
+                          const originalIndex = index % storesWithLogos.length;
+                          
+                          return (
+                            <Link
+                              key={`store-${store.id || originalIndex}-copy-${copyNumber}-idx-${index}`}
+                              href={`/stores/${store.slug || store.id}`}
+                              className="flex flex-col items-center flex-shrink-0 group"
+                            >
                           {/* Circular Logo Container */}
                           <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full bg-white shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center p-3 mb-3 group-hover:scale-105">
                             {store.logoUrl ? (
@@ -1608,7 +1631,9 @@ export default function Home() {
                             {store.name || 'Store'}
                           </p>
                         </Link>
-                      ))}
+                          );
+                        });
+                      })()}
                     </div>
                   </div>
 
