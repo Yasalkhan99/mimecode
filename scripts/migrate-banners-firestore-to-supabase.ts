@@ -110,6 +110,16 @@ interface MigrationResult {
   errors: Array<{ id: string; error: string }>;
 }
 
+interface BannerData {
+  id: string;
+  title?: string;
+  imageUrl?: string;
+  layoutPosition?: number | null;
+  createdAt?: admin.firestore.Timestamp | Date | string | null;
+  updatedAt?: admin.firestore.Timestamp | Date | string | null;
+  [key: string]: any; // Allow other properties from Firestore
+}
+
 async function migrateBanners(): Promise<MigrationResult> {
   const result: MigrationResult = {
     collection: collectionName,
@@ -134,22 +144,26 @@ async function migrateBanners(): Promise<MigrationResult> {
 
     // Process banners in batches
     const batchSize = 10;
-    const banners = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const banners: BannerData[] = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+      } as BannerData;
+    });
 
     for (let i = 0; i < banners.length; i += batchSize) {
       const batch = banners.slice(i, i + batchSize);
       console.log(`\n📤 Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(banners.length / batchSize)}`);
 
-      for (const banner of batch) {
+      for (const bannerItem of batch) {
+        const banner: BannerData = bannerItem;
         try {
           // Convert Firestore timestamp to ISO string
           let createdAt = null;
           if (banner.createdAt) {
-            if (banner.createdAt.toDate) {
-              createdAt = banner.createdAt.toDate().toISOString();
+            if (banner.createdAt instanceof admin.firestore.Timestamp || (banner.createdAt && typeof (banner.createdAt as any).toDate === 'function')) {
+              createdAt = (banner.createdAt as admin.firestore.Timestamp).toDate().toISOString();
             } else if (banner.createdAt instanceof Date) {
               createdAt = banner.createdAt.toISOString();
             } else if (typeof banner.createdAt === 'string') {
