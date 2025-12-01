@@ -41,14 +41,21 @@ try {
     private_key: formattedPrivateKey
   };
   
-  // Convert to JSON string and wrap in single quotes
-  const envValue = JSON.stringify(formattedServiceAccount).replace(/'/g, "\\'");
+  // Convert to JSON string
+  const envValue = JSON.stringify(formattedServiceAccount);
   
-  console.log('\n✅ Formatted FIREBASE_ADMIN_SA for .env.local:\n');
+  console.log('\n✅ Formatted FIREBASE_ADMIN_SA:\n');
   console.log('─'.repeat(80));
-  console.log(`FIREBASE_ADMIN_SA='${envValue}'`);
+  console.log('\n📋 For .env.local (with quotes):');
+  console.log(`FIREBASE_ADMIN_SA='${envValue.replace(/'/g, "\\'")}'`);
+  console.log('\n📋 For Vercel Environment Variables (NO quotes, paste directly):');
   console.log('─'.repeat(80));
-  console.log('\n📋 Copy the line above and paste it into your .env.local file\n');
+  console.log(envValue);
+  console.log('─'.repeat(80));
+  console.log('\n💡 Important for Vercel:');
+  console.log('   1. Copy the value WITHOUT quotes');
+  console.log('   2. Paste it directly into Vercel Environment Variable');
+  console.log('   3. Do NOT add quotes around it\n');
   
 } catch (error) {
   console.error('❌ Error processing file:', error.message);

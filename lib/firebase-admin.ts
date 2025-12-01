@@ -75,20 +75,62 @@ if (!admin.apps.length) {
       
       // Remove surrounding quotes if present (common issue with .env files)
       serviceAccountString = serviceAccountString.trim();
+      
+      // Remove outer quotes (single or double)
       if ((serviceAccountString.startsWith('"') && serviceAccountString.endsWith('"')) ||
           (serviceAccountString.startsWith("'") && serviceAccountString.endsWith("'"))) {
         serviceAccountString = serviceAccountString.slice(1, -1);
-        // Unescape quotes if they were escaped
-        serviceAccountString = serviceAccountString.replace(/\\"/g, '"').replace(/\\'/g, "'");
       }
       
+      // Try to parse - handle various escaping scenarios
       let serviceAccount;
+      let parseAttempts = [];
+      
+      // Attempt 1: Try parsing as-is
       try {
         serviceAccount = JSON.parse(serviceAccountString);
-      } catch (parseError) {
-        console.error('❌ Failed to parse FIREBASE_ADMIN_SA as JSON:', parseError);
-        console.error('💡 Tip: Check if FIREBASE_ADMIN_SA has proper JSON format. Consider using FIREBASE_SERVICE_ACCOUNT_PATH instead.');
-        throw new Error(`Invalid JSON in FIREBASE_ADMIN_SA: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+      } catch (parseError1) {
+        parseAttempts.push({ attempt: 1, error: parseError1, string: serviceAccountString });
+        
+        // Attempt 2: Unescape quotes (handle {\"type\" -> {"type")
+        try {
+          let attempt2 = serviceAccountString.replace(/\\"/g, '"').replace(/\\'/g, "'");
+          serviceAccount = JSON.parse(attempt2);
+        } catch (parseError2) {
+          parseAttempts.push({ attempt: 2, error: parseError2 });
+          
+          // Attempt 3: Handle double-encoded JSON (if stored as string)
+          try {
+            const decoded = JSON.parse(serviceAccountString);
+            if (typeof decoded === 'string') {
+              serviceAccount = JSON.parse(decoded);
+            } else {
+              serviceAccount = decoded;
+            }
+          } catch (parseError3) {
+            parseAttempts.push({ attempt: 3, error: parseError3 });
+            
+            // Attempt 4: Try unescaping then parsing as string
+            try {
+              let attempt4 = serviceAccountString.replace(/\\"/g, '"').replace(/\\'/g, "'");
+              const decoded4 = JSON.parse(attempt4);
+              if (typeof decoded4 === 'string') {
+                serviceAccount = JSON.parse(decoded4);
+              } else {
+                serviceAccount = decoded4;
+              }
+            } catch (parseError4) {
+              // All attempts failed - log details
+              console.error('❌ Failed to parse FIREBASE_ADMIN_SA as JSON after multiple attempts');
+              parseAttempts.forEach((attempt, idx) => {
+                console.error(`Attempt ${attempt.attempt} error:`, attempt.error instanceof Error ? attempt.error.message : String(attempt.error));
+              });
+              console.error('💡 First 200 chars of original string:', serviceAccountString.substring(0, 200));
+              console.error('💡 String starts with:', serviceAccountString.substring(0, 10));
+              throw new Error(`Invalid JSON in FIREBASE_ADMIN_SA: ${parseError1 instanceof Error ? parseError1.message : String(parseError1)}`);
+            }
+          }
+        }
       }
       
       // Validate required fields
