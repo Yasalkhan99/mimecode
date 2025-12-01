@@ -846,7 +846,7 @@ export default function Home() {
                     willChange: 'transform'
                   }}
                 >
-              {[...displayLatestCoupons, ...displayLatestCoupons].map((coupon, index) => {
+              {[...displayLatestCoupons, ...displayLatestCoupons, ...displayLatestCoupons].map((coupon, index) => {
                 const layoutNumber = (index % displayLatestCoupons.length) + 1;
                 const isDuplicate = index >= displayLatestCoupons.length;
 
