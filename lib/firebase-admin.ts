@@ -12,8 +12,13 @@ const require = createRequire(process.cwd() + '/');
 
 // Initialize Firebase Admin if not already initialized
 if (!admin.apps.length) {
-  // Method 1: Try service account file path first (easier for local development)
-  if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
+  // Check if we're in a serverless/production environment (Vercel, etc.)
+  const isServerless = !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+  
+  // Priority: On serverless (Vercel), skip file path and use FIREBASE_ADMIN_SA only
+  // On local, try file path first, then FIREBASE_ADMIN_SA as fallback
+  if (!isServerless && process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
+    // Local development: Try file path first
     try {
       console.log('🔧 Attempting to initialize Firebase Admin from file:', process.env.FIREBASE_SERVICE_ACCOUNT_PATH);
       
@@ -50,15 +55,15 @@ if (!admin.apps.length) {
       console.error('Error details:', error instanceof Error ? error.stack : String(error));
       if (error instanceof Error) {
         if (error.message.includes('ENOENT') || error.message.includes('Cannot find module')) {
-          console.error('💡 File not found. Please check the file path in FIREBASE_SERVICE_ACCOUNT_PATH');
+          console.error('💡 File not found. Falling back to FIREBASE_ADMIN_SA...');
         } else if (error.message.includes('Unexpected token')) {
-          console.error('💡 Invalid JSON format in service account file');
+          console.error('💡 Invalid JSON format in service account file. Falling back to FIREBASE_ADMIN_SA...');
         }
       }
     }
   }
   
-  // Method 2: Try environment variable (if file path method didn't work)
+  // Method 2: Try environment variable (priority on serverless/production)
   if (!admin.apps.length && process.env.FIREBASE_ADMIN_SA) {
     try {
       console.log('🔧 Attempting to initialize Firebase Admin from FIREBASE_ADMIN_SA...');
@@ -109,10 +114,18 @@ if (!admin.apps.length) {
       });
       
       console.log('✅ Firebase Admin SDK initialized from FIREBASE_ADMIN_SA');
+      console.log('📋 Project ID:', serviceAccount.project_id);
     } catch (error) {
       console.error('❌ Failed to initialize from FIREBASE_ADMIN_SA:', error);
       console.error('Error details:', error instanceof Error ? error.stack : String(error));
-      // Don't throw here, try file path method instead
+      if (error instanceof Error) {
+        if (error.message.includes('Unexpected token') || error.message.includes('JSON')) {
+          console.error('💡 JSON parsing error. Make sure FIREBASE_ADMIN_SA is a valid JSON string.');
+          console.error('💡 First 100 chars of FIREBASE_ADMIN_SA:', process.env.FIREBASE_ADMIN_SA?.substring(0, 100));
+        }
+      }
+      // On serverless, don't try file path (it won't work)
+      // On local, file path was already tried first, so no need to try again
     }
   }
   
@@ -126,7 +139,12 @@ if (!admin.apps.length) {
     console.error('Configuration check:');
     console.error(`  - FIREBASE_ADMIN_SA: ${hasEnvVar ? `✅ Set (${envVarLength} chars)` : '❌ Not set'}`);
     console.error(`  - FIREBASE_SERVICE_ACCOUNT_PATH: ${hasFilePath ? `✅ Set (${process.env.FIREBASE_SERVICE_ACCOUNT_PATH})` : '❌ Not set'}`);
-    console.error('Please configure one of the above in your .env.local file');
+    if (isServerless) {
+      console.error('💡 On Vercel/serverless: Use FIREBASE_ADMIN_SA (file paths don\'t work)');
+      console.error('💡 Make sure FIREBASE_ADMIN_SA is a valid JSON string without extra quotes');
+    } else {
+      console.error('Please configure one of the above in your .env.local file');
+    }
   }
 }
 
