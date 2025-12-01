@@ -514,7 +514,7 @@ export default function RegionSpecificOffers() {
     
     // Filter stores by region name based on their website URLs
     const storesForRegion = allStores.filter(store => {
-      const domain = extractDomain(store.websiteUrl || store.url);
+      const domain = extractDomain(store.websiteUrl);
       const detectedRegion = getRegionFromDomain(domain);
       return detectedRegion === region.name;
     });
@@ -577,7 +577,7 @@ export default function RegionSpecificOffers() {
               
               // Count stores for this region based on URL
               const storesCount = allStores.filter(store => {
-                const domain = extractDomain(store.websiteUrl || store.url);
+                const domain = extractDomain(store.websiteUrl);
                 const detectedRegion = getRegionFromDomain(domain);
                 return detectedRegion === region.name;
               }).length;
