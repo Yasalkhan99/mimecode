@@ -80,7 +80,6 @@ const getRegionFromDomain = (domain: string | null): string | null => {
     '.com.ie': 'Ireland',
     '.com.ru': 'Russia',
     '.com.il': 'Israel',
-    '.com.au': 'Australia',
     // Single-part TLDs
     '.uk': 'UK',
     '.ca': 'Canada',
