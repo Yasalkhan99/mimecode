@@ -1,15 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getBannerByLayoutPosition, Banner } from '@/lib/services/bannerService';
+// import { getBannerByLayoutPosition, Banner } from '@/lib/services/bannerService';
 import Navbar from '@/app/components/Navbar';
 import NewsletterSubscription from '@/app/components/NewsletterSubscription';
 import Footer from '@/app/components/Footer';
 
 export default function AboutUsPage() {
-  const [banner7, setBanner7] = useState<Banner | null>(null);
-  const [banner8, setBanner8] = useState<Banner | null>(null);
-  const [banner9, setBanner9] = useState<Banner | null>(null);
+  // const [banner7, setBanner7] = useState<Banner | null>(null);
+  // const [banner8, setBanner8] = useState<Banner | null>(null);
+  // const [banner9, setBanner9] = useState<Banner | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,14 +19,14 @@ export default function AboutUsPage() {
     const fetchBanners = async () => {
       setLoading(true);
       try {
-        const [data7, data8, data9] = await Promise.all([
-          getBannerByLayoutPosition(7),
-          getBannerByLayoutPosition(8),
-          getBannerByLayoutPosition(9)
-        ]);
-        setBanner7(data7);
-        setBanner8(data8);
-        setBanner9(data9);
+        // const [data7, data8, data9] = await Promise.all([
+        //   getBannerByLayoutPosition(7),
+        //   getBannerByLayoutPosition(8),
+        //   getBannerByLayoutPosition(9)
+        // ]);
+        // setBanner7(data7);
+        // setBanner8(data8);
+        // setBanner9(data9);
       } catch (error) {
         console.error('Error fetching about us banners:', error);
       } finally {
@@ -40,8 +40,8 @@ export default function AboutUsPage() {
     <div className="min-h-screen bg-white">
       <Navbar />
       
-      {/* Banner Section with Layout 7 - 1728x547 */}
-      <div className="w-full">
+      {/* Banner Section with Layout 7 - COMMENTED OUT (only on home page) */}
+      {/* <div className="w-full">
         {loading ? (
           <div className="w-full bg-gray-100 aspect-[1728/547] min-h-[200px] sm:min-h-[250px] animate-pulse"></div>
         ) : banner7 ? (
@@ -62,7 +62,7 @@ export default function AboutUsPage() {
         ) : (
           <div className="w-full aspect-[1728/547] min-h-[200px] sm:min-h-[250px] bg-gradient-to-r from-[#ABC443]/20 to-[#41361A]/20"></div>
         )}
-      </div>
+      </div> */}
 
       {/* Main Content Section */}
       <div className="w-full px-2 sm:px-4 md:px-6 py-6 sm:py-8 md:py-12 lg:py-16 bg-white">
@@ -108,9 +108,10 @@ export default function AboutUsPage() {
               </div>
             </div>
 
-            {/* Right Side - Layout 8 Banner Image */}
+            {/* Right Side - Layout 8 Banner Image - COMMENTED OUT (only on home page) */}
             <div className="w-full md:w-1/2">
-              {loading ? (
+              <div className="w-full min-h-[300px] sm:min-h-[400px] md:aspect-[618/588] md:max-h-[588px] flex items-center justify-center bg-gray-100 rounded-lg"></div>
+              {/* {loading ? (
                 <div className="w-full min-h-[300px] sm:min-h-[400px] md:aspect-[618/588] md:max-h-[588px] bg-gray-100 rounded-lg animate-pulse"></div>
               ) : banner8 ? (
                 <div className="w-full min-h-[300px] sm:min-h-[400px] md:aspect-[618/588] md:max-h-[588px] flex items-center justify-center">
@@ -125,15 +126,16 @@ export default function AboutUsPage() {
                 </div>
               ) : (
                 <div className="w-full min-h-[300px] sm:min-h-[400px] md:aspect-[618/588] md:max-h-[588px] flex items-center justify-center bg-gray-100 rounded-lg"></div>
-              )}
+              )} */}
             </div>
           </div>
 
           {/* Bottom Section - Image Left, Text Right */}
           <div className="flex flex-col md:flex-row gap-4 sm:gap-6 md:gap-8 items-stretch md:items-center">
-            {/* Left Side - Layout 9 Banner Image */}
+            {/* Left Side - Layout 9 Banner Image - COMMENTED OUT (only on home page) */}
             <div className="w-full md:w-1/2">
-              {loading ? (
+              <div className="w-full min-h-[300px] sm:min-h-[400px] md:aspect-[618/588] md:max-h-[588px] flex items-center justify-center bg-gray-100 rounded-lg"></div>
+              {/* {loading ? (
                 <div className="w-full min-h-[300px] sm:min-h-[400px] md:aspect-[618/588] md:max-h-[588px] bg-gray-100 rounded-lg animate-pulse"></div>
               ) : banner9 ? (
                 <div className="w-full min-h-[300px] sm:min-h-[400px] md:aspect-[618/588] md:max-h-[588px] flex items-center justify-center">
@@ -148,7 +150,7 @@ export default function AboutUsPage() {
                 </div>
               ) : (
                 <div className="w-full min-h-[300px] sm:min-h-[400px] md:aspect-[618/588] md:max-h-[588px] flex items-center justify-center bg-gray-100 rounded-lg"></div>
-              )}
+              )} */}
             </div>
 
             {/* Right Side - Text Content */}

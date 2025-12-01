@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { getNews, NewsArticle } from '@/lib/services/newsService';
-import { getBannersWithLayout, Banner } from '@/lib/services/bannerService';
+// import { getBannersWithLayout, Banner } from '@/lib/services/bannerService';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
 import NewsletterSubscription from '@/app/components/NewsletterSubscription';
@@ -12,9 +12,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ContactUsPage() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
-  const [banners, setBanners] = useState<Banner[]>([]);
-  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
-  const [direction, setDirection] = useState(0);
+  // const [banners, setBanners] = useState<Banner[]>([]);
+  // const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+  // const [direction, setDirection] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredArticles, setFilteredArticles] = useState<NewsArticle[]>([]);
@@ -56,10 +56,11 @@ export default function ContactUsPage() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [articlesData, bannersData] = await Promise.all([
-          getNews(),
-          getBannersWithLayout()
-        ]);
+        const articlesData = await getNews();
+        // const [articlesData, bannersData] = await Promise.all([
+        //   getNews(),
+        //   getBannersWithLayout()
+        // ]);
         const sorted = articlesData.sort((a, b) => {
           const timeA = getTimestamp(a.createdAt);
           const timeB = getTimestamp(b.createdAt);
@@ -67,8 +68,8 @@ export default function ContactUsPage() {
         });
         setArticles(sorted);
         setFilteredArticles(sorted);
-        const bannersList = bannersData.filter(Boolean) as Banner[];
-        setBanners(bannersList.slice(0, 4));
+        // const bannersList = bannersData.filter(Boolean) as Banner[];
+        // setBanners(bannersList.slice(0, 4));
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -105,50 +106,50 @@ export default function ContactUsPage() {
     return null;
   };
 
-  // Auto-slide banners
-  useEffect(() => {
-    if (banners.length <= 1) return;
-    const interval = setInterval(() => {
-      setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
-      setDirection(1);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [banners.length]);
+  // // Auto-slide banners - COMMENTED OUT (only on home page)
+  // useEffect(() => {
+  //   if (banners.length <= 1) return;
+  //   const interval = setInterval(() => {
+  //     setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
+  //     setDirection(1);
+  //   }, 5000);
+  //   return () => clearInterval(interval);
+  // }, [banners.length]);
 
-  const handlePrev = () => {
-    setDirection(-1);
-    setCurrentBannerIndex((prev) => (prev - 1 + banners.length) % banners.length);
-  };
+  // const handlePrev = () => {
+  //   setDirection(-1);
+  //   setCurrentBannerIndex((prev) => (prev - 1 + banners.length) % banners.length);
+  // };
 
-  const handleNext = () => {
-    setDirection(1);
-    setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
-  };
+  // const handleNext = () => {
+  //   setDirection(1);
+  //   setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
+  // };
 
-  const slideVariants = {
-    enter: (direction: number) => ({
-      x: direction > 0 ? '100%' : '-100%',
-      opacity: 0,
-      scale: 0.9
-    }),
-    center: {
-      zIndex: 1,
-      x: 0,
-      opacity: 1,
-      scale: 1
-    },
-    exit: (direction: number) => ({
-      zIndex: 0,
-      x: direction < 0 ? '100%' : '-100%',
-      opacity: 0,
-      scale: 0.9
-    })
-  };
+  // const slideVariants = {
+  //   enter: (direction: number) => ({
+  //     x: direction > 0 ? '100%' : '-100%',
+  //     opacity: 0,
+  //     scale: 0.9
+  //   }),
+  //   center: {
+  //     zIndex: 1,
+  //     x: 0,
+  //     opacity: 1,
+  //     scale: 1
+  //   },
+  //   exit: (direction: number) => ({
+  //     zIndex: 0,
+  //     x: direction < 0 ? '100%' : '-100%',
+  //     opacity: 0,
+  //     scale: 0.9
+  //   })
+  // };
 
-  const swipeConfidenceThreshold = 10000;
-  const swipePower = (offset: number, velocity: number) => {
-    return Math.abs(offset) * velocity;
-  };
+  // const swipeConfidenceThreshold = 10000;
+  // const swipePower = (offset: number, velocity: number) => {
+  //   return Math.abs(offset) * velocity;
+  // };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData(prev => ({
@@ -223,8 +224,8 @@ export default function ContactUsPage() {
     <div className="min-h-screen bg-white">
       <Navbar />
       
-      {/* Hero Banner Section */}
-      {banners.length > 0 && (
+      {/* Hero Banner Section - COMMENTED OUT (only on home page) */}
+      {/* {banners.length > 0 && (
         <section className="relative w-full bg-white py-4 sm:py-6 md:py-8">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
             <div className="relative h-[300px] md:h-[350px] lg:h-[400px] w-full rounded-xl overflow-hidden">
@@ -334,17 +335,17 @@ export default function ContactUsPage() {
             </div>
           </div>
         </section>
-      )}
+      )} */}
 
-      {/* Fallback if no banners */}
-      {banners.length === 0 && !loading && (
+      {/* Fallback if no banners - COMMENTED OUT (only on home page) */}
+      {/* {banners.length === 0 && !loading && (
         <section className="relative w-full overflow-hidden bg-gradient-to-br from-[#ABC443]/10 via-white to-[#9BB03A]/10 py-20 md:py-32">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 text-gray-900">Contact Us</h1>
             <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-2xl mx-auto">Get in touch with us</p>
           </div>
         </section>
-      )}
+      )} */}
       
       {/* Blog Articles Section */}
       <motion.div 

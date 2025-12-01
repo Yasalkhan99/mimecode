@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
-import { getBannerByLayoutPosition, getBannersWithLayout, Banner } from '@/lib/services/bannerService';
+import { useRouter } from 'next/navigation';
+// import { getBannerByLayoutPosition, getBannersWithLayout, Banner } from '@/lib/services/bannerService';
 import { getStores, Store } from '@/lib/services/storeService';
 import { getCategories, Category } from '@/lib/services/categoryService';
 import Navbar from '@/app/components/Navbar';
@@ -12,10 +13,11 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function StoresPage() {
-  const [banner10, setBanner10] = useState<Banner | null>(null);
-  const [banners, setBanners] = useState<Banner[]>([]);
-  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
-  const [direction, setDirection] = useState(0);
+  const router = useRouter();
+  // const [banner10, setBanner10] = useState<Banner | null>(null);
+  // const [banners, setBanners] = useState<Banner[]>([]);
+  // const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+  // const [direction, setDirection] = useState(0);
   const [stores, setStores] = useState<Store[]>([]);
   const [filteredStores, setFilteredStores] = useState<Store[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -27,6 +29,11 @@ export default function StoresPage() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const storesPerPage = 20;
+  // Search state
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [showSearchResults, setShowSearchResults] = useState<boolean>(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchResultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Set page title
@@ -43,15 +50,15 @@ export default function StoresPage() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [bannerData, bannersData, storesData, categoriesData] = await Promise.all([
-          getBannerByLayoutPosition(10),
-          getBannersWithLayout(),
+        const [storesData, categoriesData] = await Promise.all([
+          // getBannerByLayoutPosition(10),
+          // getBannersWithLayout(),
           getStores(),
           getCategories()
         ]);
-        setBanner10(bannerData);
-        const bannersList = bannersData.filter(Boolean) as Banner[];
-        setBanners(bannersList.slice(0, 4)); // Get first 4 banners
+        // setBanner10(bannerData);
+        // const bannersList = bannersData.filter(Boolean) as Banner[];
+        // setBanners(bannersList.slice(0, 4)); // Get first 4 banners
         setStores(storesData);
         setFilteredStores(storesData);
         setCategories(categoriesData);
@@ -69,9 +76,18 @@ export default function StoresPage() {
   }, []);
 
   useEffect(() => {
-    // Sort stores based on selected option
-    let sorted = [...stores];
+    // Filter stores by search query first
+    let filtered = [...stores];
     
+    // Apply search filter if query exists
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(store => 
+        store.name.toLowerCase().startsWith(query)
+      );
+    }
+    
+    // Sort stores based on selected option
     // Helper function to get timestamp in milliseconds
     const getTimestamp = (createdAt: any): number => {
       if (!createdAt) return 0;
@@ -101,36 +117,36 @@ export default function StoresPage() {
     
     switch (sortBy) {
       case 'newest':
-        sorted.sort((a, b) => {
+        filtered.sort((a, b) => {
           const dateA = getTimestamp(a.createdAt);
           const dateB = getTimestamp(b.createdAt);
           return dateB - dateA;
         });
         break;
       case 'oldest':
-        sorted.sort((a, b) => {
+        filtered.sort((a, b) => {
           const dateA = getTimestamp(a.createdAt);
           const dateB = getTimestamp(b.createdAt);
           return dateA - dateB;
         });
         break;
       case 'name-asc':
-        sorted.sort((a, b) => a.name.localeCompare(b.name));
+        filtered.sort((a, b) => a.name.localeCompare(b.name));
         break;
       case 'name-desc':
-        sorted.sort((a, b) => b.name.localeCompare(a.name));
+        filtered.sort((a, b) => b.name.localeCompare(a.name));
         break;
       default:
         break;
     }
     
-    setFilteredStores(sorted);
-  }, [sortBy, stores]);
+    setFilteredStores(filtered);
+  }, [sortBy, stores, searchQuery]);
 
-  // Reset to page 1 when filtered stores change (e.g., after sorting)
+  // Reset to page 1 when filtered stores change (e.g., after sorting or searching)
   useEffect(() => {
     setCurrentPage(1);
-  }, [filteredStores.length, sortBy]);
+  }, [filteredStores.length, sortBy, searchQuery]);
 
   // Auto-scroll slider with smooth continuous loop (desktop only)
   useEffect(() => {
@@ -186,53 +202,79 @@ export default function StoresPage() {
     };
   }, [filteredStores, isMobile]);
 
-  // Auto-slide banners
+  const handleStoreSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Search just filters the grid, no navigation needed
+  };
+
+  // Filter stores for search dropdown - only show stores starting with the search query
+  const searchFilteredStores = stores.filter((store: Store) => {
+    if (!searchQuery.trim()) return false;
+    const query = searchQuery.toLowerCase().trim();
+    return store.name.toLowerCase().startsWith(query);
+  }).slice(0, 10); // Limit to 10 results
+
+  // Close search dropdown when clicking outside
   useEffect(() => {
-    if (banners.length <= 1) return;
-    
-    const interval = setInterval(() => {
-      setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
-      setDirection(1);
-    }, 5000); // Change banner every 5 seconds
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchInputRef.current && !searchInputRef.current.contains(event.target as Node) &&
+          searchResultsRef.current && !searchResultsRef.current.contains(event.target as Node)) {
+        setShowSearchResults(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
-    return () => clearInterval(interval);
-  }, [banners.length]);
+  // // Auto-slide banners
+  // useEffect(() => {
+  //   if (banners.length <= 1) return;
+  //   
+  //   const interval = setInterval(() => {
+  //     setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
+  //     setDirection(1);
+  //   }, 5000); // Change banner every 5 seconds
 
-  // Swipe handlers
-  const handlePrev = () => {
-    setDirection(-1);
-    setCurrentBannerIndex((prev) => (prev - 1 + banners.length) % banners.length);
-  };
+  //   return () => clearInterval(interval);
+  // }, [banners.length]);
 
-  const handleNext = () => {
-    setDirection(1);
-    setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
-  };
+  // // Swipe handlers
+  // const handlePrev = () => {
+  //   setDirection(-1);
+  //   setCurrentBannerIndex((prev) => (prev - 1 + banners.length) % banners.length);
+  // };
 
-  const slideVariants = {
-    enter: (direction: number) => ({
-      x: direction > 0 ? '100%' : '-100%',
-      opacity: 0,
-      scale: 0.9
-    }),
-    center: {
-      zIndex: 1,
-      x: 0,
-      opacity: 1,
-      scale: 1
-    },
-    exit: (direction: number) => ({
-      zIndex: 0,
-      x: direction < 0 ? '100%' : '-100%',
-      opacity: 0,
-      scale: 0.9
-    })
-  };
+  // const handleNext = () => {
+  //   setDirection(1);
+  //   setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
+  // };
 
-  const swipeConfidenceThreshold = 10000;
-  const swipePower = (offset: number, velocity: number) => {
-    return Math.abs(offset) * velocity;
-  };
+  // const slideVariants = {
+  //   enter: (direction: number) => ({
+  //     x: direction > 0 ? '100%' : '-100%',
+  //     opacity: 0,
+  //     scale: 0.9
+  //   }),
+  //   center: {
+  //     zIndex: 1,
+  //     x: 0,
+  //     opacity: 1,
+  //     scale: 1
+  //   },
+  //   exit: (direction: number) => ({
+  //     zIndex: 0,
+  //     x: direction < 0 ? '100%' : '-100%',
+  //     opacity: 0,
+  //     scale: 0.9
+  //   })
+  // };
+
+  // const swipeConfidenceThreshold = 10000;
+  // const swipePower = (offset: number, velocity: number) => {
+  //   return Math.abs(offset) * velocity;
+  // };
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden w-full">
@@ -271,12 +313,10 @@ export default function StoresPage() {
       `}</style>
       <Navbar />
       
-      {/* Hero Banner Section - Retail Store Style */}
-      {banners.length > 0 && (
+      {/* Hero Banner Section - Retail Store Style - COMMENTED OUT (only on home page) */}
+      {/* {banners.length > 0 && ( 
         <section className="relative w-full bg-white py-4 sm:py-6 md:py-8">
-          {/* Container with padding and max-width */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-            {/* Hero Slider with rounded corners */}
             <div className="relative h-[300px] md:h-[350px] lg:h-[400px] w-full rounded-xl overflow-hidden">
             <AnimatePresence initial={false} custom={direction} mode="wait">
               {banners.map((banner, index) => {
@@ -335,10 +375,8 @@ export default function StoresPage() {
               })}
             </AnimatePresence>
 
-            {/* Minimal Navigation - Bottom Right */}
             {banners.length > 1 && (
               <>
-                {/* Arrow Navigation */}
                 <div className="absolute bottom-6 right-6 z-20 flex items-center gap-3">
                   <motion.button
                     onClick={handlePrev}
@@ -364,7 +402,6 @@ export default function StoresPage() {
                   </motion.button>
                 </div>
 
-                {/* Dots Indicator - Bottom Center */}
                 <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
                   {banners.map((_, index) => (
                     <button
@@ -389,7 +426,6 @@ export default function StoresPage() {
         </section>
       )}
 
-      {/* Fallback if no banners */}
       {banners.length === 0 && !loading && (
         <section className="relative w-full overflow-hidden bg-gradient-to-br from-[#ABC443]/10 via-white to-[#9BB03A]/10 py-20 md:py-32">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -397,11 +433,98 @@ export default function StoresPage() {
             <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-2xl mx-auto">Discover the best deals and savings</p>
           </div>
         </section>
-      )}
+      )} */}
 
       {/* Stores Grid Section */}
       <div className="w-full px-3 sm:px-4 md:px-6 lg:px-8 py-6 sm:py-8 md:py-12 lg:py-16 bg-white overflow-x-hidden">
         <div className="max-w-7xl mx-auto w-full">
+          {/* Store Search Bar */}
+          <div className='pb-6 store-search-container'>
+            <form onSubmit={handleStoreSearch} className="relative mx-auto">
+              <div className="border border-[#ABC443] relative flex items-center bg-white rounded-lg shadow-md  focus-within:border-[#16a34a] transition-colors px-4 py-3">
+                <svg className="w-5 h-5 text-[#ABC443] mr-3 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Search for stores..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setShowSearchResults(e.target.value.trim().length > 0);
+                    // filteredStores will update automatically via useEffect
+                  }}
+                  onFocus={() => {
+                    if (searchQuery.trim().length > 0) {
+                      setShowSearchResults(true);
+                    }
+                  }}
+                  className="flex-1 border-none outline-none bg-transparent text-gray-700 text-sm sm:text-base placeholder-gray-400"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setShowSearchResults(false);
+                      // filteredStores will update automatically via useEffect
+                    }}
+                    className="ml-2 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              
+              {/* Search Results Dropdown */}
+              {showSearchResults && searchFilteredStores.length > 0 && (
+                <div ref={searchResultsRef} className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-[#ABC443]/30 rounded-lg shadow-lg z-50 max-h-[400px] overflow-y-auto">
+                  <div className="px-4 py-2 text-xs font-semibold text-[#16a34a] border-b border-gray-200 bg-[#ABC443]/5 sticky top-0">
+                    Stores ({searchFilteredStores.length})
+                  </div>
+                  {searchFilteredStores.map((store) => (
+                    <Link
+                      key={store.id}
+                      href={`/stores/${store.slug || store.id}`}
+                      onClick={() => {
+                        setShowSearchResults(false);
+                        setSearchQuery('');
+                      }}
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-[#ABC443]/10 transition-colors border-b border-gray-100 last:border-b-0 group"
+                    >
+                      {store.logoUrl && (
+                        <img
+                          src={store.logoUrl}
+                          alt={store.name}
+                          className="w-10 h-10 object-contain flex-shrink-0 rounded"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                          }}
+                        />
+                      )}
+                      <span className="flex-1 text-sm text-gray-700 group-hover:text-[#16a34a] font-medium truncate">{store.name}</span>
+                      <svg className="w-4 h-4 text-gray-400 group-hover:text-[#16a34a] flex-shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Link>
+                  ))}
+                </div>
+              )}
+              
+              {/* No Results Message */}
+              {showSearchResults && searchQuery.trim().length > 0 && searchFilteredStores.length === 0 && (
+                <div ref={searchResultsRef} className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-[#ABC443]/30 rounded-lg shadow-lg z-50">
+                  <div className="px-4 py-6 text-center text-sm text-gray-500">
+                    No stores found starting with "{searchQuery}"
+                  </div>
+                </div>
+              )}
+            </form>
+          </div>
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-4 sm:mb-6 md:mb-8">
             All <span className="text-[#ABC443]">Stores</span>
           </h2>
@@ -413,9 +536,9 @@ export default function StoresPage() {
 
           {/* Filter and Sort Bar */}
           <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6 md:mb-8 pb-3 sm:pb-4 border-b border-gray-200">
-            <div className="text-xs sm:text-sm md:text-base text-gray-600 text-center sm:text-left">
+            {/* <div className="text-xs sm:text-sm md:text-base text-gray-600 text-center sm:text-left">
               Showing <span className="font-semibold text-gray-900">{filteredStores.length}</span> of <span className="font-semibold text-gray-900">{stores.length}</span> Results
-            </div>
+            </div> */}
             
             {/* Pagination Info */}
             {(() => {
@@ -440,7 +563,7 @@ export default function StoresPage() {
             })()}
             
             <div className="flex flex-col xs:flex-row items-stretch xs:items-center justify-between gap-2 xs:gap-3 sm:gap-4 w-full">
-              <button
+              {/* <button
                 onClick={() => setShowFilter(!showFilter)}
                 className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 border border-blue-400 text-blue-600 rounded-lg hover:bg-blue-50 active:bg-blue-100 transition-colors text-xs sm:text-sm md:text-base font-medium w-full xs:w-auto"
               >
@@ -448,7 +571,7 @@ export default function StoresPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                 </svg>
                 Filter
-              </button>
+              </button> */}
               
               <div className="flex items-center gap-2 w-full xs:w-auto">
                 <span className="text-xs sm:text-sm md:text-base text-gray-600 whitespace-nowrap">Sort By:</span>
@@ -556,6 +679,34 @@ export default function StoresPage() {
                 const startIndex = (currentPage - 1) * storesPerPage;
                 const endIndex = startIndex + storesPerPage;
                 const paginatedStores = storesForPagination.slice(startIndex, endIndex);
+                
+                // Show "No stores found" message when search query doesn't match any stores in paginated section
+                if (searchQuery.trim() && storesForPagination.length === 0) {
+                  return (
+                    <div className="text-center py-12 sm:py-16 md:py-20">
+                      <div className="max-w-md mx-auto">
+                        <svg className="w-16 h-16 sm:w-20 sm:h-20 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-700 mb-2">
+                          No stores found
+                        </h3>
+                        <p className="text-sm sm:text-base text-gray-500 mb-4">
+                          No stores found starting with <span className="font-semibold text-gray-700">"{searchQuery}"</span>
+                        </p>
+                        <button
+                          onClick={() => setSearchQuery('')}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-[#ABC443] hover:bg-[#16a34a] text-white font-medium rounded-lg transition-colors text-sm sm:text-base"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          Clear Search
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
                 
                 return storesForPagination.length > 0 ? (
                 <div className="mb-4 sm:mb-0">

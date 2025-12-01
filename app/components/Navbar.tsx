@@ -18,6 +18,7 @@ export default function Navbar() {
   const [stores, setStores] = useState<Store[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [showSearchResults, setShowSearchResults] = useState(false);
   const [favoritesCount, setFavoritesCount] = useState(0);
   const [notificationsCount, setNotificationsCount] = useState(0);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -61,6 +62,13 @@ export default function Navbar() {
     setNotificationsCount(getUnreadCount());
   };
 
+  // Filter stores based on search query - only show stores starting with the search query
+  const filteredStores = stores.filter(store => {
+    if (!searchQuery.trim()) return false;
+    const query = searchQuery.toLowerCase().trim();
+    return store.name.toLowerCase().startsWith(query);
+  }).slice(0, 10); // Limit to 10 results
+
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -71,15 +79,18 @@ export default function Navbar() {
       if (!target.closest('.stores-dropdown-container')) {
         setStoresDropdownOpen(false);
       }
+      if (!target.closest('.search-results-container')) {
+        setShowSearchResults(false);
+      }
     };
 
-    if (searchCategoryOpen || storesDropdownOpen) {
+    if (searchCategoryOpen || storesDropdownOpen || showSearchResults) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => {
         document.removeEventListener('mousedown', handleClickOutside);
       };
     }
-  }, [searchCategoryOpen, storesDropdownOpen]);
+  }, [searchCategoryOpen, storesDropdownOpen, showSearchResults]);
 
   const isActive = (path: string) => {
     if (path === '/categories') {
@@ -101,11 +112,20 @@ export default function Navbar() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const query = searchQuery.trim();
+    // If there's exactly one matching store, navigate to it
+    if (filteredStores.length === 1) {
+      router.push(`/stores/${filteredStores[0].slug || filteredStores[0].id}`);
+      setShowSearchResults(false);
+      setSearchQuery('');
+      return;
+    }
+    // Otherwise, navigate to search page
     if (query || selectedCategory) {
       const params = new URLSearchParams();
       if (query) params.set('q', query);
       if (selectedCategory) params.set('category', selectedCategory);
       router.push(`/search?${params.toString()}`);
+      setShowSearchResults(false);
     }
   };
 
@@ -161,28 +181,34 @@ export default function Navbar() {
                 {storesDropdownOpen && (
                   <div 
                     className="absolute top-full left-0 pt-1 bg-transparent z-50"
-                    onMouseLeave={() => setHoveredCategoryId(null)}
+                    onMouseLeave={() => {
+                      setHoveredCategoryId(null);
+                    }}
                   >
                     <div className="bg-white border border-gray-300 rounded-lg shadow-lg flex min-w-[500px] max-h-[500px]">
                       {/* Categories Column */}
                       <div className="w-1/2 border-r border-gray-200 overflow-y-auto max-h-[500px]">
+                        {/* All Categories Heading */}
+                        {/* <div className="px-4 py-2 text-gray-700 text-sm font-semibold border-b border-gray-200 bg-gray-50 sticky top-0">
+                          All Categories
+                        </div> */}
+                        
+                        {/* All Stores Option */}
                         <div
-                          className={`block px-4 py-2 text-gray-700 hover:bg-gray-100 text-sm font-semibold border-b border-gray-200 cursor-pointer flex items-center gap-2 ${
+                          className={`block px-4 py-2 text-gray-700 hover:bg-gray-100 text-sm cursor-pointer flex items-center gap-2 ${
                             hoveredCategoryId === 'all' ? 'bg-gray-100' : ''
                           }`}
                           onMouseEnter={() => setHoveredCategoryId('all')}
                         >
                           <span className="flex-1">All Stores</span>
-                          <span className="text-xs text-gray-500">({stores.length})</span>
                           <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
                         </div>
+                        {/* All Categories List */}
                         {categories.map((category) => {
-                          // Only show stores that have this categoryId
+                          // Get stores for this category
                           const categoryStores = stores.filter(store => store.categoryId === category.id);
-                          // Only show category if it has stores
-                          if (categoryStores.length === 0) return null;
                           
                           return (
                             <div
@@ -200,7 +226,9 @@ export default function Navbar() {
                                 />
                               )}
                               <span className="flex-1">{category.name}</span>
-                              <span className="text-xs text-gray-500">({categoryStores.length})</span>
+                              {categoryStores.length > 0 && (
+                                <span className="text-xs text-gray-500">({categoryStores.length})</span>
+                              )}
                               <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                               </svg>
@@ -214,7 +242,8 @@ export default function Navbar() {
                         {hoveredCategoryId === 'all' ? (
                           <>
                             <div className="px-4 py-2 text-gray-700 text-sm font-semibold border-b border-gray-200 bg-gray-50 sticky top-0">
-                              All Stores ({stores.length})
+                              All Stores 
+                              {/* ({stores.length}) */}
                             </div>
                             {stores.slice(0, 30).map((store) => (
                               <Link
@@ -285,28 +314,28 @@ export default function Navbar() {
                 )}
               </div>
               <Link 
-                href="/categories" 
+                href="/blogs" 
                 className={`text-white font-semibold text-xs lg:text-sm transition-colors hover:text-gray-200 ${
-                  isActive('/categories') ? 'underline' : ''
+                  isActive('/blogs') ? 'underline' : ''
                 }`}
               >
-                Categories
+                Blogs
               </Link>
               <Link 
-                href="/contact-us" 
+                href="/events" 
                 className={`text-white font-semibold text-xs lg:text-sm transition-colors hover:text-gray-200 ${
-                  isActive('/contact-us') ? 'underline' : ''
+                  isActive('/events') ? 'underline' : ''
                 }`}
               >
-                Contact Us
+                Events
               </Link>
             </div>
           </div>
 
           {/* Search Bar - Center */}
-          <form onSubmit={handleSearch} className="flex items-center bg-white rounded-lg shadow px-2 sm:px-3 py-1 sm:py-1.5 w-full lg:w-auto lg:max-w-md lg:flex-1 lg:mx-4">
+          <form onSubmit={handleSearch} className="relative flex items-center bg-white rounded-lg shadow px-2 sm:px-3 py-1 sm:py-1.5 w-full lg:w-auto lg:max-w-md lg:flex-1 lg:mx-4 search-results-container">
             <div className="relative category-dropdown-container">
-              <button
+              {/* <button
                 type="button"
                 className={`flex items-center px-2 sm:px-3 py-1 text-gray-700 font-semibold text-xs sm:text-sm focus:outline-none transition-colors ${
                   selectedCategory ? 'text-[#16a34a] bg-[#16a34a]/10' : ''
@@ -322,9 +351,9 @@ export default function Navbar() {
                 <svg className="ml-1 sm:ml-2 w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                 </svg>
-              </button>
+              </button> */}
               {/* Category Dropdown */}
-              {searchCategoryOpen && (
+              {/* {searchCategoryOpen && (
                 <div className="absolute left-0 top-full mt-1 bg-white border rounded-lg shadow-lg z-50 min-w-[180px] max-h-[300px] overflow-y-auto">
                   <div 
                     className="px-4 py-2 text-gray-700 hover:bg-gray-100 cursor-pointer text-sm"
@@ -352,7 +381,7 @@ export default function Navbar() {
                     </div>
                   ))}
                 </div>
-              )}
+              )} */}
             </div>
             <svg className="w-4 h-4 text-gray-400 ml-1 sm:ml-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -361,9 +390,62 @@ export default function Navbar() {
               type="text"
               placeholder="Search on MimeCode"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowSearchResults(e.target.value.trim().length > 0);
+              }}
+              onFocus={() => {
+                if (searchQuery.trim().length > 0) {
+                  setShowSearchResults(true);
+                }
+              }}
               className="flex-1 px-2 sm:px-3 py-1 border-none outline-none bg-transparent text-gray-700 text-xs sm:text-sm min-w-0"
             />
+            
+            {/* Search Results Dropdown */}
+            {showSearchResults && filteredStores.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-[400px] overflow-y-auto">
+                <div className="px-3 py-2 text-xs font-semibold text-gray-500 border-b border-gray-200 bg-gray-50 sticky top-0">
+                  Stores ({filteredStores.length})
+                </div>
+                {filteredStores.map((store) => (
+                  <Link
+                    key={store.id}
+                    href={`/stores/${store.slug || store.id}`}
+                    onClick={() => {
+                      setShowSearchResults(false);
+                      setSearchQuery('');
+                    }}
+                    className="flex items-center gap-3 px-3 py-2 hover:bg-gray-100 transition-colors border-b border-gray-100 last:border-b-0"
+                  >
+                    {store.logoUrl && (
+                      <img
+                        src={store.logoUrl}
+                        alt={store.name}
+                        className="w-8 h-8 object-contain flex-shrink-0"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                        }}
+                      />
+                    )}
+                    <span className="flex-1 text-sm text-gray-700 truncate">{store.name}</span>
+                    <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
+                ))}
+              </div>
+            )}
+            
+            {/* No Results Message */}
+            {showSearchResults && searchQuery.trim().length > 0 && filteredStores.length === 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50">
+                <div className="px-4 py-6 text-center text-sm text-gray-500">
+                  No stores found matching "{searchQuery}"
+                </div>
+              </div>
+            )}
           </form>
 
           {/* Login Button - Right */}

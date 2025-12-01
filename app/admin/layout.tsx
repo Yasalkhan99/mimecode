@@ -177,6 +177,13 @@ export default function AdminLayout({
             Manage Banners
           </Link>
           <Link
+            href="/admin/events"
+            onClick={() => setSidebarOpen(false)}
+            className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
+          >
+            Manage Events
+          </Link>
+          <Link
             href="/admin/stores"
             onClick={() => setSidebarOpen(false)}
             className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"

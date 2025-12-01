@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { getBannerByLayoutPosition, Banner } from '@/lib/services/bannerService';
+// import { getBannerByLayoutPosition, Banner } from '@/lib/services/bannerService';
 import { getActiveFAQs, FAQ } from '@/lib/services/faqService';
 import Navbar from '@/app/components/Navbar';
 import NewsletterSubscription from '@/app/components/NewsletterSubscription';
@@ -10,7 +10,7 @@ import Footer from '@/app/components/Footer';
 import ContactSupportModal from '@/app/components/ContactSupportModal';
 
 export default function FAQsPage() {
-  const [banner11, setBanner11] = useState<Banner | null>(null);
+  // const [banner11, setBanner11] = useState<Banner | null>(null);
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [loading, setLoading] = useState(true);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
@@ -23,11 +23,12 @@ export default function FAQsPage() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [bannerData, faqsData] = await Promise.all([
-          getBannerByLayoutPosition(11),
-          getActiveFAQs()
-        ]);
-        setBanner11(bannerData);
+        const faqsData = await getActiveFAQs();
+        // const [bannerData, faqsData] = await Promise.all([
+        //   getBannerByLayoutPosition(11),
+        //   getActiveFAQs()
+        // ]);
+        // setBanner11(bannerData);
         setFaqs(faqsData);
       } catch (error) {
         console.error('Error fetching FAQs page data:', error);
@@ -46,8 +47,8 @@ export default function FAQsPage() {
     <div className="min-h-screen bg-white overflow-x-hidden w-full">
       <Navbar />
       
-      {/* Banner Section with Layout 11 */}
-      <div className="w-full">
+      {/* Banner Section with Layout 11 - COMMENTED OUT (only on home page) */}
+      {/* <div className="w-full">
         {loading ? (
           <div className="w-full bg-gray-100 aspect-[1728/547] min-h-[200px] sm:min-h-[250px] animate-pulse"></div>
         ) : banner11 ? (
@@ -84,7 +85,7 @@ export default function FAQsPage() {
         ) : (
           <div className="w-full aspect-[1728/547] min-h-[200px] sm:min-h-[250px] bg-gradient-to-r from-[#ABC443]/20 to-[#41361A]/20"></div>
         )}
-      </div>
+      </div> */}
 
       {/* FAQs Section */}
       <div className="w-full px-4 sm:px-6 md:px-8 py-8 sm:py-12 md:py-16 bg-white overflow-x-hidden">
