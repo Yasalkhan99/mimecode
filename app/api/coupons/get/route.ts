@@ -160,9 +160,9 @@ export async function GET(req: NextRequest) {
 
     // Apply storeId filter if provided
     if (storeId) {
-      convertedCoupons = convertedCoupons.filter(coupon => {
+      convertedCoupons = convertedCoupons.filter((coupon: any) => {
         return coupon.storeIds?.includes(storeId) || 
-               coupon.storeIds?.some(id => id === storeId);
+               coupon.storeIds?.some((id: string) => id === storeId);
       });
     }
 
@@ -171,7 +171,7 @@ export async function GET(req: NextRequest) {
     // Apply activeOnly filtering
     if (activeOnly) {
       const beforeFilter = convertedCoupons.length;
-      convertedCoupons = convertedCoupons.filter(coupon => {
+      convertedCoupons = convertedCoupons.filter((coupon: any) => {
         return coupon.isActive !== false;
       });
       console.log(`📊 After activeOnly filter: ${convertedCoupons.length} coupons (filtered out ${beforeFilter - convertedCoupons.length})`);
@@ -180,7 +180,7 @@ export async function GET(req: NextRequest) {
     // Filter out expired coupons
     const beforeExpiryFilter = convertedCoupons.length;
     const now = new Date();
-    convertedCoupons = convertedCoupons.filter(coupon => {
+    convertedCoupons = convertedCoupons.filter((coupon: any) => {
       if (!coupon.expiryDate) return true; // No expiry date = valid
       
       let expiryDate: Date | null = null;
