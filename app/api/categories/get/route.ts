@@ -1,43 +1,58 @@
 // Server-side categories read route
-// Uses MongoDB
+// Uses Supabase
 
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import Category from '@/lib/models/Category';
-import { convertToAPIFormat, convertArrayToAPIFormat } from '@/lib/utils/mongodbHelpers';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function GET(req: NextRequest) {
   try {
-    await connectDB();
-
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
     // Get category by ID
     if (id) {
-      const category = await Category.findById(id);
-      if (category) {
-        return NextResponse.json({
-          success: true,
-          category: convertToAPIFormat(category),
-        });
+      const { data: category, error } = await supabaseAdmin
+        .from('categories')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
       }
+
       return NextResponse.json({
         success: true,
-        category: null,
+        category: category || null,
       });
     }
 
     // Get all categories
-    const categories = await Category.find({}).sort({ createdAt: -1 });
-    const convertedCategories = convertArrayToAPIFormat(categories);
+    const { data: categories, error } = await supabaseAdmin
+      .from('categories')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+
+    // Convert snake_case to camelCase for frontend
+    const formattedCategories = categories?.map(cat => ({
+      id: cat.id,
+      name: cat.name,
+      logoUrl: cat.logo_url,
+      backgroundColor: cat.background_color,
+      createdAt: cat.created_at,
+      updatedAt: cat.updated_at,
+    })) || [];
 
     return NextResponse.json({
       success: true,
-      categories: convertedCategories,
+      categories: formattedCategories,
     });
   } catch (error: any) {
-    console.error('MongoDB get categories error:', error);
+    console.error('Supabase get categories error:', error);
     return NextResponse.json(
       {
         success: false,

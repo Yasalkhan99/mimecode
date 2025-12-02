@@ -1,30 +1,40 @@
-import { getAdminFirestore, default as admin } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { id, updates, collection } = body || {};
+  const { id, updates } = body || {};
 
   if (!id || !updates) {
-    return NextResponse.json({ success: false, error: 'Missing category ID or updates' }, { status: 400 });
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Missing category ID or updates' 
+    }, { status: 400 });
   }
 
-  const targetCollection = collection || process.env.NEXT_PUBLIC_CATEGORIES_COLLECTION || 'categories-mimecode';
-
   try {
-    const firestore = getAdminFirestore();
-    const docRef = firestore.collection(targetCollection).doc(id);
+    // Convert camelCase to snake_case for Supabase
+    const updateData: any = {};
+    if (updates.name !== undefined) updateData.name = updates.name;
+    if (updates.backgroundColor !== undefined) updateData.background_color = updates.backgroundColor;
+    if (updates.logoUrl !== undefined) updateData.logo_url = updates.logoUrl;
     
-    const updateData = {
-      ...updates,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    };
-    
-    await docRef.update(updateData);
+    const { error } = await supabaseAdmin
+      .from('categories')
+      .update(updateData)
+      .eq('id', id);
+
+    if (error) {
+      throw error;
+    }
+
     return NextResponse.json({ success: true }, { status: 200 });
-  } catch (error) {
-    console.error('Admin SDK update category error:', error);
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+  } catch (error: any) {
+    console.error('Supabase update category error:', error);
+    return NextResponse.json({ 
+      success: false, 
+      error: error.message || String(error) 
+    }, { status: 500 });
   }
 }
 
