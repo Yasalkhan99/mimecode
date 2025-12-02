@@ -13,6 +13,10 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin client not initialized');
+    }
+
     // Convert camelCase to snake_case for Supabase
     const updateData: any = {};
     if (updates.name !== undefined) updateData.name = updates.name;

@@ -13,6 +13,10 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin client not initialized');
+    }
+
     const { error } = await supabaseAdmin
       .from('categories')
       .delete()

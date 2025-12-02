@@ -6,6 +6,10 @@ import { supabaseAdmin } from '@/lib/supabase';
 
 export async function GET(req: NextRequest) {
   try {
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin client not initialized');
+    }
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 

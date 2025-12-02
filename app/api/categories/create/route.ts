@@ -13,6 +13,10 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin client not initialized');
+    }
+
     const categoryData: any = {
       name: name,
       background_color: backgroundColor,
