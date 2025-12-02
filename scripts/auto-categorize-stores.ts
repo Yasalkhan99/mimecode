@@ -6,22 +6,13 @@
  * most appropriate category for each store.
  */
 
-import { createClient } from '@supabase/supabase-js';
-import * as dotenv from 'dotenv';
-import * as path from 'path';
-
-// Load environment variables
-dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('Missing Supabase credentials in environment variables');
-  process.exit(1);
-}
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+/**
+ * Note: This script requires the Next.js development server to be running
+ * on http://localhost:3000 to access the API routes.
+ * 
+ * Run this script with: npm run dev (in one terminal)
+ * Then run: npm run categorize:stores (in another terminal)
+ */
 
 // Category keywords mapping
 const categoryKeywords: Record<string, string[]> = {
@@ -182,16 +173,15 @@ function determineCategory(
 async function main() {
   console.log('🚀 Starting auto-categorization of stores...\n');
   
-  // 1. Fetch all categories from Supabase
-  console.log('📂 Fetching categories...');
-  const { data: categoriesData, error: categoriesError } = await supabase
-    .from('categories-mimecode')
-    .select('*');
-  
-  if (categoriesError) {
-    console.error('❌ Error fetching categories:', categoriesError);
+  // 1. Fetch all categories from MongoDB via API
+  console.log('📂 Fetching categories from MongoDB...');
+  const categoriesResponse = await fetch('http://localhost:3000/api/categories/get');
+  if (!categoriesResponse.ok) {
+    console.error('❌ Error fetching categories from API');
     process.exit(1);
   }
+  const categoriesJson = await categoriesResponse.json();
+  const categoriesData = categoriesJson.categories || [];
   
   // Create a map of category names to IDs
   const categoryMap = new Map<string, string>();
@@ -205,16 +195,15 @@ async function main() {
   });
   console.log('');
   
-  // 2. Fetch all stores from Supabase
-  console.log('🏪 Fetching stores...');
-  const { data: storesData, error: storesError } = await supabase
-    .from('stores-mimecode')
-    .select('*');
-  
-  if (storesError) {
-    console.error('❌ Error fetching stores:', storesError);
+  // 2. Fetch all stores from Supabase via API
+  console.log('🏪 Fetching stores from Supabase...');
+  const storesResponse = await fetch('http://localhost:3000/api/stores/get');
+  if (!storesResponse.ok) {
+    console.error('❌ Error fetching stores from API');
     process.exit(1);
   }
+  const storesJson = await storesResponse.json();
+  const storesData = storesJson.stores || [];
   
   console.log(`✅ Found ${storesData?.length || 0} stores\n`);
   
@@ -262,7 +251,7 @@ async function main() {
   console.log(`   - Could not categorize: ${uncategorizedCount}`);
   console.log(`   - Total stores: ${storesData?.length || 0}\n`);
   
-  // 4. Update stores in Supabase
+  // 4. Update stores via API
   if (updates.length > 0) {
     console.log(`💾 Updating ${updates.length} stores in database...\n`);
     
@@ -270,17 +259,27 @@ async function main() {
     let errorCount = 0;
     
     for (const update of updates) {
-      const { error } = await supabase
-        .from('stores-mimecode')
-        .update({ category_id: update.categoryId })
-        .eq('id', update.id);
-      
-      if (error) {
+      try {
+        const updateResponse = await fetch('http://localhost:3000/api/stores/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: update.id,
+            updates: { categoryId: update.categoryId }
+          })
+        });
+        
+        if (!updateResponse.ok) {
+          const errorData = await updateResponse.json();
+          console.error(`❌ Error updating "${update.name}":`, errorData.error || 'Unknown error');
+          errorCount++;
+        } else {
+          console.log(`✅ Updated "${update.name}" → ${update.categoryName}`);
+          successCount++;
+        }
+      } catch (error: any) {
         console.error(`❌ Error updating "${update.name}":`, error.message);
         errorCount++;
-      } else {
-        console.log(`✅ Updated "${update.name}" → ${update.categoryName}`);
-        successCount++;
       }
     }
     

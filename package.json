@@ -10,6 +10,7 @@
     "type-check": "tsc --noEmit",
     "migrate:firestore-to-supabase": "tsx scripts/migrate-firestore-to-supabase.ts",
     "migrate:banners-firestore-to-supabase": "tsx scripts/migrate-banners-firestore-to-supabase.ts",
+    "seed:categories": "tsx scripts/seed-categories.ts",
     "categorize:stores": "tsx scripts/auto-categorize-stores.ts"
   },
   "dependencies": {
