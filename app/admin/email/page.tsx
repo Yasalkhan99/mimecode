@@ -227,9 +227,7 @@ export default function EmailPage() {
             </button>
             {emailSettings?.updatedAt && (
               <div className="flex items-center text-sm text-gray-500">
-                Last updated: {typeof emailSettings.updatedAt === 'number' 
-                  ? new Date(emailSettings.updatedAt).toLocaleString()
-                  : emailSettings.updatedAt.toDate().toLocaleString()}
+                Last updated: {new Date(emailSettings.updatedAt).toLocaleString()}
               </div>
             )}
           </div>
