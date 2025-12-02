@@ -5,6 +5,9 @@ export interface EmailSettings {
   email1: string; // First email address
   email2: string; // Second email address
   email3: string; // Third email address
+  email4: string; // Fourth email address
+  email5: string; // Fifth email address
+  email6: string; // Sixth email address
   updatedAt?: Timestamp | number; // Can be Timestamp or number (milliseconds)
 }
 
@@ -27,6 +30,9 @@ export async function getEmailSettings(): Promise<EmailSettings | null> {
         email1: 'admin@mimecode.com',
         email2: '',
         email3: '',
+        email4: '',
+        email5: '',
+        email6: '',
       };
     }
 
@@ -35,6 +41,9 @@ export async function getEmailSettings(): Promise<EmailSettings | null> {
       email1: 'admin@availcoupon.com',
       email2: '',
       email3: '',
+      email4: '',
+      email5: '',
+      email6: '',
     };
   } catch (error) {
     console.error('Error getting email settings:', error);
@@ -43,13 +52,23 @@ export async function getEmailSettings(): Promise<EmailSettings | null> {
       email1: 'admin@availcoupon.com',
       email2: '',
       email3: '',
+      email4: '',
+      email5: '',
+      email6: '',
     };
   }
 }
 
 
 // Update email settings (client-side - uses API route)
-export async function updateEmailSettings(email1: string, email2: string, email3: string): Promise<{ success: boolean; error?: any }> {
+export async function updateEmailSettings(
+  email1: string, 
+  email2: string, 
+  email3: string, 
+  email4: string, 
+  email5: string, 
+  email6: string
+): Promise<{ success: boolean; error?: any }> {
   try {
     const res = await fetch('/api/email-settings/update', {
       method: 'POST',
@@ -58,6 +77,9 @@ export async function updateEmailSettings(email1: string, email2: string, email3
         email1,
         email2,
         email3,
+        email4,
+        email5,
+        email6,
         collection: emailSettingsCollection,
         docId: emailSettingsDocId,
       }),

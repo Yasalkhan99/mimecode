@@ -34,6 +34,9 @@ export async function getEmailSettingsServer(): Promise<EmailSettings | null> {
           email1: data?.email1 || 'admin@mimecode.com',
           email2: data?.email2 || '',
           email3: data?.email3 || '',
+          email4: data?.email4 || '',
+          email5: data?.email5 || '',
+          email6: data?.email6 || '',
           updatedAt,
         };
       }
@@ -45,6 +48,9 @@ export async function getEmailSettingsServer(): Promise<EmailSettings | null> {
       email1: 'admin@mimecode.com',
       email2: '',
       email3: '',
+      email4: '',
+      email5: '',
+      email6: '',
     };
   } catch (error) {
     console.error('Error getting email settings (server):', error);
@@ -53,6 +59,9 @@ export async function getEmailSettingsServer(): Promise<EmailSettings | null> {
       email1: 'admin@mimecode.com',
       email2: '',
       email3: '',
+      email4: '',
+      email5: '',
+      email6: '',
     };
   }
 }

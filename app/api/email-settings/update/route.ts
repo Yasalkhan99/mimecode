@@ -3,9 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { email1, email2, email3, collection, docId } = body || {};
+  const { email1, email2, email3, email4, email5, email6, collection, docId } = body || {};
 
-  if (!email1 && !email2 && !email3) {
+  if (!email1 && !email2 && !email3 && !email4 && !email5 && !email6) {
     return NextResponse.json({ success: false, error: 'At least one email address is required' }, { status: 400 });
   }
 
@@ -20,6 +20,9 @@ export async function POST(req: NextRequest) {
       email1: (email1 || '').trim(),
       email2: (email2 || '').trim(),
       email3: (email3 || '').trim(),
+      email4: (email4 || '').trim(),
+      email5: (email5 || '').trim(),
+      email6: (email6 || '').trim(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     }, { merge: true });
 

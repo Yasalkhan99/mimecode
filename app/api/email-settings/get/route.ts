@@ -44,6 +44,9 @@ export async function GET(req: NextRequest) {
             email1: 'admin@mimecode.com',
             email2: '',
             email3: '',
+            email4: '',
+            email5: '',
+            email6: '',
           };
           return NextResponse.json({ success: true, settings: defaultSettings }, { status: 200 });
         }
@@ -55,6 +58,9 @@ export async function GET(req: NextRequest) {
           email1: 'admin@availcoupon.com',
           email2: '',
           email3: '',
+          email4: '',
+          email5: '',
+          email6: '',
         };
         return NextResponse.json({ success: true, settings: defaultSettings }, { status: 200 });
       }
@@ -66,6 +72,9 @@ export async function GET(req: NextRequest) {
       email1: 'admin@availcoupon.com',
       email2: '',
       email3: '',
+      email4: '',
+      email5: '',
+      email6: '',
     };
     return NextResponse.json({ success: true, settings: defaultSettings }, { status: 200 });
   } catch (err) {
@@ -75,6 +84,9 @@ export async function GET(req: NextRequest) {
       email1: 'admin@availcoupon.com',
       email2: '',
       email3: '',
+      email4: '',
+      email5: '',
+      email6: '',
     };
     return NextResponse.json({ success: true, settings: defaultSettings }, { status: 200 });
   }
