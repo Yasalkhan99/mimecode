@@ -48,6 +48,11 @@ export default function CouponsPage() {
   const [stores, setStores] = useState<Store[]>([]);
   const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
   const [isStoreDropdownOpen, setIsStoreDropdownOpen] = useState(false);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
+  const [totalItems, setTotalItems] = useState(0);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isCreating, setIsCreating] = useState(false);
   const storeDropdownRef = useRef<HTMLDivElement>(null);
@@ -1228,7 +1233,14 @@ export default function CouponsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredCoupons.map((coupon) => (
+                {(() => {
+                  // Calculate pagination
+                  const totalPages = Math.ceil(filteredCoupons.length / itemsPerPage);
+                  const startIndex = (currentPage - 1) * itemsPerPage;
+                  const endIndex = startIndex + itemsPerPage;
+                  const paginatedCoupons = filteredCoupons.slice(startIndex, endIndex);
+                  
+                  return paginatedCoupons.map((coupon) => (
                   <tr key={coupon.id} className="border-b hover:bg-gray-50">
                     <td className="px-3 py-4">
                       <div className="font-mono text-xs text-gray-600 max-w-[120px] truncate" title={coupon.id}>
@@ -1342,9 +1354,69 @@ export default function CouponsPage() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  ));
+                })()}
               </tbody>
             </table>
+          </div>
+          
+          {/* Pagination Controls */}
+          <div className="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-700">Items per page:</label>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-900"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+              <span className="text-sm text-gray-600 ml-4">
+                Showing {Math.min((currentPage - 1) * itemsPerPage + 1, filteredCoupons.length)} - {Math.min(currentPage * itemsPerPage, filteredCoupons.length)} of {filteredCoupons.length}
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="px-3 py-1 border border-gray-300 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              >
+                First
+              </button>
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 border border-gray-300 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              >
+                Previous
+              </button>
+              
+              <span className="text-sm text-gray-700 px-3">
+                Page {currentPage} of {Math.ceil(filteredCoupons.length / itemsPerPage)}
+              </span>
+              
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(Math.ceil(filteredCoupons.length / itemsPerPage), prev + 1))}
+                disabled={currentPage >= Math.ceil(filteredCoupons.length / itemsPerPage)}
+                className="px-3 py-1 border border-gray-300 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              >
+                Next
+              </button>
+              <button
+                onClick={() => setCurrentPage(Math.ceil(filteredCoupons.length / itemsPerPage))}
+                disabled={currentPage >= Math.ceil(filteredCoupons.length / itemsPerPage)}
+                className="px-3 py-1 border border-gray-300 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              >
+                Last
+              </button>
+            </div>
           </div>
         </div>
       )}
