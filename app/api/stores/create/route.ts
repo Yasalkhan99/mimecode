@@ -30,33 +30,45 @@ export async function POST(req: NextRequest) {
       'Store Id': storeId,
       'Store Name': store.name,
       'Slug': store.slug,
-      'description': store.description,
-      'Store Logo': store.logoUrl,
-      'voucher_text': store.voucherText,
-      'Network Id': store.networkId,
-      'Parent Category Id': store.categoryId,
-      'website_url': store.websiteUrl,
-      'Tracking Url': store.websiteUrl,
-      'Store Display Url': store.websiteUrl,
-      'layout_position': store.layoutPosition,
+      'description': store.description || '',
       'created_at': new Date().toISOString(),
       'updated_at': new Date().toISOString(),
     };
 
-    // Add optional fields
+    // Add optional fields only if they have values
+    if (store.logoUrl) supabaseStore['Store Logo'] = store.logoUrl;
+    if (store.voucherText) supabaseStore['voucher_text'] = store.voucherText;
+    if (store.networkId) supabaseStore['Network Id'] = store.networkId;
+    if (store.categoryId) supabaseStore['Parent Category Id'] = store.categoryId;
+    if (store.websiteUrl) {
+      supabaseStore['website_url'] = store.websiteUrl;
+      supabaseStore['Tracking Url'] = store.websiteUrl;
+      supabaseStore['Store Display Url'] = store.websiteUrl;
+    }
+    if (store.layoutPosition !== null && store.layoutPosition !== undefined) {
+      supabaseStore['layout_position'] = store.layoutPosition;
+    }
+
+    // Add more optional fields
     if (store.subStoreName) supabaseStore['sub_store_name'] = store.subStoreName;
     if (store.aboutText) supabaseStore['about_text'] = store.aboutText;
     if (store.features) supabaseStore['features'] = store.features;
     if (store.shippingInfo) supabaseStore['shipping_info'] = store.shippingInfo;
     if (store.returnPolicy) supabaseStore['return_policy'] = store.returnPolicy;
     if (store.contactInfo) supabaseStore['contact_info'] = store.contactInfo;
-    if (store.trustScore) supabaseStore['trust_score'] = store.trustScore;
+    if (store.trustScore !== null && store.trustScore !== undefined) {
+      supabaseStore['trust_score'] = store.trustScore;
+    }
     if (store.establishedYear) supabaseStore['established_year'] = store.establishedYear;
     if (store.headquarters) supabaseStore['headquarters'] = store.headquarters;
     if (store.whyTrustUs) supabaseStore['why_trust_us'] = store.whyTrustUs;
     if (store.moreInformation) supabaseStore['more_information'] = store.moreInformation;
-    if (store.rating) supabaseStore['rating'] = store.rating;
-    if (store.reviewCount) supabaseStore['review_count'] = store.reviewCount;
+    if (store.rating !== null && store.rating !== undefined) {
+      supabaseStore['rating'] = store.rating;
+    }
+    if (store.reviewCount !== null && store.reviewCount !== undefined) {
+      supabaseStore['review_count'] = store.reviewCount;
+    }
     if (store.seoTitle) supabaseStore['seo_title'] = store.seoTitle;
     if (store.seoDescription) supabaseStore['seo_description'] = store.seoDescription;
 
