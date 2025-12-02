@@ -27,16 +27,17 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 // MASSIVE category keywords with actual brand names
 const categoryKeywords: Record<string, string[]> = {
   'Fashion & Clothing': [
-    'fashion', 'clothing', 'apparel', 'wear', 'dress', 'shirt', 'pants', 'jeans', 
-    'shoes', 'sneakers', 'boots', 'footwear', 't-shirt', 'tshirt', 'garment',
-    // Brands
-    'nike', 'adidas', 'zara', 'diesel', 'old navy', 'spencer', 'marks & spencer',
+    'fashion', 'clothing', 'apparel', 'boutique', 'wardrobe', 
+    // More specific terms
+    'jeans', 't-shirt', 'tshirt', 'dresses', 'suits',
+    // Brands (SPECIFIC fashion brands)
+    'zara', 'diesel', 'old navy', 'marks & spencer', 'spencer',
     'begg shoes', 'cat footwear', 'journeys', 'headline shirts', 'my face t-shirt',
     'lee jeans', 'h&m', 'gap', 'forever21', 'uniqlo', 'topshop', 'asos',
     'gucci', 'prada', 'versace', 'burberry', 'calvin klein', 'tommy',
     'levi', 'polo', 'armani', 'hugo boss', 'lacoste', 'vans', 'converse',
-    'puma', 'reebok', 'under armour', 'new balance', 'skechers', 'timberland',
-    'clarks', 'crocs', 'ugg', 'steve madden', 'aldo', 'payless', 'foot locker'
+    'skechers', 'timberland', 'clarks', 'crocs', 'ugg', 'steve madden',
+    'aldo', 'payless', 'foot locker', 'ecco', 'farah', 'siwy'
   ],
   'Electronics & Tech': [
     'electronics', 'tech', 'computer', 'laptop', 'phone', 'mobile', 'tablet',
@@ -68,10 +69,11 @@ const categoryKeywords: Record<string, string[]> = {
   'Sports & Outdoors': [
     'sports', 'fitness', 'gym', 'outdoor', 'athletic', 'running', 'cycling',
     'camping', 'hiking', 'climbing', 'fishing', 'hunting', 'golf', 'tennis',
+    'sportswear', 'activewear', 'intersports', 'sport shop',
     // Brands
-    'mountain', 'warehouse', 'legend footwear', 'dick sporting', 'academy',
+    'mountain warehouse', 'legend footwear', 'dick sporting', 'academy sports',
     'rei', 'cabela', 'bass pro', 'decathlon', 'sports direct', 'jd sports',
-    'lululemon', 'athleta', 'gymshark', 'fabletics', 'under armour', 'puma'
+    'lululemon', 'athleta', 'gymshark', 'fabletics', 'intersports'
   ],
   'Food & Grocery': [
     'food', 'grocery', 'restaurant', 'delivery', 'meal', 'kitchen', 'cook',
@@ -133,28 +135,62 @@ const categoryKeywords: Record<string, string[]> = {
 };
 
 function determineCategory(storeName: string, description: string, categoryMap: Map<string, string>): { id: string | null, category: string | null, score: number } {
+  const storeNameLower = storeName.toLowerCase();
   const searchText = `${storeName} ${description}`.toLowerCase();
+  
+  // Category priority order (check specific categories first)
+  const categoryPriority = [
+    'Pet Supplies',
+    'Automotive',
+    'Jewelry & Watches',
+    'Travel & Hotels',
+    'Books & Media',
+    'Toys & Kids',
+    'Office & Stationery',
+    'Food & Grocery',
+    'Sports & Outdoors',
+    'Beauty & Health',
+    'Electronics & Tech',
+    'Home & Garden',
+    'Fashion & Clothing'  // Check this LAST (most generic)
+  ];
+  
   const categoryScores = new Map<string, number>();
   
-  // More flexible matching
+  // Score each category
   for (const [categoryName, keywords] of Object.entries(categoryKeywords)) {
     let score = 0;
+    let exactBrandMatch = false;
+    
     for (const keyword of keywords) {
       const keywordLower = keyword.toLowerCase();
       
-      // Exact match in store name = highest score
-      if (storeName.toLowerCase().includes(keywordLower)) {
-        score += 5;
+      // EXACT brand name match in store name (highest priority)
+      if (keyword.length > 3 && storeNameLower === keywordLower) {
+        score += 100;
+        exactBrandMatch = true;
       }
-      // Partial match in store name
-      else if (searchText.includes(keywordLower)) {
+      // Brand name is complete word in store name
+      else if (keyword.length > 3) {
+        const regex = new RegExp(`\\b${keywordLower}\\b`, 'i');
+        if (regex.test(storeNameLower)) {
+          score += 50;
+          exactBrandMatch = true;
+        }
+      }
+      // Contains keyword in store name
+      else if (storeNameLower.includes(keywordLower) && keywordLower.length > 2) {
+        score += 10;
+      }
+      // Generic word match (lower score)
+      else if (searchText.includes(keywordLower) && keywordLower.length > 3) {
         score += 2;
       }
-      // Word boundary match (more accurate)
-      const words = searchText.split(/\s+/);
-      if (words.some(word => word.includes(keywordLower) || keywordLower.includes(word))) {
-        score += 1;
-      }
+    }
+    
+    // If exact brand match, boost score significantly
+    if (exactBrandMatch) {
+      score *= 2;
     }
     
     if (score > 0) {
@@ -166,13 +202,27 @@ function determineCategory(storeName: string, description: string, categoryMap: 
     return { id: null, category: null, score: 0 };
   }
   
+  // Find best category considering priority
   let bestCategory = '';
   let bestScore = 0;
   
+  // First pass: Find highest score
   for (const [categoryName, score] of categoryScores) {
     if (score > bestScore) {
       bestScore = score;
       bestCategory = categoryName;
+    }
+  }
+  
+  // Second pass: Check if a higher priority category has similar score
+  const threshold = 0.7; // 70% of best score
+  for (const priorityCategory of categoryPriority) {
+    const score = categoryScores.get(priorityCategory) || 0;
+    if (score >= bestScore * threshold && categoryPriority.indexOf(priorityCategory) < categoryPriority.indexOf(bestCategory)) {
+      // Higher priority category with decent score - use it!
+      bestCategory = priorityCategory;
+      bestScore = score;
+      break;
     }
   }
   
