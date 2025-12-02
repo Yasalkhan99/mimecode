@@ -197,8 +197,18 @@ export default function StoresPage() {
   const handleDelete = async (id: string | undefined) => {
     if (!id) return;
     if (confirm('Are you sure you want to delete this store?')) {
-      await deleteStore(id);
-      fetchStores();
+      try {
+        const result = await deleteStore(id);
+        if (result.success) {
+          alert('Store deleted successfully!');
+          fetchStores();
+        } else {
+          alert(`Failed to delete store: ${result.error || 'Unknown error'}`);
+        }
+      } catch (error: any) {
+        console.error('Delete error:', error);
+        alert(`Error deleting store: ${error.message || 'Unknown error'}`);
+      }
     }
   };
 
