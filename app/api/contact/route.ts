@@ -43,8 +43,10 @@ export async function POST(req: NextRequest) {
     console.log('📧 Contact Form Submission:', {
       from: email.trim(),
       to: recipients,
+      totalRecipients: recipients.length,
       subject: subject || 'Contact Support Inquiry'
     });
+    console.log(`✉️  Sending to ${recipients.length} email(s):`, recipients);
 
     // Store contact form submission in Firestore using Admin SDK
     // Use environment variable to separate collections between projects

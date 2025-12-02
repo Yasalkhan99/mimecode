@@ -48,8 +48,10 @@ export async function POST(req: NextRequest) {
         email6: emailSettings.email6
       } : null,
       recipients,
+      totalRecipients: recipients.length,
       subscriberEmail: email.trim()
     });
+    console.log(`✉️  Sending to ${recipients.length} email(s):`, recipients);
 
     // Store subscription in Firestore using Admin SDK
     // Use environment variable to separate collections between projects
