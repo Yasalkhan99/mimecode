@@ -9,12 +9,14 @@
     "lint": "eslint",
     "type-check": "tsc --noEmit",
     "migrate:firestore-to-supabase": "tsx scripts/migrate-firestore-to-supabase.ts",
-    "migrate:banners-firestore-to-supabase": "tsx scripts/migrate-banners-firestore-to-supabase.ts"
+    "migrate:banners-firestore-to-supabase": "tsx scripts/migrate-banners-firestore-to-supabase.ts",
+    "migrate:create-pages-tables": "tsx scripts/create-pages-tables.ts"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
     "@supabase/supabase-js": "^2.81.1",
     "cloudinary": "^2.8.0",
+    "date-fns": "^4.1.0",
     "firebase": "^12.6.0",
     "firebase-admin": "^12.0.0",
     "framer-motion": "^12.23.24",

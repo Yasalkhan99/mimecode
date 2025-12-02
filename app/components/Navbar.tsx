@@ -7,6 +7,7 @@ import { getCategories, Category } from "@/lib/services/categoryService";
 import { getStores, Store } from "@/lib/services/storeService";
 import { getFavoritesCount } from "@/lib/services/favoritesService";
 import { getUnreadCount, getNotifications, initializeSampleNotifications } from "@/lib/services/notificationsService";
+import { getEvents } from "@/lib/services/eventService";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -22,16 +23,19 @@ export default function Navbar() {
   const [favoritesCount, setFavoritesCount] = useState(0);
   const [notificationsCount, setNotificationsCount] = useState(0);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [hasEvents, setHasEvents] = useState(false);
   
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [categoriesData, storesData] = await Promise.all([
+        const [categoriesData, storesData, eventsData] = await Promise.all([
           getCategories(),
-          getStores()
+          getStores(),
+          getEvents()
         ]);
         setCategories(categoriesData);
         setStores(storesData);
+        setHasEvents(eventsData.length > 0);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -321,14 +325,16 @@ export default function Navbar() {
               >
                 Blogs
               </Link>
-              <Link 
-                href="/events" 
-                className={`text-white font-semibold text-xs lg:text-sm transition-colors hover:text-gray-200 ${
-                  isActive('/events') ? 'underline' : ''
-                }`}
-              >
-                Events
-              </Link>
+              {hasEvents && (
+                <Link 
+                  href="/events" 
+                  className={`text-white font-semibold text-xs lg:text-sm transition-colors hover:text-gray-200 ${
+                    isActive('/events') ? 'underline' : ''
+                  }`}
+                >
+                  Events
+                </Link>
+              )}
             </div>
           </div>
 
@@ -537,6 +543,18 @@ export default function Navbar() {
                 >
                   Contact Us
                 </Link>
+                {hasEvents && (
+                  <Link 
+                    href="/events" 
+                    className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${
+                      isActive('/events') 
+                        ? 'text-[#16a34a] bg-[#16a34a]/10 border-b-2 border-[#16a34a]' 
+                        : 'text-gray-700 hover:text-[#16a34a] hover:bg-[#16a34a]/10'
+                    }`}
+                  >
+                    Events
+                  </Link>
+                )}
               </div>
             </div>
             

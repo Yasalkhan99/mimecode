@@ -10,12 +10,17 @@ export default function DashboardPage() {
   const [stores, setStores] = useState<Store[]>([]);
   const [selectedStoreId, setSelectedStoreId] = useState<string>('');
   const [loading, setLoading] = useState(true);
-  console.log('coupons:', coupons);
+  const [apiStats, setApiStats] = useState<{
+    totalCoupons: number;
+    activeCoupons: number;
+    totalUses: number;
+    averageDiscount: string;
+  } | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch dashboard stats and all coupons
+        // Fetch dashboard stats and recent coupons (optimized)
         const dashboardRes = await fetch('/api/coupons/get-dashboard');
         const dashboardData = await dashboardRes.json();
         
@@ -24,10 +29,21 @@ export default function DashboardPage() {
         
         if (dashboardData.success) {
           setCoupons(dashboardData.coupons || []);
+          // Use stats from API (efficiently calculated)
+          setApiStats(dashboardData.stats || null);
         } else {
           // Fallback to regular API if dashboard API fails
           const couponsData = await getCoupons();
           setCoupons(couponsData);
+          // Calculate stats from all coupons as fallback
+          setApiStats({
+            totalCoupons: couponsData.length,
+            activeCoupons: couponsData.filter((c) => c.isActive).length,
+            totalUses: couponsData.reduce((sum, c) => sum + (c.currentUses || 0), 0),
+            averageDiscount: couponsData.length > 0
+              ? (couponsData.reduce((sum, c) => sum + (c.discount || 0), 0) / couponsData.length).toFixed(2)
+              : '0.00',
+          });
         }
         
         setStores(storesData);
@@ -40,6 +56,15 @@ export default function DashboardPage() {
         ]);
         setCoupons(couponsData);
         setStores(storesData);
+        // Calculate stats from all coupons as fallback
+        setApiStats({
+          totalCoupons: couponsData.length,
+          activeCoupons: couponsData.filter((c) => c.isActive).length,
+          totalUses: couponsData.reduce((sum, c) => sum + (c.currentUses || 0), 0),
+          averageDiscount: couponsData.length > 0
+            ? (couponsData.reduce((sum, c) => sum + (c.discount || 0), 0) / couponsData.length).toFixed(2)
+            : '0.00',
+        });
       } finally {
         setLoading(false);
       }
@@ -47,7 +72,7 @@ export default function DashboardPage() {
     fetchData();
   }, []);
 
-  // Filter coupons by selected store
+  // Filter coupons by selected store (only for table display)
   const filteredCoupons = selectedStoreId
     ? coupons.filter(coupon => {
         // Check if coupon has storeIds array and includes selected store
@@ -60,24 +85,33 @@ export default function DashboardPage() {
       })
     : coupons;
 
+  // Use API stats (efficient) when no store filter is applied
+  // When store filter is applied, calculate from filtered coupons
   const stats: {
     totalCoupons: number;
     activeCoupons: number;
     totalUses: number;
     averageDiscount: string;
-  } = {
-    totalCoupons: filteredCoupons.length,
-    activeCoupons: filteredCoupons.filter((c) => c.isActive).length,
-    // ensure currentUses is numeric
-    totalUses: filteredCoupons.reduce((sum, c) => sum + (c.currentUses || 0), 0),
-    // always produce a string like "0.00"
-    averageDiscount:
-      filteredCoupons.length > 0
-        ? (
-            filteredCoupons.reduce((sum, c) => sum + (c.discount || 0), 0) / filteredCoupons.length
-          ).toFixed(2)
-        : '0.00',
-  };
+  } = selectedStoreId
+    ? {
+        // When filtering by store, calculate from filtered coupons
+        totalCoupons: filteredCoupons.length,
+        activeCoupons: filteredCoupons.filter((c) => c.isActive).length,
+        totalUses: filteredCoupons.reduce((sum, c) => sum + (c.currentUses || 0), 0),
+        averageDiscount:
+          filteredCoupons.length > 0
+            ? (
+                filteredCoupons.reduce((sum, c) => sum + (c.discount || 0), 0) / filteredCoupons.length
+              ).toFixed(2)
+            : '0.00',
+      }
+    : apiStats || {
+        // Fallback if API stats not available
+        totalCoupons: 0,
+        activeCoupons: 0,
+        totalUses: 0,
+        averageDiscount: '0.00',
+      };
 
   const selectedStore = stores.find(s => s.id === selectedStoreId);
 

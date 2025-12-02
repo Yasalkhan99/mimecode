@@ -226,6 +226,20 @@ export default function AdminLayout({
             FAQs
           </Link>
           <Link
+            href="/admin/privacy-policy"
+            onClick={() => setSidebarOpen(false)}
+            className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
+          >
+            Privacy Policy
+          </Link>
+          <Link
+            href="/admin/terms"
+            onClick={() => setSidebarOpen(false)}
+            className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
+          >
+            Terms & Conditions
+          </Link>
+          <Link
             href="/admin/analytics"
             onClick={() => setSidebarOpen(false)}
             className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"

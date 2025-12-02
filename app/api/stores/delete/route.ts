@@ -1,13 +1,14 @@
 // Server-side store delete route
-// Uses MongoDB
+// Uses Supabase
 
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import Store from '@/lib/models/Store';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   try {
-    await connectDB();
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin client not initialized');
+    }
 
     const body = await req.json();
     const { id } = body;
@@ -19,20 +20,42 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const store = await Store.findByIdAndDelete(id);
+    console.log('Deleting store with ID:', id);
 
-    if (!store) {
+    // Delete store by Store Id (Supabase uses 'Store Id' as the identifier)
+    // First check if store exists
+    const { data: checkData, error: checkError } = await supabaseAdmin
+      .from('stores')
+      .select('"Store Id"')
+      .eq('Store Id', id)
+      .single();
+
+    if (checkError || !checkData) {
+      console.error('Store not found or error checking:', checkError);
       return NextResponse.json(
         { success: false, error: 'Store not found' },
         { status: 404 }
       );
     }
 
+    // Now delete the store
+    const { error } = await supabaseAdmin
+      .from('stores')
+      .delete()
+      .eq('Store Id', id);
+
+    if (error) {
+      console.error('Supabase delete store error:', error);
+      throw error;
+    }
+
+    console.log('Store deleted successfully:', id);
+
     return NextResponse.json({
       success: true,
     });
   } catch (error: any) {
-    console.error('MongoDB delete store error:', error);
+    console.error('Supabase delete store error:', error);
     return NextResponse.json(
       {
         success: false,

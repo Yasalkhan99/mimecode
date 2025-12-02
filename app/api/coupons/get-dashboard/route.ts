@@ -65,78 +65,86 @@ export async function GET(req: NextRequest) {
     }
 
     const tableName = 'coupons';
-    const storesTableName = 'stores';
 
-    // Get all coupons without any filters - for dashboard stats
-    // Fetch all coupons using pagination to bypass 1000 row limit
-    let baseQuery = supabaseAdmin.from(tableName).select('*', { count: 'exact' });
-    
-    // Fetch all coupons using pagination to bypass 1000 row limit
-    let allCoupons: any[] = [];
-    const batchSize = 1000;
-    let from = 0;
-    let hasMore = true;
-    
-    while (hasMore) {
-      let batchQuery = baseQuery.range(from, from + batchSize - 1);
-      const { data: batchCoupons, error: batchError, count } = await batchQuery;
+    // OPTIMIZED: Use database aggregation instead of fetching all data
+    // Get counts and minimal data using efficient queries
+    const [totalCountResult, activeCountResult, statsData] = await Promise.all([
+      // Total coupons count
+      supabaseAdmin
+        .from(tableName)
+        .select('*', { count: 'exact', head: true }),
       
-      if (batchError) {
-        throw batchError;
-      }
+      // Active coupons count (where is_active is not false)
+      supabaseAdmin
+        .from(tableName)
+        .select('*', { count: 'exact', head: true })
+        .or('is_active.is.null,is_active.eq.true'),
       
-      if (batchCoupons && batchCoupons.length > 0) {
-        allCoupons = [...allCoupons, ...batchCoupons];
-        from += batchSize;
-        // Continue if we got a full batch and there might be more
-        hasMore = batchCoupons.length === batchSize && (count === null || from < count);
-      } else {
-        hasMore = false;
-      }
-    }
-    
-    const coupons = allCoupons;
+      // Get only the fields we need for calculations (much faster than fetching all)
+      supabaseAdmin
+        .from(tableName)
+        .select('current_uses,currentUses,discount'),
+    ]);
 
-    console.log(`📊 Dashboard API: Fetched ${coupons?.length || 0} coupons from Supabase`);
-
-    // Get unique store IDs for batch fetch
-    const storeIds = new Set<string>();
-    coupons?.forEach((coupon: any) => {
-      if (coupon['Store  Id']) storeIds.add(coupon['Store  Id']);
-      if (coupon.storeIds && Array.isArray(coupon.storeIds)) {
-        coupon.storeIds.forEach((id: string) => storeIds.add(id));
-      }
-    });
+    const totalCoupons = totalCountResult.count || 0;
+    const activeCoupons = activeCountResult.count || 0;
     
-    // Fetch store data for all unique store IDs
-    const storeDataMap = new Map();
-    if (storeIds.size > 0) {
-      const { data: stores } = await supabaseAdmin
-        .from(storesTableName)
-        .select('*')
-        .in('id', Array.from(storeIds));
+    // Calculate total uses from minimal data
+    const totalUses = (statsData.data || []).reduce((sum: number, coupon: any) => {
+      return sum + (parseInt(coupon.current_uses || coupon.currentUses || 0) || 0);
+    }, 0);
+    
+    // Calculate average discount from minimal data
+    const discountValues = (statsData.data || [])
+      .map((c: any) => parseFloat(c.discount || 0))
+      .filter((d: number) => !isNaN(d) && d > 0);
+    
+    const averageDiscount = discountValues.length > 0
+      ? (discountValues.reduce((sum: number, d: number) => sum + d, 0) / discountValues.length).toFixed(2)
+      : '0.00';
+
+    console.log(`✅ Dashboard API: Fast stats calculated - Total: ${totalCoupons}, Active: ${activeCoupons}`);
+
+    // For the table, fetch only recent coupons (limit to 10-20 for faster loading)
+    const { data: recentCoupons, error: recentError } = await supabaseAdmin
+      .from(tableName)
+      .select('*')
+      .order('created_at', { ascending: false })
+      .order('Modify Date', { ascending: false })
+      .limit(20);
+
+    let convertedCoupons: any[] = [];
+    
+    if (recentCoupons && recentCoupons.length > 0) {
+      // Get unique store IDs for batch fetch (only for recent coupons)
+      const storeIds = new Set<string>();
+      recentCoupons.forEach((coupon: any) => {
+        if (coupon['Store  Id']) storeIds.add(coupon['Store  Id']);
+        if (coupon.storeIds && Array.isArray(coupon.storeIds)) {
+          coupon.storeIds.forEach((id: string) => storeIds.add(id));
+        }
+      });
       
-      stores?.forEach(store => {
-        storeDataMap.set(store.id, store);
+      // Fetch store data only for recent coupons
+      const storeDataMap = new Map();
+      if (storeIds.size > 0) {
+        const { data: stores } = await supabaseAdmin
+          .from('stores')
+          .select('*')
+          .in('id', Array.from(storeIds));
+        
+        stores?.forEach(store => {
+          storeDataMap.set(store.id, store);
+        });
+      }
+
+      // Convert only recent coupons
+      convertedCoupons = recentCoupons.map((coupon: any) => {
+        const couponStoreId = coupon['Store  Id'] || coupon.storeIds?.[0];
+        const storeData = couponStoreId ? storeDataMap.get(couponStoreId) : null;
+        return convertToAPIFormat({ data: () => coupon }, coupon.id, storeData);
       });
     }
-
-    // Convert coupons with store data fallback
-    let convertedCoupons = (coupons || []).map((coupon: any) => {
-      const couponStoreId = coupon['Store  Id'] || coupon.storeIds?.[0];
-      const storeData = couponStoreId ? storeDataMap.get(couponStoreId) : null;
-      return convertToAPIFormat({ data: () => coupon }, coupon.id, storeData);
-    });
-
-    console.log(`✅ Dashboard API: Converted ${convertedCoupons.length} coupons`);
-
-    // Calculate stats
-    const totalCoupons = convertedCoupons.length;
-    const activeCoupons = convertedCoupons.filter((coupon: any) => coupon.isActive !== false).length;
-    const totalUses = convertedCoupons.reduce((sum: number, coupon: any) => sum + (coupon.currentUses || 0), 0);
-    const averageDiscount = convertedCoupons.length > 0
-      ? (convertedCoupons.reduce((sum: number, coupon: any) => sum + (coupon.discount || 0), 0) / convertedCoupons.length).toFixed(2)
-      : '0.00';
 
     return NextResponse.json({
       success: true,
@@ -146,7 +154,7 @@ export async function GET(req: NextRequest) {
         totalUses,
         averageDiscount,
       },
-      coupons: convertedCoupons, // Return all coupons for dashboard
+      coupons: convertedCoupons, // Return only recent coupons for table
     });
   } catch (error: any) {
     console.error('Supabase get dashboard coupons error:', error);
