@@ -600,16 +600,6 @@ export default function StoreDetailPage() {
                 >
                   Deals({dealCoupons.length})
                 </button>
-                <button
-                  onClick={() => setFilterTab('products')}
-                  className={`pb-3 px-1 text-sm sm:text-base font-semibold transition-colors border-b-2 ${
-                    filterTab === 'products'
-                      ? 'border-[#16a34a] text-[#16a34a]'
-                      : 'border-transparent text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Products(0)
-                </button>
               </div>
             </div>
 
