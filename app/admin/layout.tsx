@@ -160,70 +160,70 @@ export default function AdminLayout({
             onClick={() => setSidebarOpen(false)}
             className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
           >
-            Manage Coupons
+            Coupons
           </Link>
           <Link
             href="/admin/categories"
             onClick={() => setSidebarOpen(false)}
             className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
           >
-            Manage Categories
+            Categories
           </Link>
           <Link
             href="/admin/banners"
             onClick={() => setSidebarOpen(false)}
             className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
           >
-            Manage Banners
+            Banners
           </Link>
           <Link
             href="/admin/events"
             onClick={() => setSidebarOpen(false)}
             className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
           >
-            Manage Events
+            Events
           </Link>
           <Link
             href="/admin/stores"
             onClick={() => setSidebarOpen(false)}
             className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
           >
-            Manage Stores
+            Stores
           </Link>
           <Link
             href="/admin/regions"
             onClick={() => setSidebarOpen(false)}
             className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
           >
-            Manage Regions
+            Regions
           </Link>
           <Link
             href="/admin/logos"
             onClick={() => setSidebarOpen(false)}
             className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
           >
-            Manage Logos
+            Logos
           </Link>
           <Link
             href="/admin/news"
             onClick={() => setSidebarOpen(false)}
             className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
           >
-            Manage News & Articles
+            News & Articles
           </Link>
           <Link
             href="/admin/email"
             onClick={() => setSidebarOpen(false)}
             className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
           >
-            Manage Email
+            Email
           </Link>
           <Link
             href="/admin/faqs"
             onClick={() => setSidebarOpen(false)}
             className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
           >
-            Manage FAQs
+            FAQs
           </Link>
           <Link
             href="/admin/analytics"

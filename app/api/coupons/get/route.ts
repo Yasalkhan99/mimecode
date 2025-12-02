@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
       }
       
       // Get store data for fallback URL
-      let storeData = null;
+      let storeData = null; 
       const storeIdToFetch = couponData['Store  Id'] || couponData.storeIds?.[0];
       if (storeIdToFetch) {
         const { data: store } = await supabaseAdmin

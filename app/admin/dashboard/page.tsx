@@ -10,16 +10,39 @@ export default function DashboardPage() {
   const [stores, setStores] = useState<Store[]>([]);
   const [selectedStoreId, setSelectedStoreId] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  console.log('coupons:', coupons);
 
   useEffect(() => {
     const fetchData = async () => {
-      const [couponsData, storesData] = await Promise.all([
-        getCoupons(),
-        getStores()
-      ]);
-      setCoupons(couponsData);
-      setStores(storesData);
-      setLoading(false);
+      try {
+        // Fetch dashboard stats and all coupons
+        const dashboardRes = await fetch('/api/coupons/get-dashboard');
+        const dashboardData = await dashboardRes.json();
+        
+        // Fetch stores
+        const storesData = await getStores();
+        
+        if (dashboardData.success) {
+          setCoupons(dashboardData.coupons || []);
+        } else {
+          // Fallback to regular API if dashboard API fails
+          const couponsData = await getCoupons();
+          setCoupons(couponsData);
+        }
+        
+        setStores(storesData);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        // Fallback to regular API
+        const [couponsData, storesData] = await Promise.all([
+          getCoupons(),
+          getStores()
+        ]);
+        setCoupons(couponsData);
+        setStores(storesData);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchData();
   }, []);
