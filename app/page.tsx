@@ -335,9 +335,9 @@ export default function Home() {
       urlToOpen = store.websiteUrl || (store as any)?.['Tracking Url'] || (store as any)?.['Store Display Url'] || null;
     }
     
-    // Fallback to coupon URL if no store URL
+    // Fallback to coupon URL or affiliate link if no store URL
     if (!urlToOpen) {
-      urlToOpen = coupon.url || null;
+      urlToOpen = coupon.url || coupon.affiliateLink || null;
     }
     
     // Normalize URL to ensure it has protocol

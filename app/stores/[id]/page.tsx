@@ -252,16 +252,20 @@ export default function StoreDetailPage() {
     setShowPopup(true);
     
     // Automatically open URL in new tab after a short delay (to ensure popup is visible first)
-    if (coupon.url && coupon.url.trim()) {
+    // Use url first, then affiliateLink as fallback
+    const redirectUrl = (coupon.url && coupon.url.trim()) || (coupon.affiliateLink && coupon.affiliateLink.trim());
+    if (redirectUrl) {
       setTimeout(() => {
-        window.open(coupon.url, '_blank', 'noopener,noreferrer');
+        window.open(redirectUrl, '_blank', 'noopener,noreferrer');
       }, 500);
     }
   };
 
   const handleContinue = () => {
-    if (selectedCoupon?.url) {
-      window.open(selectedCoupon.url, '_blank', 'noopener,noreferrer');
+    // Use url first, then affiliateLink as fallback
+    const redirectUrl = selectedCoupon?.url || selectedCoupon?.affiliateLink;
+    if (redirectUrl) {
+      window.open(redirectUrl, '_blank', 'noopener,noreferrer');
     }
     setShowPopup(false);
     setSelectedCoupon(null);

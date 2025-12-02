@@ -58,6 +58,7 @@ const convertToAPIFormat = (doc: any, docId: string, storeData?: any) => {
     expiryDate: data['Coupon Expiry'] || data.expiry_date || data.expiryDate || null,
     logoUrl: data.logo_url || data.logoUrl || null,
     url: couponUrl,
+    affiliateLink: data.affiliate_link || data.affiliateLink || null,
     couponType: data['Coupon Type'] || data.coupon_type || data.couponType || 'code',
     isPopular: data.is_popular || data.isPopular || false,
     layoutPosition: data['Coupon Priority'] ? parseInt(String(data['Coupon Priority'])) : (data.layoutPosition || null),

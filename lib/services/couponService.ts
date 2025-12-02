@@ -29,6 +29,7 @@ export interface Coupon {
   expiryDate: Timestamp | null;
   logoUrl?: string;
   url?: string; // Coupon URL where user should be redirected
+  affiliateLink?: string; // Fallback affiliate link when url is not available
   couponType?: 'code' | 'deal'; // Type of coupon: 'code' for coupon codes, 'deal' for deals
   isPopular?: boolean;
   layoutPosition?: number | null; // Position in popular coupons layout (1-8)
