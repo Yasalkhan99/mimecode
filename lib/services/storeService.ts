@@ -1,5 +1,4 @@
-import { db } from '@/lib/firebase';
-import { collection, getDocs, deleteDoc, doc, Timestamp, addDoc, updateDoc, getDoc, query, where } from 'firebase/firestore';
+import { Timestamp } from 'firebase/firestore';
 import { extractOriginalCloudinaryUrl } from '@/lib/utils/cloudinary';
 
 export interface Store {
@@ -24,6 +23,8 @@ export interface Store {
   trustScore?: number; // Trust score (0-100)
   establishedYear?: number; // Year store was established
   headquarters?: string; // Headquarters location
+  whyTrustUs?: string; // Dynamic "Why Trust Us" content for store page
+  moreInformation?: string; // Dynamic "More Information" content for store page
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -115,17 +116,8 @@ export async function createStore(store: Omit<Store, 'id'>) {
 
     if (!res.ok) {
       console.error('Server create failed', { status: res.status, body: json });
-      // Fallback to client-side create (requires proper Firestore rules)
-      try {
-        const docRef = await addDoc(collection(db, stores), {
-          ...store,
-          createdAt: Timestamp.now(),
-        });
-        return { success: true, id: docRef.id };
-      } catch (fallbackError) {
-        console.error('Client-side create fallback failed', fallbackError);
-        return { success: false, error: json.error || json.text || 'Failed to create store' };
-      }
+      // No fallback - API is required for Supabase
+      return { success: false, error: json.error || json.text || 'Failed to create store' };
     }
 
     return { success: true, id: json.id };
@@ -148,15 +140,10 @@ export async function getStoreById(id: string): Promise<Store | null> {
         return null;
       }
     } catch (apiError) {
-      console.warn('Server API failed, trying client-side:', apiError);
+      console.warn('Server API failed:', apiError);
     }
 
-    // Fallback to client-side read (requires proper Firestore rules)
-    const docRef = doc(db, stores, id);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() } as Store;
-    }
+    // No fallback - API is required for Supabase
     return null;
   } catch (error) {
     console.error('Error getting store:', error);
@@ -178,19 +165,10 @@ export async function getStoreBySlug(slug: string): Promise<Store | null> {
         return null;
       }
     } catch (apiError) {
-      console.warn('Server API failed, trying client-side:', apiError);
+      console.warn('Server API failed:', apiError);
     }
 
-    // Fallback to client-side read (requires proper Firestore rules)
-    const q = query(
-      collection(db, stores),
-      where('slug', '==', slug)
-    );
-    const querySnapshot = await getDocs(q);
-    if (!querySnapshot.empty) {
-      const doc = querySnapshot.docs[0];
-      return { id: doc.id, ...doc.data() } as Store;
-    }
+    // No fallback - API is required for Supabase
     return null;
   } catch (error) {
     console.error('Error getting store by slug:', error);
@@ -212,19 +190,10 @@ export async function getStoreByNetworkId(networkId: string): Promise<Store | nu
         return null;
       }
     } catch (apiError) {
-      console.warn('Server API failed, trying client-side:', apiError);
+      console.warn('Server API failed:', apiError);
     }
 
-    // Fallback to client-side read (requires proper Firestore rules)
-    const q = query(
-      collection(db, stores),
-      where('networkId', '==', networkId)
-    );
-    const querySnapshot = await getDocs(q);
-    if (!querySnapshot.empty) {
-      const doc = querySnapshot.docs[0];
-      return { id: doc.id, ...doc.data() } as Store;
-    }
+    // No fallback - API is required for Supabase
     return null;
   } catch (error) {
     console.error('Error getting store by network ID:', error);
@@ -253,19 +222,11 @@ export async function getStoresByNetworkId(networkId: string): Promise<Store[]> 
         return [];
       }
     } catch (apiError) {
-      console.warn('Server API failed, trying client-side:', apiError);
+      console.warn('Server API failed:', apiError);
     }
 
-    // Fallback to client-side read (requires proper Firestore rules)
-    const q = query(
-      collection(db, stores),
-      where('networkId', '==', networkId)
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as Store[];
+    // No fallback - API is required for Supabase
+    return [];
   } catch (error) {
     console.error('Error getting stores by network ID:', error);
     return [];
@@ -321,42 +282,16 @@ export async function isSlugUnique(slug: string, excludeStoreId?: string): Promi
       return isUnique;
     }
 
-    // If API failed, log error but try fallback
-    console.warn('Server API failed, trying client-side fallback:', {
+    // If API failed, log error
+    console.warn('Server API failed:', {
       status: res.status,
       error: json.error || json.text || 'Unknown error'
     });
 
-    // Fallback to client-side check (requires proper Firestore rules)
-    try {
-      const q = query(
-        collection(db, stores),
-        where('slug', '==', trimmedSlug)
-      );
-      const querySnapshot = await getDocs(q);
-      
-      if (querySnapshot.empty) {
-        console.log(`Slug "${trimmedSlug}" is unique (client-side check)`);
-        return true; // Slug is unique
-      }
-      
-      // If editing, check if the slug belongs to the current store
-      if (excludeStoreId) {
-        const existingStore = querySnapshot.docs.find(doc => doc.id === excludeStoreId);
-        const isOwnSlug = !!existingStore;
-        console.log(`Slug "${trimmedSlug}" ${isOwnSlug ? 'belongs to current store' : 'belongs to another store'}`);
-        return isOwnSlug; // Return true if slug belongs to current store (it's valid to keep your own slug)
-      }
-      
-      console.log(`Slug "${trimmedSlug}" already exists for another store`);
-      return false; // Slug already exists for another store
-    } catch (fallbackError) {
-      console.error('Client-side fallback also failed:', fallbackError);
-      // If both fail, return true to allow creation (better than blocking)
-      // User can manually check if slug is duplicate
-      console.warn('Both server and client-side checks failed, allowing slug creation');
-      return true;
-    }
+    // No fallback - API is required for Supabase
+    // If API fails, return true to allow creation (better than blocking)
+    console.warn('API check failed, allowing slug creation');
+    return true;
   } catch (error) {
     console.error('Error checking slug uniqueness:', error);
     // If error occurs, return true to allow creation (better than blocking)
@@ -394,16 +329,8 @@ export async function updateStore(id: string, updates: Partial<Store>) {
 
     if (!res.ok) {
       console.error('Server update failed', { status: res.status, body: json });
-      // Fallback to client-side update (requires proper Firestore rules)
-      try {
-        const { updateDoc } = await import('firebase/firestore');
-        const docRef = doc(db, stores, id);
-        await updateDoc(docRef, updates);
-        return { success: true };
-      } catch (fallbackError) {
-        console.error('Client-side update fallback failed', fallbackError);
-        return { success: false, error: json.error || json.text || 'Failed to update store' };
-      }
+      // No fallback - API is required for Supabase
+      return { success: false, error: json.error || json.text || 'Failed to update store' };
     }
 
     return { success: true };
@@ -440,15 +367,8 @@ export async function deleteStore(id: string) {
 
     if (!res.ok) {
       console.error('Server delete failed', { status: res.status, body: json });
-      // Fallback to client-side delete (requires proper Firestore rules)
-      try {
-        const docRef = doc(db, stores, id);
-        await deleteDoc(docRef);
-        return { success: true };
-      } catch (fallbackError) {
-        console.error('Client-side delete fallback failed', fallbackError);
-        return { success: false, error: json.error || json.text || 'Failed to delete store' };
-      }
+      // No fallback - API is required for Supabase
+      return { success: false, error: json.error || json.text || 'Failed to delete store' };
     }
 
     return { success: true };
@@ -471,19 +391,11 @@ export async function getStoresByCategoryId(categoryId: string): Promise<Store[]
         }
       }
     } catch (apiError) {
-      console.warn('Server API failed, trying client-side:', apiError);
+      console.warn('Server API failed:', apiError);
     }
 
-    // Fallback to client-side read (requires proper Firestore rules)
-    const q = query(
-      collection(db, stores),
-      where('categoryId', '==', categoryId)
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    } as Store));
+    // No fallback - API is required for Supabase
+    return [];
   } catch (error) {
     console.error('Error getting stores by category:', error);
     return [];

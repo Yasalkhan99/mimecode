@@ -1,13 +1,14 @@
 // Server-side store update route
-// Uses MongoDB
+// Uses Supabase
 
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import Store from '@/lib/models/Store';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   try {
-    await connectDB();
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin client not initialized');
+    }
 
     const body = await req.json();
     const { id, updates } = body;
@@ -19,32 +20,78 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const store = await Store.findByIdAndUpdate(
-      id,
-      { ...updates, updatedAt: new Date() },
-      { new: true, runValidators: true }
-    );
+    console.log('Updating store:', id, 'with updates:', Object.keys(updates));
 
-    if (!store) {
+    // Convert camelCase field names to snake_case for Supabase
+    const supabaseUpdates: any = {
+      updated_at: new Date().toISOString(),
+    };
+
+    // Map common fields
+    if (updates.name !== undefined) supabaseUpdates['Store Name'] = updates.name;
+    if (updates.slug !== undefined) supabaseUpdates['Slug'] = updates.slug;
+    if (updates.description !== undefined) supabaseUpdates['description'] = updates.description;
+    if (updates.logoUrl !== undefined) supabaseUpdates['Store Logo'] = updates.logoUrl;
+    if (updates.websiteUrl !== undefined) {
+      supabaseUpdates['Tracking Url'] = updates.websiteUrl;
+      supabaseUpdates['Store Display Url'] = updates.websiteUrl;
+      supabaseUpdates['website_url'] = updates.websiteUrl;
+    }
+    if (updates.networkId !== undefined) supabaseUpdates['Network Id'] = updates.networkId;
+    if (updates.categoryId !== undefined) supabaseUpdates['Parent Category Id'] = updates.categoryId;
+    if (updates.aboutText !== undefined) supabaseUpdates['about_text'] = updates.aboutText;
+    if (updates.features !== undefined) supabaseUpdates['features'] = updates.features;
+    if (updates.shippingInfo !== undefined) supabaseUpdates['shipping_info'] = updates.shippingInfo;
+    if (updates.returnPolicy !== undefined) supabaseUpdates['return_policy'] = updates.returnPolicy;
+    if (updates.contactInfo !== undefined) supabaseUpdates['contact_info'] = updates.contactInfo;
+    if (updates.trustScore !== undefined) supabaseUpdates['trust_score'] = updates.trustScore;
+    if (updates.establishedYear !== undefined) supabaseUpdates['established_year'] = updates.establishedYear;
+    if (updates.headquarters !== undefined) supabaseUpdates['headquarters'] = updates.headquarters;
+    if (updates.voucherText !== undefined) supabaseUpdates['voucher_text'] = updates.voucherText;
+    if (updates.layoutPosition !== undefined) supabaseUpdates['layout_position'] = updates.layoutPosition;
+    
+    // Add new dynamic content fields
+    if (updates.whyTrustUs !== undefined) supabaseUpdates['why_trust_us'] = updates.whyTrustUs;
+    if (updates.moreInformation !== undefined) supabaseUpdates['more_information'] = updates.moreInformation;
+
+    console.log('Supabase updates:', supabaseUpdates);
+
+    // Update store by Store Id
+    const { data, error } = await supabaseAdmin
+      .from('stores')
+      .update(supabaseUpdates)
+      .eq('Store Id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Supabase update error:', error);
+      
+      // Check for duplicate slug error
+      if (error.code === '23505') { // Unique constraint violation
+        return NextResponse.json(
+          { success: false, error: 'Store with this slug already exists' },
+          { status: 400 }
+        );
+      }
+      
+      throw error;
+    }
+
+    if (!data) {
       return NextResponse.json(
         { success: false, error: 'Store not found' },
         { status: 404 }
       );
     }
 
+    console.log('Store updated successfully:', id);
+
     return NextResponse.json({
       success: true,
     });
   } catch (error: any) {
-    console.error('MongoDB update store error:', error);
-    
-    // Handle duplicate key error (slug)
-    if (error.code === 11000) {
-      return NextResponse.json(
-        { success: false, error: 'Store with this slug already exists' },
-        { status: 400 }
-      );
-    }
+    console.error('Supabase update store error:', error);
 
     return NextResponse.json(
       {
@@ -55,4 +102,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-

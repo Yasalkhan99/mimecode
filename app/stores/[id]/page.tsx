@@ -495,16 +495,24 @@ export default function StoreDetailPage() {
                 </div>
               </div>
 
-              {/* Why Trust Us Section */}
+              {/* Why Trust Us Section - Dynamic Content */}
               <div className="bg-white border border-gray-200 rounded-lg p-4">
                 <h3 className="text-lg font-bold text-gray-900 mb-3">Why Trust Us?</h3>
                 <div className="space-y-2 text-sm text-gray-700 leading-relaxed">
-                  <p>
-                    At MimeCode, we are committed to providing you with the best deals and savings opportunities. Our dedicated team works tirelessly to ensure that every coupon and deal we feature is verified, up-to-date, and reliable.
-                  </p>
-                  <p>
-                    We understand the importance of saving money, and that's why we make it our mission to help you find the best discounts from your favorite stores.
-                  </p>
+                  {store.whyTrustUs ? (
+                    // Use custom content from admin if available
+                    <div dangerouslySetInnerHTML={{ __html: store.whyTrustUs.replace(/\n/g, '<br />') }} />
+                  ) : (
+                    // Default content if not set
+                    <>
+                      <p>
+                        At MimeCode, we are committed to providing you with the best deals and savings opportunities. Our dedicated team works tirelessly to ensure that every coupon and deal we feature is verified, up-to-date, and reliable.
+                      </p>
+                      <p>
+                        We understand the importance of saving money, and that's why we make it our mission to help you find the best discounts from your favorite stores.
+                      </p>
+                    </>
+                  )}
                   <p className="text-xs text-gray-500 mt-3">
                     Last updated: {getCurrentDate()}
                   </p>
@@ -819,31 +827,39 @@ export default function StoreDetailPage() {
               </div>
             )}
 
-            {/* More Information Section */}
+            {/* More Information Section - Dynamic Content */}
             <div id="store-info-section" className="mt-12 bg-white rounded-lg shadow-md p-6 sm:p-8">
               <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">
                 More Information On {store.name} Coupons
               </h2>
               <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed space-y-4">
-                <p>
-                  At MimeCode, we are dedicated to helping you save money with incredible savings opportunities from {store.name}. Whether you're looking for your preferred item or exploring new products, our verified coupons and deals make it easy to shop more while spending less.
-                </p>
-                <p>
-                  The expanding e-commerce market offers numerous opportunities for savings, and we've developed simple strategies to help you maximize your discounts. Our team works around the clock to ensure all {store.name} coupons are verified, up-to-date, and ready to use.
-                </p>
-                <p>
-                  <strong>Seasonal Deals & Savings:</strong> Keep an eye out for special promotions during November deals, holiday deals, Black Friday, Cyber Monday, Christmas, New Year's, Easter, Thanksgiving, Winter Sale, Summer Sale, Halloween, Chinese Sale, Mother's Day, and Father's Day. These are the best times to find incredible discounts on {store.name} products.
-                </p>
-                {store.description && (
-                  <p>
-                    {store.description}
-                  </p>
-                )}
-                {store.aboutText && (
-                  <div className="mt-4">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">About {store.name}</h3>
-                    <p className="whitespace-pre-line">{store.aboutText}</p>
-                  </div>
+                {store.moreInformation ? (
+                  // Use custom content from admin if available
+                  <div dangerouslySetInnerHTML={{ __html: store.moreInformation.replace(/\n/g, '<br />') }} />
+                ) : (
+                  // Default content if not set
+                  <>
+                    <p>
+                      At MimeCode, we are dedicated to helping you save money with incredible savings opportunities from {store.name}. Whether you're looking for your preferred item or exploring new products, our verified coupons and deals make it easy to shop more while spending less.
+                    </p>
+                    <p>
+                      The expanding e-commerce market offers numerous opportunities for savings, and we've developed simple strategies to help you maximize your discounts. Our team works around the clock to ensure all {store.name} coupons are verified, up-to-date, and ready to use.
+                    </p>
+                    <p>
+                      <strong>Seasonal Deals & Savings:</strong> Keep an eye out for special promotions during November deals, holiday deals, Black Friday, Cyber Monday, Christmas, New Year's, Easter, Thanksgiving, Winter Sale, Summer Sale, Halloween, Chinese Sale, Mother's Day, and Father's Day. These are the best times to find incredible discounts on {store.name} products.
+                    </p>
+                    {store.description && (
+                      <p>
+                        {store.description}
+                      </p>
+                    )}
+                    {store.aboutText && (
+                      <div className="mt-4">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">About {store.name}</h3>
+                        <p className="whitespace-pre-line">{store.aboutText}</p>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>

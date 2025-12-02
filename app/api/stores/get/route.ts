@@ -136,6 +136,8 @@ const convertToAPIFormat = (row: any) => {
     categoryId: row['Parent Category Id'] || row.category_id || row['Cate Ids'] || '',
     storeId: storeIdValue,
     merchantId: row['Merchant Id'] || row.merchant_id || '',
+    whyTrustUs: row.why_trust_us || null, // Dynamic "Why Trust Us" content
+    moreInformation: row.more_information || null, // Dynamic "More Information" content
     createdAt: row['Created Date'] || row.created_at || null,
     updatedAt: row['Modify Date'] || row.updated_at || null,
   };
@@ -157,23 +159,17 @@ export async function GET(req: NextRequest) {
 
     // Get store by ID
     if (id) {
-      // Try UUID first, then Store Id
-      let { data, error } = await query.eq('id', id).single();
-      if (error && error.code === 'PGRST116') {
-        // Try Store Id column
-        const { data: storeData, error: storeError } = await supabaseAdmin
-          .from('stores')
-          .select('*')
-          .eq('Store Id', id)
-          .single();
-        if (storeError && storeError.code !== 'PGRST116') {
-          throw storeError;
-        }
-        data = storeData;
-        error = storeError;
-      } else if (error) {
+      // Stores table doesn't have UUID 'id' column, only 'Store Id'
+      const { data, error } = await supabaseAdmin
+        .from('stores')
+        .select('*')
+        .eq('Store Id', id)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
         throw error;
       }
+      
       return NextResponse.json({
         success: true,
         store: data ? convertToAPIFormat(data) : null,

@@ -361,6 +361,46 @@ export default function EditStorePage() {
             </div>
 
             <div>
+              <label htmlFor="whyTrustUs" className="block text-sm font-semibold text-gray-700 mb-1">
+                Why Trust Us Section
+              </label>
+              <textarea
+                id="whyTrustUs"
+                name="whyTrustUs"
+                value={formData.whyTrustUs || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, whyTrustUs: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={6}
+                placeholder="Why should customers trust this store? Enter custom content here..."
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                This will appear in the sidebar "Why Trust Us?" section. Leave blank to use default content.
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="moreInformation" className="block text-sm font-semibold text-gray-700 mb-1">
+                More Information Section
+              </label>
+              <textarea
+                id="moreInformation"
+                name="moreInformation"
+                value={formData.moreInformation || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, moreInformation: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={8}
+                placeholder="Enter detailed information about the store, coupons, how to use them, etc. You can use HTML tags for formatting."
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                This will appear in the "More Information On [Store Name] Coupons" section. Supports HTML formatting. Leave blank to use default content.
+              </p>
+            </div>
+
+            <div>
               <label htmlFor="features" className="block text-sm font-semibold text-gray-700 mb-1">
                 Features (One per line)
               </label>
