@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
         
         emailSent = true;
         console.log('✅ Contact email sent successfully via SMTP:', {
-          recipientEmail,
+          recipients,
           messageId: info.messageId
         });
       } catch (err: any) {
@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
           error: err,
           message: err?.message,
           code: err?.code,
-          recipientEmail
+          recipients
         });
         
         // Try port 465 if 587 fails (for Gmail)
@@ -172,7 +172,7 @@ export async function POST(req: NextRequest) {
             
             const mailOptions = {
               from: smtpFrom,
-              to: recipientEmail,
+              to: recipients.join(', '),
               replyTo: email.trim(),
               subject: subject?.trim() || `Contact Support: ${name.trim()}`,
               html: `
@@ -199,7 +199,7 @@ export async function POST(req: NextRequest) {
             emailSent = true;
             emailError = null;
             console.log('✅ Contact email sent successfully via SMTP (port 465):', {
-              recipientEmail,
+              recipients,
               messageId: info.messageId
             });
           } catch (sslErr: any) {

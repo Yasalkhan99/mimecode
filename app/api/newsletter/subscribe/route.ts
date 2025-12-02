@@ -177,7 +177,7 @@ export async function POST(req: NextRequest) {
               
               const mailOptions = {
                 from: smtpFrom,
-                to: recipientEmail,
+                to: recipients.join(', '),
                 subject: 'New Newsletter Subscription Request',
                 html: `
                   <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -197,7 +197,7 @@ export async function POST(req: NextRequest) {
               emailSent = true;
               emailError = null;
               console.log('✅ Email sent successfully via SMTP (port 465):', {
-                recipientEmail,
+                recipients,
                 messageId: info.messageId
               });
             } catch (sslErr: any) {
@@ -226,7 +226,7 @@ export async function POST(req: NextRequest) {
       success: true,
       message: 'Thank you for subscribing! Your email has been saved successfully.',
       emailSent,
-      recipientEmail,
+      recipients,
       emailError: emailError ? emailError.message : null,
     });
   } catch (error: any) {
