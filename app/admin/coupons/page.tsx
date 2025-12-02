@@ -958,6 +958,26 @@ export default function CouponsPage() {
             </div>
 
             <div>
+              <label htmlFor="affiliateLink" className="block text-gray-700 text-sm font-semibold mb-2">
+                Affiliate Link (Fallback URL)
+              </label>
+              <input
+                id="affiliateLink"
+                name="affiliateLink"
+                type="url"
+                placeholder="https://affiliate.com/store-link"
+                value={formData.affiliateLink || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, affiliateLink: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                This affiliate link will be used if the Coupon URL above is not set. Great for tracking commissions!
+              </p>
+            </div>
+
+            <div>
               <label htmlFor="categoryId" className="block text-gray-700 text-sm font-semibold mb-2">
                 Category
               </label>
