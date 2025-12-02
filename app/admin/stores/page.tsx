@@ -542,6 +542,136 @@ export default function StoresPage() {
               </p>
             </div>
 
+            <div>
+              <label htmlFor="whyTrustUs" className="block text-gray-700 text-sm font-semibold mb-2">
+                Why Trust Us Section (Optional)
+              </label>
+              <textarea
+                id="whyTrustUs"
+                name="whyTrustUs"
+                value={formData.whyTrustUs || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, whyTrustUs: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={4}
+                placeholder="Why should customers trust this store? Enter custom content here..."
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                This will appear in the sidebar "Why Trust Us?" section. Leave blank to use default content.
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="moreInformation" className="block text-gray-700 text-sm font-semibold mb-2">
+                More Information Section (Optional)
+              </label>
+              <textarea
+                id="moreInformation"
+                name="moreInformation"
+                value={formData.moreInformation || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, moreInformation: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={6}
+                placeholder="Enter detailed information about the store, coupons, how to use them, etc. You can use HTML tags for formatting."
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Supports HTML formatting. Leave blank to use default content.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="seoTitle" className="block text-gray-700 text-sm font-semibold mb-2">
+                  SEO Page Title (Optional)
+                </label>
+                <input
+                  id="seoTitle"
+                  name="seoTitle"
+                  type="text"
+                  value={formData.seoTitle || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, seoTitle: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Best Nike Shoes Coupons & Deals 2024"
+                  maxLength={60}
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Shown in browser tab. Max 60 characters.
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="seoDescription" className="block text-gray-700 text-sm font-semibold mb-2">
+                  SEO Meta Description (Optional)
+                </label>
+                <textarea
+                  id="seoDescription"
+                  name="seoDescription"
+                  value={formData.seoDescription || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, seoDescription: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={2}
+                  placeholder="Get the latest Nike coupons & save up to 70%!"
+                  maxLength={160}
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Shown in search results. Max 160 characters.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="rating" className="block text-gray-700 text-sm font-semibold mb-2">
+                  Rating (0.0 - 5.0)
+                </label>
+                <input
+                  id="rating"
+                  name="rating"
+                  type="number"
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  placeholder="4.5"
+                  value={formData.rating || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, rating: e.target.value ? parseFloat(e.target.value) : undefined })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Store rating displayed as stars (e.g., 4.5 = 4.5 stars)
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="reviewCount" className="block text-gray-700 text-sm font-semibold mb-2">
+                  Review Count
+                </label>
+                <input
+                  id="reviewCount"
+                  name="reviewCount"
+                  type="number"
+                  min="0"
+                  placeholder="123"
+                  value={formData.reviewCount || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, reviewCount: e.target.value ? parseInt(e.target.value) : undefined })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Number of reviews (e.g., "123 reviews")
+                </p>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center">
                 <input
