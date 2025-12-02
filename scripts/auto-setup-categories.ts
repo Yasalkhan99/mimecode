@@ -245,16 +245,17 @@ async function categorizeStores(tableName: string) {
   let failed = 0;
   
   for (const store of storesData || []) {
-    const storeName = store.name || store['Store Name'] || '';
-    const storeDescription = store.description || '';
-    const storeId = store.id;
+    // Handle multiple naming conventions
+    const storeName = store.name || store['Store Name'] || store['store_name'] || store.Name || '';
+    const storeDescription = store.description || store.Description || store['Store Description'] || '';
+    const storeId = store.id || store['Store Id'] || store.store_id || store['id'];
     
     if (!storeName) {
       skipped++;
       continue;
     }
     
-    if (store.category_id) {
+    if (store.category_id || store['category_id'] || store.categoryId) {
       console.log(`⏭️  "${storeName}" - Already categorized`);
       skipped++;
       continue;
@@ -265,17 +266,29 @@ async function categorizeStores(tableName: string) {
     if (categoryId) {
       const categoryName = [...categoryMap.entries()].find(([_, id]) => id === categoryId)?.[0];
       
-      const { error } = await supabase
-        .from(tableName)
-        .update({ category_id: categoryId })
-        .eq('id', storeId);
+      // Try to update with different ID column names
+      let updateError = null;
+      const idColumns = ['id', 'Store Id', 'store_id'];
       
-      if (error) {
-        console.error(`❌ "${storeName}" - Update failed`);
+      for (const idCol of idColumns) {
+        const { error } = await supabase
+          .from(tableName)
+          .update({ category_id: categoryId })
+          .eq(idCol, storeId);
+        
+        if (!error) {
+          console.log(`✅ "${storeName}" → ${categoryName}`);
+          categorized++;
+          updateError = null;
+          break;
+        } else {
+          updateError = error;
+        }
+      }
+      
+      if (updateError) {
+        console.error(`❌ "${storeName}" - Update failed: ${updateError.message}`);
         failed++;
-      } else {
-        console.log(`✅ "${storeName}" → ${categoryName}`);
-        categorized++;
       }
     } else {
       console.log(`❓ "${storeName}" - No matching category`);
@@ -298,18 +311,33 @@ async function main() {
   console.log('🔍 Finding stores table...');
   let storesTable = '';
   
-  const tables = ['stores-mimecode', 'stores'];
+  const tables = ['stores', 'stores-mimecode', 'Stores', 'public.stores'];
   for (const table of tables) {
-    const { error } = await supabase.from(table).select('id').limit(1);
-    if (!error) {
-      storesTable = table;
-      console.log(`✅ Found stores table: "${table}"\n`);
-      break;
+    // Try different column names for selection
+    const columnAttempts = ['id', '"Store Id"', 'store_id', '*'];
+    
+    for (const column of columnAttempts) {
+      try {
+        const { data, error } = await supabase.from(table).select(column).limit(1);
+        if (!error && data !== null) {
+          storesTable = table;
+          console.log(`✅ Found stores table: "${table}"\n`);
+          console.log(`   Sample row keys: ${data[0] ? Object.keys(data[0]).slice(0, 5).join(', ') : 'No data'}\n`);
+          break;
+        }
+      } catch (e) {
+        // Continue to next attempt
+      }
     }
+    
+    if (storesTable) break;
   }
   
   if (!storesTable) {
-    console.error('❌ Could not find stores table (tried: stores-mimecode, stores)');
+    console.error('❌ Could not find stores table');
+    console.error('   Tried table names: ' + tables.join(', '));
+    console.error('\n💡 Please check Supabase dashboard for actual table name');
+    console.error('   Then update this script with the correct name\n');
     process.exit(1);
   }
   
