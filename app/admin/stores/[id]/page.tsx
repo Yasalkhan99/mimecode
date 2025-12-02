@@ -401,6 +401,48 @@ export default function EditStorePage() {
             </div>
 
             <div>
+              <label htmlFor="seoTitle" className="block text-sm font-semibold text-gray-700 mb-1">
+                SEO Page Title
+              </label>
+              <input
+                id="seoTitle"
+                name="seoTitle"
+                type="text"
+                value={formData.seoTitle || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, seoTitle: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Best Nike Shoes Coupons & Deals 2024 - Save Up to 70%"
+                maxLength={60}
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Optimized title for search engines (shown in browser tab). Max 60 characters. Leave blank to use default: "[Store Name] Coupons & Deals - MimeCode"
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="seoDescription" className="block text-sm font-semibold text-gray-700 mb-1">
+                SEO Meta Description
+              </label>
+              <textarea
+                id="seoDescription"
+                name="seoDescription"
+                value={formData.seoDescription || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, seoDescription: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={3}
+                placeholder="Get the latest Nike coupons, promo codes & deals. Save up to 70% on shoes, clothing & accessories. Verified daily!"
+                maxLength={160}
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Description shown in search results. Max 160 characters. Should include keywords and call-to-action.
+              </p>
+            </div>
+
+            <div>
               <label htmlFor="features" className="block text-sm font-semibold text-gray-700 mb-1">
                 Features (One per line)
               </label>

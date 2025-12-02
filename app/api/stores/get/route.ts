@@ -140,6 +140,8 @@ const convertToAPIFormat = (row: any) => {
     moreInformation: row.more_information || null, // Dynamic "More Information" content
     rating: row.rating ? parseFloat(row.rating) : 4.5, // Store rating
     reviewCount: row.review_count || 0, // Number of reviews
+    seoTitle: row.seo_title || null, // SEO page title
+    seoDescription: row.seo_description || null, // SEO meta description
     createdAt: row['Created Date'] || row.created_at || null,
     updatedAt: row['Modify Date'] || row.updated_at || null,
   };

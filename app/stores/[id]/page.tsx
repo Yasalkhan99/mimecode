@@ -47,9 +47,21 @@ export default function StoreDetailPage() {
   };
 
   useEffect(() => {
-    // Set page title
+    // Set page title and meta description
     if (store) {
-      document.title = `${store.name} - MimeCode`;
+      // Use SEO title if available, otherwise use default
+      document.title = store.seoTitle || `${store.name} Coupons & Deals - MimeCode`;
+      
+      // Set meta description if available
+      if (store.seoDescription) {
+        let metaDescription = document.querySelector('meta[name="description"]');
+        if (!metaDescription) {
+          metaDescription = document.createElement('meta');
+          metaDescription.setAttribute('name', 'description');
+          document.head.appendChild(metaDescription);
+        }
+        metaDescription.setAttribute('content', store.seoDescription);
+      }
     }
   }, [store]);
 

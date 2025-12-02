@@ -57,6 +57,10 @@ export async function POST(req: NextRequest) {
     // Add rating and review count fields
     if (updates.rating !== undefined) supabaseUpdates['rating'] = updates.rating;
     if (updates.reviewCount !== undefined) supabaseUpdates['review_count'] = updates.reviewCount;
+    
+    // Add SEO fields
+    if (updates.seoTitle !== undefined) supabaseUpdates['seo_title'] = updates.seoTitle;
+    if (updates.seoDescription !== undefined) supabaseUpdates['seo_description'] = updates.seoDescription;
 
     console.log('Supabase updates:', supabaseUpdates);
 

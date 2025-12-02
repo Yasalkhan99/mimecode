@@ -27,6 +27,8 @@ export interface Store {
   moreInformation?: string; // Dynamic "More Information" content for store page
   rating?: number; // Store rating (0.0 to 5.0)
   reviewCount?: number; // Number of reviews
+  seoTitle?: string; // SEO-optimized page title
+  seoDescription?: string; // SEO-optimized meta description
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
