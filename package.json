@@ -13,6 +13,7 @@
     "setup:categories": "tsx scripts/auto-setup-categories.ts",
     "categorize:stores": "tsx scripts/auto-categorize-stores.ts",
     "reset:categories": "tsx scripts/reset-and-recategorize.ts",
+    "verify:categories": "tsx scripts/verify-categorization.ts",
     "debug:stores": "tsx scripts/debug-stores.ts"
   },
   "dependencies": {
