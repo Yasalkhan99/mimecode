@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { getTrendingStores, Store } from '@/lib/services/storeService';
 import Link from 'next/link';
 
 export default function TrendingStores() {
+  const router = useRouter();
   const [stores, setStores] = useState<(Store | null)[]>(Array(8).fill(null));
   const [loading, setLoading] = useState(true);
 
@@ -139,7 +141,7 @@ export default function TrendingStores() {
                       <button 
                         onClick={(e) => {
                           e.preventDefault();
-                          window.location.href = `/stores/${store.slug || store.id}`;
+                          router.push(`/stores/${store.slug || store.id}`);
                         }}
                         className="w-full bg-gradient-to-r from-[#ABC443] via-[#ABC443]/90 to-[#41361A] border-2 border-dashed border-white/60 rounded-lg px-3 py-2 flex items-center justify-between text-white font-semibold hover:from-[#41361A] hover:via-[#ABC443]/90 hover:to-[#ABC443] hover:border-white/80 transition-all duration-300 group mt-auto text-xs relative overflow-hidden shadow-md hover:shadow-lg"
                         style={{ borderStyle: 'dashed', borderWidth: '2px' }}
@@ -223,7 +225,7 @@ export default function TrendingStores() {
                   <button 
                     onClick={(e) => {
                       e.preventDefault();
-                      window.location.href = `/stores/${store.slug || store.id}`;
+                      router.push(`/stores/${store.slug || store.id}`);
                     }}
                     className="w-full bg-gradient-to-r from-[#ABC443] via-[#ABC443]/90 to-[#41361A] border-2 border-dashed border-white/60 rounded-lg px-3 py-2.5 flex items-center justify-between text-white font-semibold hover:from-[#41361A] hover:via-[#ABC443]/90 hover:to-[#ABC443] hover:border-white/80 transition-all duration-300 group mt-auto relative overflow-hidden shadow-md hover:shadow-lg"
                     style={{ borderStyle: 'dashed', borderWidth: '2px' }}

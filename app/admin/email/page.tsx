@@ -8,6 +8,9 @@ export default function EmailPage() {
   const [email1, setEmail1] = useState('');
   const [email2, setEmail2] = useState('');
   const [email3, setEmail3] = useState('');
+  const [email4, setEmail4] = useState('');
+  const [email5, setEmail5] = useState('');
+  const [email6, setEmail6] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -21,6 +24,9 @@ export default function EmailPage() {
         setEmail1(settings?.email1 || '');
         setEmail2(settings?.email2 || '');
         setEmail3(settings?.email3 || '');
+        setEmail4(settings?.email4 || '');
+        setEmail5(settings?.email5 || '');
+        setEmail6(settings?.email6 || '');
       } catch (error) {
         console.error('Error fetching email settings:', error);
         setMessage({ type: 'error', text: 'Failed to load email settings' });
@@ -39,7 +45,14 @@ export default function EmailPage() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     
     // Validate all emails if they are filled
-    const emails = [email1.trim(), email2.trim(), email3.trim()];
+    const emails = [
+      email1.trim(), 
+      email2.trim(), 
+      email3.trim(), 
+      email4.trim(), 
+      email5.trim(), 
+      email6.trim()
+    ];
     const filledEmails = emails.filter(email => email !== '');
     
     if (filledEmails.length === 0) {
@@ -59,7 +72,7 @@ export default function EmailPage() {
     setMessage(null);
 
     try {
-      const result = await updateEmailSettings(email1, email2, email3);
+      const result = await updateEmailSettings(email1, email2, email3, email4, email5, email6);
       
       if (result.success) {
         setMessage({ type: 'success', text: 'Email settings saved successfully!' });
@@ -69,6 +82,9 @@ export default function EmailPage() {
           email1: email1.trim(),
           email2: email2.trim(),
           email3: email3.trim(),
+          email4: email4.trim(),
+          email5: email5.trim(),
+          email6: email6.trim(),
         } as EmailSettings);
       } else {
         setMessage({ type: 'error', text: 'Failed to save email settings' });
@@ -98,7 +114,7 @@ export default function EmailPage() {
         <div className="mb-6">
           <h2 className="text-xl font-bold text-gray-800 mb-2">Manage Email Addresses</h2>
           <p className="text-gray-600 text-sm">
-            Set up to 3 email addresses where emails will be sent. All fields are editable and optional.
+            Set up to 6 email addresses where emails will be sent. All fields are editable and optional.
           </p>
         </div>
 
@@ -157,6 +173,48 @@ export default function EmailPage() {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
               />
             </div>
+
+            <div>
+              <label htmlFor="email4" className="block text-sm font-semibold text-gray-700 mb-2">
+                Email Address 4
+              </label>
+              <input
+                type="email"
+                id="email4"
+                value={email4}
+                onChange={(e) => setEmail4(e.target.value)}
+                placeholder="contact@mimecode.com"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="email5" className="block text-sm font-semibold text-gray-700 mb-2">
+                Email Address 5
+              </label>
+              <input
+                type="email"
+                id="email5"
+                value={email5}
+                onChange={(e) => setEmail5(e.target.value)}
+                placeholder="marketing@mimecode.com"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="email6" className="block text-sm font-semibold text-gray-700 mb-2">
+                Email Address 6
+              </label>
+              <input
+                type="email"
+                id="email6"
+                value={email6}
+                onChange={(e) => setEmail6(e.target.value)}
+                placeholder="team@mimecode.com"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+              />
+            </div>
           </div>
 
           <div className="flex gap-4 flex-wrap items-center">
@@ -169,9 +227,7 @@ export default function EmailPage() {
             </button>
             {emailSettings?.updatedAt && (
               <div className="flex items-center text-sm text-gray-500">
-                Last updated: {typeof emailSettings.updatedAt === 'number' 
-                  ? new Date(emailSettings.updatedAt).toLocaleString()
-                  : emailSettings.updatedAt.toDate().toLocaleString()}
+                Last updated: {new Date(emailSettings.updatedAt).toLocaleString()}
               </div>
             )}
           </div>
@@ -180,7 +236,7 @@ export default function EmailPage() {
         <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <h3 className="font-semibold text-blue-900 mb-2">How it works:</h3>
           <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-            <li>You can add up to 3 email addresses where emails will be sent.</li>
+            <li>You can add up to 6 email addresses where emails will be sent.</li>
             <li>All email fields are editable and can be updated at any time.</li>
             <li>At least one email address is required to save settings.</li>
             <li>Make sure to use valid email addresses that you have access to.</li>

@@ -1,55 +1,67 @@
-import { Timestamp } from 'firebase/firestore';
-
 export interface EmailSettings {
   id?: string;
   email1: string; // First email address
   email2: string; // Second email address
   email3: string; // Third email address
-  updatedAt?: Timestamp | number; // Can be Timestamp or number (milliseconds)
+  email4: string; // Fourth email address
+  email5: string; // Fifth email address
+  email6: string; // Sixth email address
+  updatedAt?: number; // Timestamp in milliseconds
 }
-
-// Use environment variable to separate collections between projects
-// Default to 'emailSettings-mimecode' for this new project
-const emailSettingsCollection = process.env.NEXT_PUBLIC_EMAIL_SETTINGS_COLLECTION || 'emailSettings-mimecode';
-const emailSettingsDocId = 'main'; // Single document for email settings
 
 // Get email settings (client-side - uses API route)
 export async function getEmailSettings(): Promise<EmailSettings | null> {
   try {
-    const res = await fetch(`/api/email-settings/get?collection=${encodeURIComponent(emailSettingsCollection)}&docId=${encodeURIComponent(emailSettingsDocId)}`);
+    const res = await fetch('/api/email-settings/get');
     const json = await res.json();
     
     if (!res.ok) {
       console.error('Error getting email settings:', json.error);
       // Return default on error
       return {
-        id: emailSettingsDocId,
+        id: 'default',
         email1: 'admin@mimecode.com',
         email2: '',
         email3: '',
+        email4: '',
+        email5: '',
+        email6: '',
       };
     }
 
     return json.settings || {
-      id: emailSettingsDocId,
-      email1: 'admin@availcoupon.com',
+      id: 'default',
+      email1: 'admin@mimecode.com',
       email2: '',
       email3: '',
+      email4: '',
+      email5: '',
+      email6: '',
     };
   } catch (error) {
     console.error('Error getting email settings:', error);
     return {
-      id: emailSettingsDocId,
-      email1: 'admin@availcoupon.com',
+      id: 'default',
+      email1: 'admin@mimecode.com',
       email2: '',
       email3: '',
+      email4: '',
+      email5: '',
+      email6: '',
     };
   }
 }
 
 
 // Update email settings (client-side - uses API route)
-export async function updateEmailSettings(email1: string, email2: string, email3: string): Promise<{ success: boolean; error?: any }> {
+export async function updateEmailSettings(
+  email1: string, 
+  email2: string, 
+  email3: string, 
+  email4: string, 
+  email5: string, 
+  email6: string
+): Promise<{ success: boolean; error?: any }> {
   try {
     const res = await fetch('/api/email-settings/update', {
       method: 'POST',
@@ -58,8 +70,9 @@ export async function updateEmailSettings(email1: string, email2: string, email3
         email1,
         email2,
         email3,
-        collection: emailSettingsCollection,
-        docId: emailSettingsDocId,
+        email4,
+        email5,
+        email6,
       }),
     });
 

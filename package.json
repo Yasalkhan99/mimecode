@@ -10,7 +10,13 @@
     "type-check": "tsc --noEmit",
     "migrate:firestore-to-supabase": "tsx scripts/migrate-firestore-to-supabase.ts",
     "migrate:banners-firestore-to-supabase": "tsx scripts/migrate-banners-firestore-to-supabase.ts",
-    "migrate:create-pages-tables": "tsx scripts/create-pages-tables.ts"
+    "migrate:create-pages-tables": "tsx scripts/create-pages-tables.ts",
+    "setup:categories": "tsx scripts/auto-setup-categories.ts",
+    "categorize:stores": "tsx scripts/auto-categorize-stores.ts",
+    "reset:categories": "tsx scripts/reset-and-recategorize.ts",
+    "verify:categories": "tsx scripts/verify-categorization.ts",
+    "debug:stores": "tsx scripts/debug-stores.ts",
+    "check:emails": "tsx scripts/check-email-settings.ts"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",

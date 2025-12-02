@@ -24,16 +24,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get recipient email from settings (server-side)
+    // Get recipient emails from settings (server-side)
     const emailSettings = await getEmailSettingsServer();
-    // Use email1 as primary, fallback to email2, email3, or default
-    const recipientEmail = emailSettings?.email1 || emailSettings?.email2 || emailSettings?.email3 || 'yasalkhan90@gmail.com';
+    // Collect all non-empty email addresses (email1 through email6)
+    const recipientEmails = [
+      emailSettings?.email1,
+      emailSettings?.email2,
+      emailSettings?.email3,
+      emailSettings?.email4,
+      emailSettings?.email5,
+      emailSettings?.email6,
+    ].filter(e => e && e.trim() !== '');
+    
+    // If no emails configured, use default
+    const recipients = recipientEmails.length > 0 ? recipientEmails : ['yasalkhan90@gmail.com'];
+    const recipientEmailsString = recipients.join(', ');
     
     console.log('📧 Contact Form Submission:', {
       from: email.trim(),
-      to: recipientEmail,
+      to: recipients,
+      totalRecipients: recipients.length,
       subject: subject || 'Contact Support Inquiry'
     });
+    console.log(`✉️  Sending to ${recipients.length} email(s):`, recipients);
 
     // Store contact form submission in Firestore using Admin SDK
     // Use environment variable to separate collections between projects
@@ -44,7 +57,7 @@ export async function POST(req: NextRequest) {
       email: email.trim(),
       subject: subject?.trim() || 'Contact Support Inquiry',
       message: message.trim(),
-      recipientEmail: recipientEmail,
+      recipientEmails: recipients,
       submittedAt: admin.firestore.FieldValue.serverTimestamp(),
       status: 'pending',
     });
@@ -64,7 +77,7 @@ export async function POST(req: NextRequest) {
         console.log('📤 Attempting to send contact email via SMTP:', {
           host: smtpHost,
           port: smtpPort,
-          to: recipientEmail
+          to: recipients
         });
         
         const transporter = nodemailer.createTransport({
@@ -95,7 +108,7 @@ export async function POST(req: NextRequest) {
         
         const mailOptions = {
           from: smtpFrom,
-          to: recipientEmail,
+          to: recipients.join(', '),
           replyTo: email.trim(),
           subject: subject?.trim() || `Contact Support: ${name.trim()}`,
           html: `
@@ -122,7 +135,7 @@ export async function POST(req: NextRequest) {
         
         emailSent = true;
         console.log('✅ Contact email sent successfully via SMTP:', {
-          recipientEmail,
+          recipients,
           messageId: info.messageId
         });
       } catch (err: any) {
@@ -131,7 +144,7 @@ export async function POST(req: NextRequest) {
           error: err,
           message: err?.message,
           code: err?.code,
-          recipientEmail
+          recipients
         });
         
         // Try port 465 if 587 fails (for Gmail)
@@ -159,7 +172,7 @@ export async function POST(req: NextRequest) {
             
             const mailOptions = {
               from: smtpFrom,
-              to: recipientEmail,
+              to: recipients.join(', '),
               replyTo: email.trim(),
               subject: subject?.trim() || `Contact Support: ${name.trim()}`,
               html: `
@@ -186,7 +199,7 @@ export async function POST(req: NextRequest) {
             emailSent = true;
             emailError = null;
             console.log('✅ Contact email sent successfully via SMTP (port 465):', {
-              recipientEmail,
+              recipients,
               messageId: info.messageId
             });
           } catch (sslErr: any) {

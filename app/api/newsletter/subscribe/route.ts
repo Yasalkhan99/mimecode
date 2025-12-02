@@ -23,16 +23,35 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get recipient email from settings (server-side)
+    // Get recipient emails from settings (server-side)
     const emailSettings = await getEmailSettingsServer();
-    // Use email1 as primary, fallback to email2, email3, or default
-    const recipientEmail = emailSettings?.email1 || emailSettings?.email2 || emailSettings?.email3 || 'yasalkhan90@gmail.com';
+    // Collect all non-empty email addresses (email1 through email6)
+    const recipientEmails = [
+      emailSettings?.email1,
+      emailSettings?.email2,
+      emailSettings?.email3,
+      emailSettings?.email4,
+      emailSettings?.email5,
+      emailSettings?.email6,
+    ].filter(e => e && e.trim() !== '');
+    
+    // If no emails configured, use default
+    const recipients = recipientEmails.length > 0 ? recipientEmails : ['yasalkhan90@gmail.com'];
     
     console.log('📧 Email Settings:', {
-      emailSettings: emailSettings ? { email1: emailSettings.email1, email2: emailSettings.email2, email3: emailSettings.email3 } : null,
-      recipientEmail,
+      emailSettings: emailSettings ? { 
+        email1: emailSettings.email1, 
+        email2: emailSettings.email2, 
+        email3: emailSettings.email3,
+        email4: emailSettings.email4,
+        email5: emailSettings.email5,
+        email6: emailSettings.email6
+      } : null,
+      recipients,
+      totalRecipients: recipients.length,
       subscriberEmail: email.trim()
     });
+    console.log(`✉️  Sending to ${recipients.length} email(s):`, recipients);
 
     // Store subscription in Firestore using Admin SDK
     // Use environment variable to separate collections between projects
@@ -40,7 +59,7 @@ export async function POST(req: NextRequest) {
     const firestore = getAdminFirestore();
     await firestore.collection(newsletterSubscriptionsCollection).add({
       email: email.trim(),
-      recipientEmail: recipientEmail,
+      recipientEmails: recipients,
       subscribedAt: admin.firestore.FieldValue.serverTimestamp(),
       status: 'pending',
     });
@@ -62,7 +81,7 @@ export async function POST(req: NextRequest) {
           host: smtpHost,
           port: smtpPort,
           user: smtpUser,
-          to: recipientEmail,
+          to: recipients,
           from: smtpFrom
         });
         
@@ -99,7 +118,7 @@ export async function POST(req: NextRequest) {
         // Send email
         const mailOptions = {
           from: smtpFrom,
-          to: recipientEmail,
+          to: recipients.join(', '),
           subject: 'New Newsletter Subscription Request',
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -119,7 +138,7 @@ export async function POST(req: NextRequest) {
         
         emailSent = true;
         console.log('✅ Email sent successfully via SMTP:', {
-          recipientEmail,
+          recipients,
           messageId: info.messageId
         });
       } catch (err: any) {
@@ -128,7 +147,7 @@ export async function POST(req: NextRequest) {
           error: err,
           message: err?.message,
           code: err?.code,
-          recipientEmail,
+          recipients,
           host: smtpHost,
           port: smtpPort
         });
@@ -158,7 +177,7 @@ export async function POST(req: NextRequest) {
               
               const mailOptions = {
                 from: smtpFrom,
-                to: recipientEmail,
+                to: recipients.join(', '),
                 subject: 'New Newsletter Subscription Request',
                 html: `
                   <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -178,7 +197,7 @@ export async function POST(req: NextRequest) {
               emailSent = true;
               emailError = null;
               console.log('✅ Email sent successfully via SMTP (port 465):', {
-                recipientEmail,
+                recipients,
                 messageId: info.messageId
               });
             } catch (sslErr: any) {
@@ -207,7 +226,7 @@ export async function POST(req: NextRequest) {
       success: true,
       message: 'Thank you for subscribing! Your email has been saved successfully.',
       emailSent,
-      recipientEmail,
+      recipients,
       emailError: emailError ? emailError.message : null,
     });
   } catch (error: any) {
