@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
     const { data, error } = await supabaseAdmin
       .from('stores')
       .insert([supabaseStore])
-      .select()
+      .select('"Store Id", "Store Name"')
       .single();
 
     if (error) {
