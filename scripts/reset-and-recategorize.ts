@@ -29,7 +29,7 @@ const categoryKeywords: Record<string, string[]> = {
   'Fashion & Clothing': [
     'fashion', 'clothing', 'apparel', 'boutique', 'wardrobe', 
     // More specific terms
-    'jeans', 't-shirt', 'tshirt', 'dresses', 'suits',
+    'jeans', 't-shirt', 'tshirt', 'dresses', 'suits', 'eyewear', 'glasses',
     // Brands (SPECIFIC fashion brands)
     'zara', 'diesel', 'old navy', 'marks & spencer', 'spencer',
     'begg shoes', 'cat footwear', 'journeys', 'headline shirts', 'my face t-shirt',
@@ -37,7 +37,9 @@ const categoryKeywords: Record<string, string[]> = {
     'gucci', 'prada', 'versace', 'burberry', 'calvin klein', 'tommy',
     'levi', 'polo', 'armani', 'hugo boss', 'lacoste', 'vans', 'converse',
     'skechers', 'timberland', 'clarks', 'crocs', 'ugg', 'steve madden',
-    'aldo', 'payless', 'foot locker', 'ecco', 'farah', 'siwy'
+    'aldo', 'payless', 'foot locker', 'ecco', 'farah', 'siwy',
+    'eileen fisher', 'j.crew', 'jcrew', 'neon beach', 'smartbuyglasses',
+    'girlfriend collective', 'luiza barcelos', 'aanya linen'
   ],
   'Electronics & Tech': [
     'electronics', 'tech', 'computer', 'laptop', 'phone', 'mobile', 'tablet',
@@ -50,21 +52,23 @@ const categoryKeywords: Record<string, string[]> = {
   ],
   'Home & Garden': [
     'home', 'furniture', 'decor', 'garden', 'house', 'kitchen', 'bath', 'bedroom',
-    'living', 'dining', 'outdoor', 'patio', 'lawn', 'plant',
+    'living', 'dining', 'outdoor', 'patio', 'lawn', 'plant', 'succulent', 'linen',
     // Brands
     'ikea', 'warehouse', 'furniture@work', 'home depot', 'lowes', 'wayfair',
     'bed bath & beyond', 'target', 'walmart', 'pottery barn', 'west elm',
-    'crate and barrel', 'williams sonoma', 'homegoods', 'pier 1', 'world market'
+    'crate and barrel', 'williams sonoma', 'homegoods', 'pier 1', 'world market',
+    'dunelm', 'colourwarehouse', 'hawkins new york', 'shop succulents'
   ],
   'Beauty & Health': [
     'beauty', 'cosmetics', 'makeup', 'skincare', 'skin care', 'hair', 'salon',
-    'spa', 'wellness', 'health', 'fragrance', 'perfume', 'cologne', 'nails',
+    'spa', 'wellness', 'health', 'fragrance', 'perfume', 'cologne', 'nails', 'lash',
     // Brands
     'juara', 'adore beauty', 'jamie makeup', 'dcl skincare', 'revolution beauty',
     'perfume shop', 'sephora', 'ulta', 'mac', 'nyx', 'maybelline', 'loreal',
     'estee lauder', 'clinique', 'lancome', 'dior', 'chanel', 'glossier',
     'fenty', 'kylie', 'anastasia', 'too faced', 'benefit', 'lush', 
-    'body shop', 'bath & body', 'victoria secret', 'bees', 'burt'
+    'body shop', 'bath & body', 'victoria secret', 'bees', 'burt',
+    'eczema company', 'lash rehab'
   ],
   'Sports & Outdoors': [
     'sports', 'fitness', 'gym', 'outdoor', 'athletic', 'running', 'cycling',
@@ -73,7 +77,8 @@ const categoryKeywords: Record<string, string[]> = {
     // Brands
     'mountain warehouse', 'legend footwear', 'dick sporting', 'academy sports',
     'rei', 'cabela', 'bass pro', 'decathlon', 'sports direct', 'jd sports',
-    'lululemon', 'athleta', 'gymshark', 'fabletics', 'intersports'
+    'lululemon', 'athleta', 'gymshark', 'fabletics', 'intersports',
+    'new balance', 'nike', 'adidas', 'puma', 'reebok', 'under armour'
   ],
   'Food & Grocery': [
     'food', 'grocery', 'restaurant', 'delivery', 'meal', 'kitchen', 'cook',
@@ -92,11 +97,12 @@ const categoryKeywords: Record<string, string[]> = {
   ],
   'Toys & Kids': [
     'toy', 'kids', 'children', 'baby', 'infant', 'toddler', 'nursery',
-    'playground', 'game', 'puzzle', 'doll', 'action figure', 'lego',
+    'playground', 'game', 'puzzle', 'doll', 'action figure', 'lego', 'fun factory',
     // Brands
     'cherub', 'burts bees baby', 'toys r us', 'fisher-price', 'mattel',
     'hasbro', 'melissa doug', 'build-a-bear', 'disney store', 'carter',
-    'gymboree', 'oshkosh', 'gap kids', 'old navy kids', 'children place'
+    'gymboree', 'oshkosh', 'gap kids', 'old navy kids', 'children place',
+    'three little pigs', 'fun factory'
   ],
   'Automotive': [
     'auto', 'car', 'vehicle', 'motorcycle', 'bike', 'truck', 'parts',
@@ -107,17 +113,17 @@ const categoryKeywords: Record<string, string[]> = {
   ],
   'Travel & Hotels': [
     'travel', 'hotel', 'flight', 'airline', 'vacation', 'trip', 'cruise',
-    'resort', 'accommodation', 'booking', 'tour', 'tourism', 'airport',
+    'resort', 'accommodation', 'booking', 'tour', 'tourism', 'airport', 'air',
     // Brands
     'expedia', 'booking', 'hotels.com', 'priceline', 'kayak', 'tripadvisor',
-    'airbnb', 'vrbo', 'marriott', 'hilton', 'hyatt', 'ihg'
+    'airbnb', 'vrbo', 'marriott', 'hilton', 'hyatt', 'ihg', 'cheapoair'
   ],
   'Jewelry & Watches': [
     'jewelry', 'jewellery', 'watch', 'diamond', 'gold', 'silver', 'platinum',
     'ring', 'necklace', 'bracelet', 'earring', 'pendant', 'chain',
     // Brands
     'tiffany', 'cartier', 'bulgari', 'rolex', 'omega', 'pandora',
-    'swarovski', 'kay jewelers', 'zales', 'jared', 'blue nile'
+    'swarovski', 'kay jewelers', 'zales', 'jared', 'blue nile', 'yfn'
   ],
   'Pet Supplies': [
     'pet', 'dog', 'cat', 'puppy', 'kitten', 'animal', 'bird', 'fish',
@@ -134,63 +140,47 @@ const categoryKeywords: Record<string, string[]> = {
   ]
 };
 
+// Generic fallback patterns for unknown brands
+const genericPatterns: Record<string, string[]> = {
+  'Fashion & Clothing': ['fashion', 'apparel', 'clothing', 'wear', 'dress', 'shirt', 'jeans', 'shoes', 'footwear', 'boots', 'sneakers', 'glasses', 'eyewear', 'sunglasses', 'linen', 'textile', 'fabric', 'collective'],
+  'Beauty & Health': ['beauty', 'cosmetics', 'makeup', 'skin', 'hair', 'lash', 'brow', 'nail', 'spa', 'wellness', 'health', 'eczema', 'derma'],
+  'Home & Garden': ['home', 'garden', 'furniture', 'decor', 'house', 'kitchen', 'living', 'succulent', 'plant', 'warehouse', 'linen'],
+  'Sports & Outdoors': ['sport', 'fitness', 'gym', 'athletic', 'balance', 'active'],
+  'Electronics & Tech': ['tech', 'electronics', 'gadget', 'smart', 'digital', '3d'],
+  'Travel & Hotels': ['travel', 'flight', 'air', 'hotel', 'vacation', 'trip'],
+  'Food & Grocery': ['food', 'restaurant', 'cafe', 'grocery', 'kitchen', 'cook'],
+  'Jewelry & Watches': ['jewelry', 'jewellery', 'watch', 'diamond', 'gold', 'silver'],
+  'Pet Supplies': ['pet', 'dog', 'cat', 'animal'],
+  'Toys & Kids': ['toy', 'kids', 'children', 'baby', 'factory', 'fun factory'],
+  'Books & Media': ['book', 'media', 'read', 'publish'],
+  'Office & Stationery': ['office', 'stationery', 'writer', 'write', 'paper'],
+  'Automotive': ['auto', 'car', 'vehicle', 'motor']
+};
+
 function determineCategory(storeName: string, description: string, categoryMap: Map<string, string>): { id: string | null, category: string | null, score: number } {
   const storeNameLower = storeName.toLowerCase();
   const searchText = `${storeName} ${description}`.toLowerCase();
   
-  // Category priority order (check specific categories first)
-  const categoryPriority = [
-    'Pet Supplies',
-    'Automotive',
-    'Jewelry & Watches',
-    'Travel & Hotels',
-    'Books & Media',
-    'Toys & Kids',
-    'Office & Stationery',
-    'Food & Grocery',
-    'Sports & Outdoors',
-    'Beauty & Health',
-    'Electronics & Tech',
-    'Home & Garden',
-    'Fashion & Clothing'  // Check this LAST (most generic)
-  ];
-  
   const categoryScores = new Map<string, number>();
   
-  // Score each category
+  // PHASE 1: Exact brand/keyword matching
   for (const [categoryName, keywords] of Object.entries(categoryKeywords)) {
     let score = 0;
-    let exactBrandMatch = false;
     
     for (const keyword of keywords) {
       const keywordLower = keyword.toLowerCase();
       
-      // EXACT brand name match in store name (highest priority)
-      if (keyword.length > 3 && storeNameLower === keywordLower) {
-        score += 100;
-        exactBrandMatch = true;
-      }
-      // Brand name is complete word in store name
-      else if (keyword.length > 3) {
+      // Exact brand name match
+      if (keyword.length > 3) {
         const regex = new RegExp(`\\b${keywordLower}\\b`, 'i');
         if (regex.test(storeNameLower)) {
-          score += 50;
-          exactBrandMatch = true;
+          score += 100;
         }
       }
-      // Contains keyword in store name
-      else if (storeNameLower.includes(keywordLower) && keywordLower.length > 2) {
-        score += 10;
+      // Partial match in store name
+      if (storeNameLower.includes(keywordLower) && keywordLower.length > 3) {
+        score += 20;
       }
-      // Generic word match (lower score)
-      else if (searchText.includes(keywordLower) && keywordLower.length > 3) {
-        score += 2;
-      }
-    }
-    
-    // If exact brand match, boost score significantly
-    if (exactBrandMatch) {
-      score *= 2;
     }
     
     if (score > 0) {
@@ -198,15 +188,35 @@ function determineCategory(storeName: string, description: string, categoryMap: 
     }
   }
   
+  // PHASE 2: If no strong match, use generic patterns (FALLBACK)
+  if (categoryScores.size === 0 || Math.max(...categoryScores.values()) < 20) {
+    for (const [categoryName, patterns] of Object.entries(genericPatterns)) {
+      let score = 0;
+      
+      for (const pattern of patterns) {
+        if (storeNameLower.includes(pattern)) {
+          score += 10;
+        }
+        if (searchText.includes(pattern)) {
+          score += 5;
+        }
+      }
+      
+      if (score > 0) {
+        const existingScore = categoryScores.get(categoryName) || 0;
+        categoryScores.set(categoryName, existingScore + score);
+      }
+    }
+  }
+  
   if (categoryScores.size === 0) {
     return { id: null, category: null, score: 0 };
   }
   
-  // Find best category considering priority
+  // Find best category
   let bestCategory = '';
   let bestScore = 0;
   
-  // First pass: Find highest score
   for (const [categoryName, score] of categoryScores) {
     if (score > bestScore) {
       bestScore = score;
@@ -214,16 +224,9 @@ function determineCategory(storeName: string, description: string, categoryMap: 
     }
   }
   
-  // Second pass: Check if a higher priority category has similar score
-  const threshold = 0.7; // 70% of best score
-  for (const priorityCategory of categoryPriority) {
-    const score = categoryScores.get(priorityCategory) || 0;
-    if (score >= bestScore * threshold && categoryPriority.indexOf(priorityCategory) < categoryPriority.indexOf(bestCategory)) {
-      // Higher priority category with decent score - use it!
-      bestCategory = priorityCategory;
-      bestScore = score;
-      break;
-    }
+  // Only return if score is above threshold
+  if (bestScore < 5) {
+    return { id: null, category: null, score: 0 };
   }
   
   const categoryId = categoryMap.get(bestCategory) || null;
@@ -380,4 +383,5 @@ main().catch((error) => {
   console.error('💥 Fatal error:', error);
   process.exit(1);
 });
+
 
