@@ -1,5 +1,3 @@
-import { Timestamp } from 'firebase/firestore';
-
 export interface EmailSettings {
   id?: string;
   email1: string; // First email address
@@ -8,25 +6,20 @@ export interface EmailSettings {
   email4: string; // Fourth email address
   email5: string; // Fifth email address
   email6: string; // Sixth email address
-  updatedAt?: Timestamp | number; // Can be Timestamp or number (milliseconds)
+  updatedAt?: number; // Timestamp in milliseconds
 }
-
-// Use environment variable to separate collections between projects
-// Default to 'emailSettings-mimecode' for this new project
-const emailSettingsCollection = process.env.NEXT_PUBLIC_EMAIL_SETTINGS_COLLECTION || 'emailSettings-mimecode';
-const emailSettingsDocId = 'main'; // Single document for email settings
 
 // Get email settings (client-side - uses API route)
 export async function getEmailSettings(): Promise<EmailSettings | null> {
   try {
-    const res = await fetch(`/api/email-settings/get?collection=${encodeURIComponent(emailSettingsCollection)}&docId=${encodeURIComponent(emailSettingsDocId)}`);
+    const res = await fetch('/api/email-settings/get');
     const json = await res.json();
     
     if (!res.ok) {
       console.error('Error getting email settings:', json.error);
       // Return default on error
       return {
-        id: emailSettingsDocId,
+        id: 'default',
         email1: 'admin@mimecode.com',
         email2: '',
         email3: '',
@@ -37,8 +30,8 @@ export async function getEmailSettings(): Promise<EmailSettings | null> {
     }
 
     return json.settings || {
-      id: emailSettingsDocId,
-      email1: 'admin@availcoupon.com',
+      id: 'default',
+      email1: 'admin@mimecode.com',
       email2: '',
       email3: '',
       email4: '',
@@ -48,8 +41,8 @@ export async function getEmailSettings(): Promise<EmailSettings | null> {
   } catch (error) {
     console.error('Error getting email settings:', error);
     return {
-      id: emailSettingsDocId,
-      email1: 'admin@availcoupon.com',
+      id: 'default',
+      email1: 'admin@mimecode.com',
       email2: '',
       email3: '',
       email4: '',
@@ -80,8 +73,6 @@ export async function updateEmailSettings(
         email4,
         email5,
         email6,
-        collection: emailSettingsCollection,
-        docId: emailSettingsDocId,
       }),
     });
 

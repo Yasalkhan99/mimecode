@@ -1,34 +1,61 @@
-import { getAdminFirestore, default as admin } from '@/lib/firebase-admin';
+import { supabaseAdmin } from '@/lib/supabase';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { email1, email2, email3, email4, email5, email6, collection, docId } = body || {};
+  const { email1, email2, email3, email4, email5, email6 } = body || {};
 
   if (!email1 && !email2 && !email3 && !email4 && !email5 && !email6) {
     return NextResponse.json({ success: false, error: 'At least one email address is required' }, { status: 400 });
   }
 
-  const targetCollection = collection || process.env.NEXT_PUBLIC_EMAIL_SETTINGS_COLLECTION || 'emailSettings-mimecode';
-  const targetDocId = docId || 'main';
-
   try {
-    const firestore = getAdminFirestore();
-    const docRef = firestore.collection(targetCollection).doc(targetDocId);
-    
-    await docRef.set({
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin client not initialized');
+    }
+
+    // Prepare update data
+    const updateData = {
       email1: (email1 || '').trim(),
       email2: (email2 || '').trim(),
       email3: (email3 || '').trim(),
       email4: (email4 || '').trim(),
       email5: (email5 || '').trim(),
       email6: (email6 || '').trim(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    }, { merge: true });
+      updated_at: new Date().toISOString(),
+    };
+
+    // Check if a row exists
+    const { data: existingData, error: fetchError } = await supabaseAdmin
+      .from('email_settings')
+      .select('id')
+      .limit(1)
+      .single();
+
+    if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = no rows found
+      throw fetchError;
+    }
+
+    if (existingData) {
+      // Update existing row
+      const { error: updateError } = await supabaseAdmin
+        .from('email_settings')
+        .update(updateData)
+        .eq('id', existingData.id);
+
+      if (updateError) throw updateError;
+    } else {
+      // Insert new row
+      const { error: insertError } = await supabaseAdmin
+        .from('email_settings')
+        .insert([updateData]);
+
+      if (insertError) throw insertError;
+    }
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
-    console.error('Admin SDK update email settings error:', error);
+    console.error('Supabase update email settings error:', error);
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
   }
 }
