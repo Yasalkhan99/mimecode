@@ -202,7 +202,7 @@ export default function EditStorePage() {
                     slug: autoGenerateSlug ? generateSlug(name) : formData.slug
                   });
                 }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 required
               />
             </div>
@@ -219,7 +219,7 @@ export default function EditStorePage() {
                 onChange={(e) =>
                   setFormData({ ...formData, subStoreName: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
               />
               <p className="mt-1 text-xs text-gray-500">
                 This name will be displayed on the store page when visiting the store
@@ -296,7 +296,7 @@ export default function EditStorePage() {
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
               rows={4}
               required
             />
@@ -315,7 +315,7 @@ export default function EditStorePage() {
               onChange={(e) =>
                 setFormData({ ...formData, voucherText: e.target.value })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
             />
             <p className="mt-1 text-xs text-gray-500">
               Voucher text that will be displayed on the store card
@@ -339,7 +339,7 @@ export default function EditStorePage() {
                 onChange={(e) =>
                   setFormData({ ...formData, websiteUrl: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
               />
             </div>
 
@@ -354,7 +354,7 @@ export default function EditStorePage() {
                 onChange={(e) =>
                   setFormData({ ...formData, aboutText: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 rows={6}
                 placeholder="Detailed about section for Store Info tab..."
               />
@@ -371,7 +371,7 @@ export default function EditStorePage() {
                 onChange={(e) =>
                   setFormData({ ...formData, whyTrustUs: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 rows={6}
                 placeholder="Why should customers trust this store? Enter custom content here..."
               />
@@ -391,7 +391,7 @@ export default function EditStorePage() {
                 onChange={(e) =>
                   setFormData({ ...formData, moreInformation: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 rows={8}
                 placeholder="Enter detailed information about the store, coupons, how to use them, etc. You can use HTML tags for formatting."
               />
@@ -412,7 +412,7 @@ export default function EditStorePage() {
                 onChange={(e) =>
                   setFormData({ ...formData, seoTitle: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 placeholder="Best Nike Shoes Coupons & Deals 2024 - Save Up to 70%"
                 maxLength={60}
               />
@@ -432,7 +432,7 @@ export default function EditStorePage() {
                 onChange={(e) =>
                   setFormData({ ...formData, seoDescription: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 rows={3}
                 placeholder="Get the latest Nike coupons, promo codes & deals. Save up to 70% on shoes, clothing & accessories. Verified daily!"
                 maxLength={160}
@@ -454,7 +454,7 @@ export default function EditStorePage() {
                   const features = e.target.value.split('\n').filter(f => f.trim() !== '');
                   setFormData({ ...formData, features });
                 }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 rows={4}
                 placeholder="Free Shipping&#10;24/7 Support&#10;Easy Returns"
               />
@@ -474,7 +474,7 @@ export default function EditStorePage() {
                 onChange={(e) =>
                   setFormData({ ...formData, shippingInfo: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 rows={4}
                 placeholder="Shipping information..."
               />
@@ -491,7 +491,7 @@ export default function EditStorePage() {
                 onChange={(e) =>
                   setFormData({ ...formData, returnPolicy: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 rows={4}
                 placeholder="Return policy information..."
               />
@@ -508,7 +508,7 @@ export default function EditStorePage() {
                 onChange={(e) =>
                   setFormData({ ...formData, contactInfo: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 rows={3}
                 placeholder="Contact information..."
               />
@@ -530,7 +530,7 @@ export default function EditStorePage() {
                   onChange={(e) =>
                     setFormData({ ...formData, establishedYear: e.target.value ? parseInt(e.target.value) : undefined })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 />
               </div>
 
@@ -547,7 +547,7 @@ export default function EditStorePage() {
                   onChange={(e) =>
                     setFormData({ ...formData, headquarters: e.target.value })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 />
               </div>
 
@@ -566,7 +566,7 @@ export default function EditStorePage() {
                   onChange={(e) =>
                     setFormData({ ...formData, trustScore: e.target.value ? parseInt(e.target.value) : undefined })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 />
               </div>
             </div>
@@ -588,7 +588,7 @@ export default function EditStorePage() {
                   onChange={(e) =>
                     setFormData({ ...formData, rating: e.target.value ? parseFloat(e.target.value) : undefined })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 />
                 <p className="mt-1 text-xs text-gray-500">
                   Store rating displayed as stars (e.g., 4.5 = 4.5 stars)
@@ -609,7 +609,7 @@ export default function EditStorePage() {
                   onChange={(e) =>
                     setFormData({ ...formData, reviewCount: e.target.value ? parseInt(e.target.value) : undefined })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 />
                 <p className="mt-1 text-xs text-gray-500">
                   Number of reviews (e.g., "123 reviews")
@@ -629,7 +629,7 @@ export default function EditStorePage() {
               onChange={(e) =>
                 setFormData({ ...formData, networkId: e.target.value || undefined })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
             >
               <option value="">No Network ID</option>
               {regions.map((region) => (
@@ -655,7 +655,7 @@ export default function EditStorePage() {
                 const categoryId = e.target.value || null;
                 setFormData({ ...formData, categoryId });
               }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
             >
               <option value="">No Category</option>
               {categories.map((category) => (
@@ -679,7 +679,7 @@ export default function EditStorePage() {
               type="url"
               value={logoUrl}
               onChange={(e) => handleLogoUrlChange(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
               placeholder="https://res.cloudinary.com/... or https://example.com/logo.png"
             />
             {extractedLogoUrl && extractedLogoUrl !== logoUrl && (
@@ -736,7 +736,7 @@ export default function EditStorePage() {
                   });
                 }}
                 disabled={!formData.isTrending && !formData.layoutPosition}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
               >
                 <option value="">Not Assigned</option>
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((pos) => (
@@ -841,7 +841,7 @@ export default function EditStorePage() {
                     type="text"
                     value={faqFormData.question || ''}
                     onChange={(e) => setFaqFormData({ ...faqFormData, question: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                     required
                   />
                 </div>
@@ -852,7 +852,7 @@ export default function EditStorePage() {
                   <textarea
                     value={faqFormData.answer || ''}
                     onChange={(e) => setFaqFormData({ ...faqFormData, answer: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                     rows={4}
                     required
                   />
@@ -866,7 +866,7 @@ export default function EditStorePage() {
                       type="number"
                       value={faqFormData.order || 0}
                       onChange={(e) => setFaqFormData({ ...faqFormData, order: parseInt(e.target.value) || 0 })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                     />
                   </div>
                   <div className="flex items-center pt-6">

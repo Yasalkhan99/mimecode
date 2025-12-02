@@ -303,7 +303,7 @@ export default function StoresPage() {
                 value={storeUrl}
                 onChange={(e) => setStoreUrl(e.target.value)}
                 placeholder="Enter website URL (e.g., nike.com or https://nike.com)"
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
               />
               <button
                 type="button"
@@ -340,7 +340,7 @@ export default function StoresPage() {
                       slug: autoGenerateSlug ? generateSlug(name) : formData.slug
                     });
                   }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   required
                 />
               </div>
@@ -357,7 +357,7 @@ export default function StoresPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, subStoreName: e.target.value })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 />
                 <p className="mt-1 text-xs text-gray-500">
                   This name will be displayed on the store page when visiting the store
@@ -432,7 +432,7 @@ export default function StoresPage() {
                 type="url"
                 value={logoUrl}
                 onChange={(e) => handleLogoUrlChange(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 placeholder="https://res.cloudinary.com/... or https://example.com/logo.png"
               />
               {extractedLogoUrl && extractedLogoUrl !== logoUrl && (
@@ -465,7 +465,7 @@ export default function StoresPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 rows={3}
                 required
               />
@@ -484,7 +484,7 @@ export default function StoresPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, voucherText: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
               />
               <p className="mt-1 text-xs text-gray-500">
                 Voucher text that will be displayed on the store card (e.g., "Upto 58% Voucher")
@@ -502,7 +502,7 @@ export default function StoresPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, networkId: e.target.value || undefined })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
               >
                 <option value="">No Network ID</option>
                 {regions.map((region) => (
@@ -528,7 +528,7 @@ export default function StoresPage() {
                   const categoryId = e.target.value || null;
                   setFormData({ ...formData, categoryId });
                 }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
               >
                 <option value="">No Category</option>
                 {categories.map((category) => (
@@ -553,7 +553,7 @@ export default function StoresPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, whyTrustUs: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 rows={4}
                 placeholder="Why should customers trust this store? Enter custom content here..."
               />
@@ -573,7 +573,7 @@ export default function StoresPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, moreInformation: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 rows={6}
                 placeholder="Enter detailed information about the store, coupons, how to use them, etc. You can use HTML tags for formatting."
               />
@@ -595,7 +595,7 @@ export default function StoresPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, seoTitle: e.target.value })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   placeholder="Best Nike Shoes Coupons & Deals 2024"
                   maxLength={60}
                 />
@@ -615,7 +615,7 @@ export default function StoresPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, seoDescription: e.target.value })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   rows={2}
                   placeholder="Get the latest Nike coupons & save up to 70%!"
                   maxLength={160}
@@ -643,7 +643,7 @@ export default function StoresPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, rating: e.target.value ? parseFloat(e.target.value) : undefined })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 />
                 <p className="mt-1 text-xs text-gray-500">
                   Store rating displayed as stars (e.g., 4.5 = 4.5 stars)
@@ -664,7 +664,7 @@ export default function StoresPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, reviewCount: e.target.value ? parseInt(e.target.value) : undefined })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 />
                 <p className="mt-1 text-xs text-gray-500">
                   Number of reviews (e.g., "123 reviews")
@@ -711,7 +711,7 @@ export default function StoresPage() {
                     });
                   }}
                   disabled={!formData.isTrending && !formData.layoutPosition}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 >
                   <option value="">Not Assigned</option>
                   {[1, 2, 3, 4, 5, 6, 7, 8].map((pos) => {
