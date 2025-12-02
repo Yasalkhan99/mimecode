@@ -33,11 +33,21 @@ const convertToAPIFormat = (doc: any, docId: string, storeData?: any) => {
   // Normalize the URL (add https:// if missing)
   couponUrl = normalizeUrl(couponUrl);
   
-  return {
-    id: docId || data['Coupon Id'] || '',
+  // Get store IDs - check Store  Id field (most common in our CSV import data)
+  let storeIdsArray: string[] = [];
+  if (data['Store  Id']) {
+    storeIdsArray = [data['Store  Id']];
+  } else if (data.store_ids && Array.isArray(data.store_ids)) {
+    storeIdsArray = data.store_ids;
+  } else if (data.storeIds && Array.isArray(data.storeIds)) {
+    storeIdsArray = data.storeIds;
+  }
+  
+  const result = {
+    id: docId || data['Coupon Id'] || data.id || '',
     code: data['Coupon Code'] || data.code || '',
-    storeName: data['Store Name'] || data.storeName || storeData?.['Store Name'] || '',
-    storeIds: data['Store  Id'] ? [data['Store  Id']] : (data.storeIds || []),
+    storeName: data['Store Name'] || data.store_name || data.storeName || storeData?.['Store Name'] || '',
+    storeIds: storeIdsArray,
     discount: data.discount ? parseFloat(String(data.discount)) : 0,
     discountType: data.discount_type || data.discountType || 'percentage',
     description: data['Coupon Desc'] || data.description || '',
@@ -45,10 +55,10 @@ const convertToAPIFormat = (doc: any, docId: string, storeData?: any) => {
     isActive: data.is_active !== false && data.isActive !== false,
     maxUses: data.max_uses || data.maxUses || 1000,
     currentUses: data.current_uses || data.currentUses || 0,
-    expiryDate: data['Coupon Expiry'] || data.expiryDate || data.expiry_date || null,
+    expiryDate: data['Coupon Expiry'] || data.expiry_date || data.expiryDate || null,
     logoUrl: data.logo_url || data.logoUrl || null,
     url: couponUrl,
-    couponType: data['Coupon Type'] || data.couponType || 'code',
+    couponType: data['Coupon Type'] || data.coupon_type || data.couponType || 'code',
     isPopular: data.is_popular || data.isPopular || false,
     layoutPosition: data['Coupon Priority'] ? parseInt(String(data['Coupon Priority'])) : (data.layoutPosition || null),
     isLatest: data.is_latest || data.isLatest || false,
@@ -57,6 +67,8 @@ const convertToAPIFormat = (doc: any, docId: string, storeData?: any) => {
     createdAt: data.created_at || data.createdAt || data['Created Date'] || null,
     updatedAt: data.updated_at || data.updatedAt || data['Modify Date'] || null,
   };
+  
+  return result;
 };
 
 export async function GET(req: NextRequest) {
@@ -112,6 +124,13 @@ export async function GET(req: NextRequest) {
     // Get all coupons with filters
     let query = supabaseAdmin.from(tableName).select('*');
     
+    // Apply storeId filter at database level (much faster!)
+    if (storeId) {
+      console.log(`🔍 Filtering at DB level for storeId: ${storeId}`);
+      // Filter by Store  Id column (with two spaces)
+      query = query.eq('Store  Id', storeId);
+    }
+    
     // Apply category filter
     if (categoryId) {
       query = query.or(`category_id.eq.${categoryId},categoryId.eq.${categoryId}`);
@@ -141,10 +160,14 @@ export async function GET(req: NextRequest) {
       const { data: stores } = await supabaseAdmin
         .from(storesTableName)
         .select('*')
-        .in('id', Array.from(storeIds));
+        .in('Store Id', Array.from(storeIds));
       
       stores?.forEach(store => {
-        storeDataMap.set(store.id, store);
+        // Use Store Id as the map key (not UUID id which doesn't exist)
+        const storeIdKey = store['Store Id'] || store.store_id;
+        if (storeIdKey) {
+          storeDataMap.set(storeIdKey, store);
+        }
       });
     }
 
@@ -155,15 +178,8 @@ export async function GET(req: NextRequest) {
       return convertToAPIFormat({ data: () => coupon }, coupon.id, storeData);
     });
 
-    // Apply storeId filter if provided
-    if (storeId) {
-      convertedCoupons = convertedCoupons.filter((coupon: any) => {
-        return coupon.storeIds?.includes(storeId) || 
-               coupon.storeIds?.some((id: string) => id === storeId);
-      });
-    }
-
-    console.log(`📊 Converted ${convertedCoupons.length} coupons`);
+    // StoreId filtering is now done at database level (see query above)
+    console.log(`📊 Total coupons after conversion: ${convertedCoupons.length}`);
 
     // Apply activeOnly filtering
     if (activeOnly) {

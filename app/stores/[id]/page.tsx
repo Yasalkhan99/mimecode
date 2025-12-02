@@ -117,7 +117,19 @@ export default function StoreDetailPage() {
               // Keep if not expired
               return !expiryDate || expiryDate >= now;
             });
-            setCoupons(validCoupons);
+            
+            // Sort coupons: CODE type first, then DEAL type
+            const sortedCoupons = validCoupons.sort((a, b) => {
+              const typeA = a.couponType?.toLowerCase() || 'deal';
+              const typeB = b.couponType?.toLowerCase() || 'deal';
+              
+              // CODE comes before DEAL
+              if (typeA === 'code' && typeB !== 'code') return -1;
+              if (typeA !== 'code' && typeB === 'code') return 1;
+              return 0;
+            });
+            
+            setCoupons(sortedCoupons);
             setStoreFaqs(faqsData);
             setAllStores(storesData);
           }
