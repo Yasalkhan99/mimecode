@@ -80,10 +80,7 @@ export async function POST(req: NextRequest) {
       throw error;
     }
 
-    console.log('Store created successfully');
-
-    // Get the Store Id from the created record
-    const storeId = data['Store Id'] || data.id;
+    console.log('Store created successfully with ID:', storeId);
 
     return NextResponse.json({
       success: true,
