@@ -24,10 +24,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Delete from Supabase
+    // Note: The stores table uses "Store Id" column (with space), not "id"
     const { error } = await supabaseAdmin
       .from('stores')
       .delete()
-      .eq('id', id);
+      .eq('Store Id', id);
 
     if (error) {
       console.error('Supabase delete store error:', error);
