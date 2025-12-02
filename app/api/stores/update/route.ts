@@ -22,9 +22,9 @@ export async function POST(req: NextRequest) {
 
     console.log('Updating store:', id, 'with updates:', Object.keys(updates));
 
-    // Convert camelCase field names to snake_case for Supabase
+    // Convert camelCase field names to Supabase column names
     const supabaseUpdates: any = {
-      updated_at: new Date().toISOString(),
+      'Modify Date': new Date().toISOString(),
     };
 
     // Map common fields

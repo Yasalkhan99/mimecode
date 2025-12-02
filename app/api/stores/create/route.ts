@@ -37,8 +37,8 @@ export async function POST(req: NextRequest) {
       'Store Name': store.name,
       'Slug': store.slug,
       'description': store.description || '',
-      'created_at': new Date().toISOString(),
-      'updated_at': new Date().toISOString(),
+      'Created Date': new Date().toISOString(),
+      'Modify Date': new Date().toISOString(),
     };
 
     // Add optional fields only if they have values
