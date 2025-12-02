@@ -12,6 +12,7 @@
     "migrate:banners-firestore-to-supabase": "tsx scripts/migrate-banners-firestore-to-supabase.ts",
     "setup:categories": "tsx scripts/auto-setup-categories.ts",
     "categorize:stores": "tsx scripts/auto-categorize-stores.ts",
+    "reset:categories": "tsx scripts/reset-and-recategorize.ts",
     "debug:stores": "tsx scripts/debug-stores.ts"
   },
   "dependencies": {
