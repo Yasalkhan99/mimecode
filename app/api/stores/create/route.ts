@@ -6,21 +6,27 @@ import { supabaseAdmin } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   try {
+    console.log('=== Create Store API Called ===');
+    
     if (!supabaseAdmin) {
+      console.error('❌ Supabase admin client not initialized');
       throw new Error('Supabase admin client not initialized');
     }
 
     const body = await req.json();
+    console.log('📦 Request body received');
+    
     const { store } = body;
 
     if (!store || !store.name) {
+      console.error('❌ Missing store name');
       return NextResponse.json(
         { success: false, error: 'Store name is required' },
         { status: 400 }
       );
     }
 
-    console.log('Creating store:', store.name);
+    console.log('✅ Creating store:', store.name);
 
     // Generate a unique Store Id (use timestamp + random)
     const storeId = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
@@ -72,6 +78,9 @@ export async function POST(req: NextRequest) {
     if (store.seoTitle) supabaseStore['seo_title'] = store.seoTitle;
     if (store.seoDescription) supabaseStore['seo_description'] = store.seoDescription;
 
+    console.log('💾 Inserting into Supabase...');
+    console.log('📝 Store data:', JSON.stringify(supabaseStore, null, 2));
+
     const { data, error } = await supabaseAdmin
       .from('stores')
       .insert([supabaseStore])
@@ -79,7 +88,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Supabase create store error:', error);
+      console.error('❌ Supabase create store error:', error);
       
       // Check for duplicate slug error
       if (error.code === '23505') { // Unique constraint violation
