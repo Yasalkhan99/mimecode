@@ -53,6 +53,10 @@ export async function POST(req: NextRequest) {
     // Add new dynamic content fields
     if (updates.whyTrustUs !== undefined) supabaseUpdates['why_trust_us'] = updates.whyTrustUs;
     if (updates.moreInformation !== undefined) supabaseUpdates['more_information'] = updates.moreInformation;
+    
+    // Add rating and review count fields
+    if (updates.rating !== undefined) supabaseUpdates['rating'] = updates.rating;
+    if (updates.reviewCount !== undefined) supabaseUpdates['review_count'] = updates.reviewCount;
 
     console.log('Supabase updates:', supabaseUpdates);
 

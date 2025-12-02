@@ -528,6 +528,52 @@ export default function EditStorePage() {
                 />
               </div>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="rating" className="block text-sm font-semibold text-gray-700 mb-1">
+                  Rating (0.0 - 5.0)
+                </label>
+                <input
+                  id="rating"
+                  name="rating"
+                  type="number"
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  placeholder="4.5"
+                  value={formData.rating || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, rating: e.target.value ? parseFloat(e.target.value) : undefined })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Store rating displayed as stars (e.g., 4.5 = 4.5 stars)
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="reviewCount" className="block text-sm font-semibold text-gray-700 mb-1">
+                  Review Count
+                </label>
+                <input
+                  id="reviewCount"
+                  name="reviewCount"
+                  type="number"
+                  min="0"
+                  placeholder="123"
+                  value={formData.reviewCount || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, reviewCount: e.target.value ? parseInt(e.target.value) : undefined })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Number of reviews (e.g., "123 reviews")
+                </p>
+              </div>
+            </div>
           </div>
 
           <div>

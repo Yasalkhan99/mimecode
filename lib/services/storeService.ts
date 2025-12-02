@@ -25,6 +25,8 @@ export interface Store {
   headquarters?: string; // Headquarters location
   whyTrustUs?: string; // Dynamic "Why Trust Us" content for store page
   moreInformation?: string; // Dynamic "More Information" content for store page
+  rating?: number; // Store rating (0.0 to 5.0)
+  reviewCount?: number; // Number of reviews
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }

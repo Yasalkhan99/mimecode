@@ -138,6 +138,8 @@ const convertToAPIFormat = (row: any) => {
     merchantId: row['Merchant Id'] || row.merchant_id || '',
     whyTrustUs: row.why_trust_us || null, // Dynamic "Why Trust Us" content
     moreInformation: row.more_information || null, // Dynamic "More Information" content
+    rating: row.rating ? parseFloat(row.rating) : 4.5, // Store rating
+    reviewCount: row.review_count || 0, // Number of reviews
     createdAt: row['Created Date'] || row.created_at || null,
     updatedAt: row['Modify Date'] || row.updated_at || null,
   };
