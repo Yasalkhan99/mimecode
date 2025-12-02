@@ -14,7 +14,51 @@ Email settings are now stored in **Supabase** (no Firebase needed!)
 2. Select your project
 3. Go to **SQL Editor** (left sidebar)
 4. Click **New Query**
-5. Copy and paste this SQL:
+
+#### Option A: If `email_settings` table already exists (most common)
+
+**Run this SQL to add missing columns:**
+
+```sql
+-- Add email4, email5, email6 columns to existing email_settings table
+DO $$ 
+BEGIN
+    -- Add email4 if it doesn't exist
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'email_settings' AND column_name = 'email4'
+    ) THEN
+        ALTER TABLE email_settings ADD COLUMN email4 TEXT DEFAULT '';
+        RAISE NOTICE 'Added column email4';
+    END IF;
+
+    -- Add email5 if it doesn't exist
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'email_settings' AND column_name = 'email5'
+    ) THEN
+        ALTER TABLE email_settings ADD COLUMN email5 TEXT DEFAULT '';
+        RAISE NOTICE 'Added column email5';
+    END IF;
+
+    -- Add email6 if it doesn't exist
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'email_settings' AND column_name = 'email6'
+    ) THEN
+        ALTER TABLE email_settings ADD COLUMN email6 TEXT DEFAULT '';
+        RAISE NOTICE 'Added column email6';
+    END IF;
+END $$;
+```
+
+Click **Run** → You should see: ✅ "Success" with notices about added columns
+
+---
+
+#### Option B: If `email_settings` table does NOT exist (fresh install)
+
+**Run this SQL to create the table:**
 
 ```sql
 -- Create email_settings table in Supabase
@@ -39,8 +83,7 @@ WHERE NOT EXISTS (SELECT 1 FROM email_settings);
 CREATE INDEX IF NOT EXISTS idx_email_settings_updated_at ON email_settings(updated_at DESC);
 ```
 
-6. Click **Run** (or press F5)
-7. You should see: ✅ "Success. No rows returned"
+Click **Run** → You should see: ✅ "Success. No rows returned"
 
 ---
 
