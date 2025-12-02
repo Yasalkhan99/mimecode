@@ -9,6 +9,29 @@ import { getActiveStoreFAQs, StoreFAQ } from '@/lib/services/storeFaqService';
 import Navbar from '@/app/components/Navbar';
 import NewsletterSubscription from '@/app/components/NewsletterSubscription';
 import Footer from '@/app/components/Footer';
+
+// Helper function to generate consistent random rating and reviews based on store ID
+const getStoreRating = (storeId: string | undefined): { rating: number; reviews: number } => {
+  if (!storeId) {
+    return { rating: 4.0, reviews: 0 };
+  }
+  
+  // Use store ID as seed for consistent random values
+  let hash = 0;
+  for (let i = 0; i < storeId.length; i++) {
+    const char = storeId.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  
+  // Generate rating between 3.0 and 5.0
+  const rating = 3.0 + (Math.abs(hash) % 200) / 100; // 3.0 to 5.0
+  
+  // Generate reviews between 10 and 5000
+  const reviews = 10 + (Math.abs(hash * 7) % 4990);
+  
+  return { rating: Math.round(rating * 10) / 10, reviews };
+};
 import CouponPopup from '@/app/components/CouponPopup';
 
 export default function StoreDetailPage() {
