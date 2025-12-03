@@ -841,7 +841,7 @@ export default function Home() {
                   className="flex gap-4 md:gap-5"
                   style={{ 
                     width: 'fit-content',
-                    animation: 'scrollLeft 900s linear infinite',
+                    animation: 'scrollLeft 40s linear infinite',
                     animationPlayState: isSliderPaused ? 'paused' : 'running',
                     willChange: 'transform'
                   }}
@@ -1119,7 +1119,7 @@ export default function Home() {
                     className="flex gap-4 md:gap-5"
                     style={{ 
                       width: 'fit-content',
-                      animation: 'scrollLeft 900s linear infinite',
+                      animation: 'scrollLeft 40s linear infinite',
                       animationPlayState: isFeaturedDealsPaused ? 'paused' : 'running',
                       willChange: 'transform'
                     }}
@@ -1581,7 +1581,7 @@ export default function Home() {
                       className="flex gap-4 md:gap-6 pb-4"
                       style={{ 
                         width: 'fit-content',
-                        animation: 'scrollLeft 900s linear infinite',
+                        animation: 'scrollLeft 40s linear infinite',
                         animationPlayState: isStoresOfSeasonPaused ? 'paused' : 'running',
                         willChange: 'transform'
                       }}
