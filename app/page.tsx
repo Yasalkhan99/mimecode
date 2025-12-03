@@ -327,6 +327,21 @@ export default function Home() {
     // Get store for this specific coupon
     const store = getStoreForCoupon(coupon);
     
+    // Track coupon click (async - don't wait for response)
+    fetch('/api/track/coupon-click', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        couponId: coupon.id,
+        couponCode: coupon.code || null,
+        couponType: coupon.couponType || 'deal',
+        storeName: store?.name || coupon.storeName || null,
+        storeId: store?.id || coupon.storeIds?.[0] || null,
+        pageUrl: window.location.href,
+        referrer: document.referrer || null,
+      }),
+    }).catch(() => {}); // Ignore errors - tracking shouldn't block user
+    
     // Get tracking URL - ALWAYS use store's tracking URL if available
     let urlToOpen: string | null = null;
     
