@@ -1026,22 +1026,24 @@ export default function Home() {
                         </div>
                       )}
                       
-                      {/* Discount Badge - Bottom Right of Logo Area */}
-                      <div className="absolute bottom-0 right-0 bg-gray-200 rounded-lg px-3 py-1.5">
-                        <span className="text-gray-900 font-bold text-sm sm:text-base">
-                          {coupon.discount || 25}% OFF
-                        </span>
-                      </div>
+                      {/* Discount Badge - Bottom Right of Logo Area - Only show if real discount exists */}
+                      {coupon.discount && coupon.discount > 0 && (
+                        <div className="absolute bottom-0 right-0 bg-gray-200 rounded-lg px-3 py-1.5">
+                          <span className="text-gray-900 font-bold text-sm sm:text-base">
+                            {coupon.discount}% OFF
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Brand Name */}
                     <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-2 text-center uppercase line-clamp-2">
-                      {storeName || `${coupon.discount || 25}% OFF DEAL`}
+                      {storeName || 'Special Deal'}
                     </h3>
 
                     {/* Description */}
                     <p className="text-xs sm:text-sm text-gray-600 mb-4 text-center line-clamp-2 leading-relaxed flex-grow">
-                      {storeName ? `Visit ${storeName} for great deals` : `Save ${coupon.discount || 25}% on your order`}
+                      {storeName ? `Visit ${storeName} for great deals` : 'Save on your order'}
                     </p>
 
                     {/* Get Code Button - With Code Preview on Hover */}
@@ -1257,12 +1259,6 @@ export default function Home() {
                                 </div>
                               )}
                               
-                              {/* Discount Badge - Bottom Right of Logo Area */}
-                              <div className="absolute bottom-0 right-0 bg-gray-200 rounded-lg px-3 py-1.5">
-                                <span className="text-gray-900 font-bold text-sm sm:text-base">
-                                  25% OFF
-                                </span>
-                              </div>
                             </div>
 
                             {/* Brand Name */}
@@ -1497,19 +1493,21 @@ export default function Home() {
                             }
                           })()}
                           
-                          {/* Discount Badge - Bottom Right of Logo Area */}
-                          <div className="absolute bottom-0 right-0 bg-gray-200 rounded-lg px-3 py-1.5">
-                            <span className="text-gray-900 font-bold text-sm sm:text-base">
-                              {coupon.discount || 0}% OFF
-                            </span>
-                          </div>
+                          {/* Discount Badge - Bottom Right of Logo Area - Only show if real discount exists */}
+                          {coupon.discount && coupon.discount > 0 && (
+                            <div className="absolute bottom-0 right-0 bg-gray-200 rounded-lg px-3 py-1.5">
+                              <span className="text-gray-900 font-bold text-sm sm:text-base">
+                                {coupon.discount}% OFF
+                              </span>
+                            </div>
+                          )}
                         </div>
 
                         {/* Brand Name */}
                         <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-2 text-center uppercase line-clamp-2">
                           {(() => {
                             const storeName = store?.name || coupon.storeName;
-                            return storeName || `${coupon.discount || 25}% OFF DEAL`;
+                            return storeName || 'Special Deal';
                           })()}
                         </h3>
 
@@ -1517,7 +1515,7 @@ export default function Home() {
                         <p className="text-xs sm:text-sm text-gray-600 mb-4 text-center line-clamp-2 leading-relaxed flex-grow">
                           {(() => {
                             const storeName = store?.name || coupon.storeName;
-                            return storeName ? `Visit ${storeName} for great deals` : `Save ${coupon.discount || 25}% on your order`;
+                            return storeName ? `Visit ${storeName} for great deals` : 'Save on your order';
                           })()}
                         </p>
 
