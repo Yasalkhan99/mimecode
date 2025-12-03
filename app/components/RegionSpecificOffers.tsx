@@ -531,16 +531,16 @@ export default function RegionSpecificOffers() {
 
   if (loading) {
     return (
-      <section className="py-12 md:py-16 bg-white">
+      <section className="py-8 md:py-12 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8">
+          <div className="mb-6">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">
               Region <span className="text-orange-500">Specific Offers</span>
             </h2>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 sm:gap-3">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="bg-gray-100 rounded-lg p-4 h-24 animate-pulse"></div>
+              <div key={i} className="bg-gray-100 rounded-lg p-2 h-16 animate-pulse"></div>
             ))}
           </div>
         </div>
@@ -554,7 +554,7 @@ export default function RegionSpecificOffers() {
 
   return (
     <>
-      <section className="py-12 md:py-16 bg-white">
+      <section className="py-8 md:py-12 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <motion.div
@@ -562,15 +562,15 @@ export default function RegionSpecificOffers() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="mb-6 md:mb-8"
+            className="mb-4 md:mb-6"
           >
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">
               Region <span className="text-orange-500">Specific Offers</span>
             </h2>
           </motion.div>
 
-          {/* Regions Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+          {/* Regions Grid - Compact */}
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 sm:gap-3">
             {regions.map((region, index) => {
               const countryCode = getCountryCode(region.name);
               const flagUrl = getFlagImageUrl(countryCode);
@@ -593,21 +593,21 @@ export default function RegionSpecificOffers() {
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: index * 0.05 }}
+                  transition={{ duration: 0.4, delay: index * 0.03 }}
                   onClick={() => handleRegionClick(region)}
-                  className="bg-white border border-gray-200 rounded-lg p-4 sm:p-5 hover:border-orange-500 hover:shadow-md transition-all duration-300 text-center group cursor-pointer flex flex-col items-center justify-center"
+                  className="bg-white border border-gray-200 rounded-lg p-2 sm:p-3 hover:border-orange-500 hover:shadow-md transition-all duration-300 text-center group cursor-pointer flex flex-col items-center justify-center"
                 >
-                  {/* Flag Display - Large and centered */}
-                  <div className="mb-3 group-hover:scale-110 transition-transform duration-300 flex items-center justify-center min-h-[60px]">
+                  {/* Flag Display - Compact */}
+                  <div className="mb-1.5 group-hover:scale-110 transition-transform duration-300 flex items-center justify-center">
                     <div 
-                      className="relative w-16 h-12 sm:w-20 sm:h-14 md:w-24 md:h-16 flex items-center justify-center"
+                      className="relative w-10 h-7 sm:w-12 sm:h-8 flex items-center justify-center"
                       role="img"
                       aria-label={`${region.name} flag`}
                     >
                       <img
                         src={flagUrl}
                         alt={`${region.name} flag`}
-                        className="w-full h-full object-cover rounded-sm"
+                        className="w-full h-full object-cover rounded-sm shadow-sm"
                         onError={(e) => {
                           // Fallback to a default flag if image fails to load
                           const target = e.target as HTMLImageElement;
@@ -616,8 +616,8 @@ export default function RegionSpecificOffers() {
                       />
                     </div>
                   </div>
-                  {/* Country Name Only - No store count */}
-                  <h3 className="font-semibold text-gray-900 text-sm sm:text-base mt-1">
+                  {/* Country Name - Compact */}
+                  <h3 className="font-medium text-gray-900 text-xs sm:text-sm leading-tight line-clamp-1">
                     {region.name}
                   </h3>
                 </motion.button>
