@@ -1,8 +1,12 @@
 // Server-side stores read route
-// Uses Supabase (migrated from MongoDB)
+// Uses Supabase with caching
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+
+// Simple in-memory cache
+let storesCache: { data: any[] | null; timestamp: number } = { data: null, timestamp: 0 };
+const CACHE_TTL = 60 * 1000; // 60 seconds cache
 
 // Helper function to extract domain from URL
 const extractDomain = (url: string | null | undefined): string | null => {
@@ -217,24 +221,37 @@ export async function GET(req: NextRequest) {
       query = query.eq('category_id', categoryId);
     }
 
+    // Check cache for full list (no filters)
+    const now = Date.now();
+    if (!categoryId && storesCache.data && (now - storesCache.timestamp) < CACHE_TTL) {
+      return NextResponse.json(
+        { success: true, stores: storesCache.data },
+        { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' } }
+      );
+    }
+
     // Get all stores
-    // Note: No created_at column in stores table, fetch without ordering first
     const { data, error } = await query;
     if (error) throw error;
 
     const convertedStores = (data || []).map(convertToAPIFormat);
     
-    // Sort by Store Id numerically if possible, otherwise alphabetically
+    // Sort by Store Id numerically
     convertedStores.sort((a, b) => {
       const idA = parseInt(a.storeId || '0') || 0;
       const idB = parseInt(b.storeId || '0') || 0;
-      return idB - idA; // Descending order
+      return idB - idA;
     });
 
-    return NextResponse.json({
-      success: true,
-      stores: convertedStores,
-    });
+    // Update cache for full list
+    if (!categoryId) {
+      storesCache = { data: convertedStores, timestamp: now };
+    }
+
+    return NextResponse.json(
+      { success: true, stores: convertedStores },
+      { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' } }
+    );
   } catch (error: any) {
     console.error('Supabase get stores error:', error);
     return NextResponse.json(

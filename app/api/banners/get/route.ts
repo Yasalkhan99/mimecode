@@ -1,5 +1,5 @@
 // Server-side banner read route
-// Uses Firebase Firestore
+// Uses Firebase Firestore with caching
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase-admin';
@@ -7,23 +7,22 @@ import { getAdminFirestore } from '@/lib/firebase-admin';
 // Collection name for banners
 const BANNERS_COLLECTION = process.env.NEXT_PUBLIC_BANNERS_COLLECTION || 'banners-mimecode';
 
+// Simple in-memory cache
+let bannersCache: { data: any[] | null; timestamp: number } = { data: null, timestamp: 0 };
+const CACHE_TTL = 60 * 1000; // 60 seconds cache
+
 // Helper function to convert Firebase doc to API format
 const convertToAPIFormat = (doc: any) => {
   const data = doc.data();
   
-  // Ensure layoutPosition is a number if it exists
   let layoutPosition = data.layoutPosition;
   if (layoutPosition !== null && layoutPosition !== undefined) {
     layoutPosition = Number(layoutPosition);
-    // If conversion failed, set to null
-    if (isNaN(layoutPosition)) {
-      layoutPosition = null;
-    }
+    if (isNaN(layoutPosition)) layoutPosition = null;
   } else {
     layoutPosition = null;
   }
   
-  // Handle createdAt - could be Firestore Timestamp or other formats
   let createdAt = null;
   if (data.createdAt) {
     if (data.createdAt.toDate) {
@@ -46,9 +45,16 @@ const convertToAPIFormat = (doc: any) => {
 
 export async function GET(req: NextRequest) {
   try {
-    const db = getAdminFirestore();
+    // Check cache first
+    const now = Date.now();
+    if (bannersCache.data && (now - bannersCache.timestamp) < CACHE_TTL) {
+      return NextResponse.json(
+        { success: true, banners: bannersCache.data },
+        { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' } }
+      );
+    }
 
-    // Get all banners from Firebase collection
+    const db = getAdminFirestore();
     const snapshot = await db.collection(BANNERS_COLLECTION).get();
     
     const banners: any[] = [];
@@ -58,41 +64,28 @@ export async function GET(req: NextRequest) {
 
     // Sort by layoutPosition (ascending, nulls last), then by createdAt (descending)
     banners.sort((a, b) => {
-      // First sort by layoutPosition
       if (a.layoutPosition === null && b.layoutPosition === null) {
-        // Both null, sort by createdAt descending
         return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
       }
-      if (a.layoutPosition === null) return 1; // nulls last
-      if (b.layoutPosition === null) return -1; // nulls last
+      if (a.layoutPosition === null) return 1;
+      if (b.layoutPosition === null) return -1;
       if (a.layoutPosition !== b.layoutPosition) {
         return a.layoutPosition - b.layoutPosition;
       }
-      // Same layoutPosition, sort by createdAt descending
       return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
     });
 
-    console.log(`📊 Firebase banners API: Fetched ${banners.length} banners from collection '${BANNERS_COLLECTION}'`);
-    if (banners.length > 0) {
-      console.log(`📋 Banner layout positions:`, banners.map((b: any) => ({ 
-        id: b.id, 
-        title: b.title, 
-        layoutPosition: b.layoutPosition,
-      })));
-    }
+    // Update cache
+    bannersCache = { data: banners, timestamp: now };
 
-    return NextResponse.json({
-      success: true,
-      banners: banners,
-    });
+    return NextResponse.json(
+      { success: true, banners: banners },
+      { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' } }
+    );
   } catch (error: any) {
     console.error('Firebase get banners error:', error);
     return NextResponse.json(
-      {
-        success: false,
-        error: error.message || 'Failed to get banners',
-        banners: [],
-      },
+      { success: false, error: error.message || 'Failed to get banners', banners: [] },
       { status: 500 }
     );
   }
