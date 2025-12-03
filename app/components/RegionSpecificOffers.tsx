@@ -538,8 +538,8 @@ export default function RegionSpecificOffers() {
               Region <span className="text-orange-500">Specific Offers</span>
             </h2>
           </div>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 sm:gap-3">
-            {[...Array(8)].map((_, i) => (
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
+            {[...Array(12)].map((_, i) => (
               <div key={i} className="bg-gray-100 rounded-lg p-2 h-16 animate-pulse"></div>
             ))}
           </div>
@@ -569,60 +569,63 @@ export default function RegionSpecificOffers() {
             </h2>
           </motion.div>
 
-          {/* Regions Grid - Compact */}
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 sm:gap-3">
-            {regions.map((region, index) => {
-              const countryCode = getCountryCode(region.name);
-              const flagUrl = getFlagImageUrl(countryCode);
+          {/* Regions Grid - Equal rows (6 per row) */}
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
+            {(() => {
+              // Filter regions with stores first
+              const regionsWithStores = regions.filter(region => {
+                const storesCount = allStores.filter(store => {
+                  const domain = extractDomain(store.websiteUrl);
+                  const detectedRegion = getRegionFromDomain(domain);
+                  return detectedRegion === region.name;
+                }).length;
+                return storesCount > 0;
+              });
               
-              // Count stores for this region based on URL
-              const storesCount = allStores.filter(store => {
-                const domain = extractDomain(store.websiteUrl);
-                const detectedRegion = getRegionFromDomain(domain);
-                return detectedRegion === region.name;
-              }).length;
+              // Limit to 12 items (2 equal rows of 6)
+              const displayRegions = regionsWithStores.slice(0, 12);
+              
+              return displayRegions.map((region, index) => {
+                const countryCode = getCountryCode(region.name);
+                const flagUrl = getFlagImageUrl(countryCode);
 
-              // Skip regions with 0 stores
-              if (storesCount === 0) {
-                return null;
-              }
-
-              return (
-                <motion.button
-                  key={region.id || index}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: index * 0.03 }}
-                  onClick={() => handleRegionClick(region)}
-                  className="bg-white border border-gray-200 rounded-lg p-2 sm:p-3 hover:border-orange-500 hover:shadow-md transition-all duration-300 text-center group cursor-pointer flex flex-col items-center justify-center"
-                >
-                  {/* Flag Display - Compact */}
-                  <div className="mb-1.5 group-hover:scale-110 transition-transform duration-300 flex items-center justify-center">
-                    <div 
-                      className="relative w-10 h-7 sm:w-12 sm:h-8 flex items-center justify-center"
-                      role="img"
-                      aria-label={`${region.name} flag`}
-                    >
-                      <img
-                        src={flagUrl}
-                        alt={`${region.name} flag`}
-                        className="w-full h-full object-cover rounded-sm shadow-sm"
-                        onError={(e) => {
-                          // Fallback to a default flag if image fails to load
-                          const target = e.target as HTMLImageElement;
-                          target.src = 'https://flagcdn.com/w160/un.png';
-                        }}
-                      />
+                return (
+                  <motion.button
+                    key={region.id || index}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.4, delay: index * 0.03 }}
+                    onClick={() => handleRegionClick(region)}
+                    className="bg-white border border-gray-200 rounded-lg p-2 sm:p-3 hover:border-orange-500 hover:shadow-md transition-all duration-300 text-center group cursor-pointer flex flex-col items-center justify-center"
+                  >
+                    {/* Flag Display - Compact */}
+                    <div className="mb-1.5 group-hover:scale-110 transition-transform duration-300 flex items-center justify-center">
+                      <div 
+                        className="relative w-10 h-7 sm:w-12 sm:h-8 flex items-center justify-center"
+                        role="img"
+                        aria-label={`${region.name} flag`}
+                      >
+                        <img
+                          src={flagUrl}
+                          alt={`${region.name} flag`}
+                          className="w-full h-full object-cover rounded-sm shadow-sm"
+                          onError={(e) => {
+                            // Fallback to a default flag if image fails to load
+                            const target = e.target as HTMLImageElement;
+                            target.src = 'https://flagcdn.com/w160/un.png';
+                          }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                  {/* Country Name - Compact */}
-                  <h3 className="font-medium text-gray-900 text-xs sm:text-sm leading-tight line-clamp-1">
-                    {region.name}
-                  </h3>
-                </motion.button>
-              );
-            })}
+                    {/* Country Name - Compact */}
+                    <h3 className="font-medium text-gray-900 text-xs sm:text-sm leading-tight line-clamp-1">
+                      {region.name}
+                    </h3>
+                  </motion.button>
+                );
+              });
+            })()}
           </div>
         </div>
       </section>
