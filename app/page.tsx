@@ -1013,7 +1013,7 @@ export default function Home() {
                       )}
                       
                       {/* Discount Badge - Bottom Right of Logo Area - Only show if real discount exists */}
-                      {coupon.discount && coupon.discount > 0 && (
+                      {Number(coupon.discount) > 0 && (
                         <div className="absolute bottom-0 right-0 bg-gray-200 rounded-lg px-3 py-1.5">
                           <span className="text-gray-900 font-bold text-sm sm:text-base">
                             {coupon.discount}% OFF
@@ -1029,7 +1029,7 @@ export default function Home() {
 
                     {/* Actual Coupon Title/Description */}
                     <p className="text-xs sm:text-sm text-gray-600 mb-4 text-center line-clamp-2 leading-relaxed flex-grow">
-                      {coupon.title || coupon.description || (coupon.discount && coupon.discount > 0 ? `Save ${coupon.discount}% on your order` : 'Great savings available')}
+                      {coupon.title || coupon.description || (Number(coupon.discount) > 0 ? `Save ${coupon.discount}% on your order` : 'Great savings available')}
                     </p>
 
                     {/* Get Code/Deal Button */}
@@ -1461,7 +1461,7 @@ export default function Home() {
                           })()}
                           
                           {/* Discount Badge - Bottom Right of Logo Area - Only show if real discount exists */}
-                          {coupon.discount && coupon.discount > 0 && (
+                          {Number(coupon.discount) > 0 && (
                             <div className="absolute bottom-0 right-0 bg-gray-200 rounded-lg px-3 py-1.5">
                               <span className="text-gray-900 font-bold text-sm sm:text-base">
                                 {coupon.discount}% OFF
@@ -1477,7 +1477,7 @@ export default function Home() {
 
                         {/* Actual Coupon Title/Description */}
                         <p className="text-xs sm:text-sm text-gray-600 mb-4 text-center line-clamp-2 leading-relaxed flex-grow">
-                          {coupon.title || coupon.description || (coupon.discount && coupon.discount > 0 ? `Save ${coupon.discount}% on your order` : 'Great savings available')}
+                          {coupon.title || coupon.description || (Number(coupon.discount) > 0 ? `Save ${coupon.discount}% on your order` : 'Great savings available')}
                         </p>
 
                         {/* Get Code/Deal Button */}
