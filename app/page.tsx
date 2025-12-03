@@ -1545,7 +1545,7 @@ export default function Home() {
                       style={{ 
                         width: 'fit-content',
                         animationName: 'scrollLeft',
-                        animationDuration: '200s',
+                        animationDuration: '1900s',
                         animationTimingFunction: 'linear',
                         animationIterationCount: 'infinite',
                         animationPlayState: isStoresOfSeasonPaused ? 'paused' : 'running',
@@ -1606,31 +1606,23 @@ export default function Home() {
                   {/* Category Tags */}
                   {categories && categories.length > 0 && (
                     <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
-                      <button
-                        onClick={() => setSelectedCategoryId(null)}
-                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
-                          selectedCategoryId === null
-                            ? 'bg-gray-900 text-white'
-                            : 'bg-white text-gray-700 border border-gray-300 hover:border-gray-400'
-                        }`}
+                      <Link
+                        href="/categories"
+                        className="px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 bg-gray-900 text-white hover:bg-gray-800"
                       >
                         Discover more
-                      </button>
+                      </Link>
                       {categories.map((category) => (
-                        <button
+                        <Link
                           key={category.id}
-                          onClick={() => setSelectedCategoryId(category.id || null)}
-                          className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-1.5 ${
-                            selectedCategoryId === category.id
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-white text-blue-600 border border-gray-300 hover:border-blue-400'
-                          }`}
+                          href={`/categories/${category.slug || category.id}`}
+                          className="px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-1.5 bg-white text-blue-600 border border-gray-300 hover:border-blue-400 hover:bg-blue-50"
                         >
                           <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
                           </svg>
                           {category.name}
-                        </button>
+                        </Link>
                       ))}
                     </div>
                   )}
