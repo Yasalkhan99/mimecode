@@ -1,7 +1,10 @@
 // Server-side banner creation from URL route
-// Uses Supabase (migrated from Firebase)
+// Uses Firebase Firestore
 
-import { supabaseAdmin } from '@/lib/supabase';
+import { getAdminFirestore } from '@/lib/firebase-admin';
+
+// Collection name for banners
+const BANNERS_COLLECTION = process.env.NEXT_PUBLIC_BANNERS_COLLECTION || 'banners-mimecode';
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -12,52 +15,41 @@ export async function POST(req: Request) {
   }
 
   try {
-    if (!supabaseAdmin) {
-      throw new Error('Supabase admin client not initialized');
-    }
+    const db = getAdminFirestore();
 
     const bannerData: any = {
       title: title || '',
-      image_url: imageUrl.trim(),
+      imageUrl: imageUrl.trim(),
+      createdAt: new Date(),
     };
     
     if (layoutPosition !== undefined && layoutPosition !== null) {
-      bannerData.layout_position = Number(layoutPosition); // Ensure it's a number
-      console.log(`📝 Creating banner with layout_position: ${bannerData.layout_position} (type: ${typeof bannerData.layout_position})`);
+      bannerData.layoutPosition = Number(layoutPosition); // Ensure it's a number
+      console.log(`📝 Creating banner with layoutPosition: ${bannerData.layoutPosition} (type: ${typeof bannerData.layoutPosition})`);
     } else {
-      console.log(`📝 Creating banner without layout_position`);
+      console.log(`📝 Creating banner without layoutPosition`);
     }
 
     console.log(`📝 Banner data being inserted:`, bannerData);
 
-    const { data, error } = await supabaseAdmin
-      .from('banners')
-      .insert(bannerData)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('❌ Supabase insert error:', error);
-      throw error;
-    }
+    const docRef = await db.collection(BANNERS_COLLECTION).add(bannerData);
 
     console.log(`✅ Banner created successfully:`, { 
-      id: data.id, 
-      title: data.title, 
-      layout_position: data.layout_position,
-      layout_position_type: typeof data.layout_position 
+      id: docRef.id, 
+      title: bannerData.title, 
+      layoutPosition: bannerData.layoutPosition,
     });
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        id: data.id, 
+        id: docRef.id, 
         imageUrl: imageUrl.trim() 
       }), 
       { status: 200 }
     );
   } catch (err: any) {
-    console.error('Supabase create from URL error:', err);
+    console.error('Firebase create from URL error:', err);
     return new Response(
       JSON.stringify({ 
         success: false, 
@@ -67,4 +59,3 @@ export async function POST(req: Request) {
     );
   }
 }
-

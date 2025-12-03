@@ -1,7 +1,10 @@
 // Server-side banner delete route
-// Uses Supabase (migrated from Firebase)
+// Uses Firebase Firestore
 
-import { supabaseAdmin } from '@/lib/supabase';
+import { getAdminFirestore } from '@/lib/firebase-admin';
+
+// Collection name for banners
+const BANNERS_COLLECTION = process.env.NEXT_PUBLIC_BANNERS_COLLECTION || 'banners-mimecode';
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -12,23 +15,18 @@ export async function POST(req: Request) {
   }
 
   try {
-    if (!supabaseAdmin) {
-      throw new Error('Supabase admin client not initialized');
-    }
+    const db = getAdminFirestore();
 
-    const { error } = await supabaseAdmin
-      .from('banners')
-      .delete()
-      .eq('id', id);
+    await db.collection(BANNERS_COLLECTION).doc(id).delete();
 
-    if (error) throw error;
+    console.log(`✅ Banner deleted successfully: ${id}`);
 
     return new Response(
       JSON.stringify({ success: true }),
       { status: 200 }
     );
   } catch (err: any) {
-    console.error('Supabase delete banner error:', err);
+    console.error('Firebase delete banner error:', err);
     return new Response(
       JSON.stringify({ 
         success: false, 
@@ -38,4 +36,3 @@ export async function POST(req: Request) {
     );
   }
 }
-
