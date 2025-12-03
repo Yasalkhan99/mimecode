@@ -327,12 +327,27 @@ export default function Home() {
     // Get store for this specific coupon
     const store = getStoreForCoupon(coupon);
     
+    // Track coupon click (async - don't wait for response)
+    fetch('/api/track/coupon-click', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        couponId: coupon.id,
+        couponCode: coupon.code || null,
+        couponType: coupon.couponType || 'deal',
+        storeName: store?.name || coupon.storeName || null,
+        storeId: store?.id || coupon.storeIds?.[0] || null,
+        pageUrl: window.location.href,
+        referrer: document.referrer || null,
+      }),
+    }).catch(() => {}); // Ignore errors - tracking shouldn't block user
+    
     // Get tracking URL - ALWAYS use store's tracking URL if available
     let urlToOpen: string | null = null;
+    const storeTrackingUrl = store?.websiteUrl || (store as any)?.['Tracking Url'] || (store as any)?.['Store Display Url'] || null;
     
-    if (store) {
-      // Priority 1: Store tracking URL (most reliable)
-      urlToOpen = store.websiteUrl || (store as any)?.['Tracking Url'] || (store as any)?.['Store Display Url'] || null;
+    if (storeTrackingUrl) {
+      urlToOpen = storeTrackingUrl;
     }
     
     // Fallback to coupon URL or affiliate link if no store URL
@@ -343,8 +358,56 @@ export default function Home() {
     // Normalize URL to ensure it has protocol
     urlToOpen = normalizeUrl(urlToOpen);
     
-    // Show popup
-    setSelectedCoupon(coupon);
+    // Helper to extract domain for favicon
+    const extractDomainForLogo = (url: string | null | undefined): string | null => {
+      if (!url) return null;
+      let cleanUrl = url.trim().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].replace(/\.+$/, '');
+      return cleanUrl || null;
+    };
+    
+    // Get the correct logo URL - SAME LOGIC as card display
+    let correctLogoUrl: string | null = null;
+    
+    // Priority 1: Store tracking URL favicon (most reliable - matches what card shows)
+    if (storeTrackingUrl) {
+      const domain = extractDomainForLogo(storeTrackingUrl);
+      if (domain) {
+        correctLogoUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+      }
+    }
+    
+    // Priority 2: Store logo URL
+    if (!correctLogoUrl && store?.logoUrl) {
+      if (store.logoUrl.startsWith('http://') || store.logoUrl.startsWith('https://') || store.logoUrl.includes('cloudinary.com')) {
+        correctLogoUrl = store.logoUrl;
+      }
+    }
+    
+    // Priority 3: Coupon logo URL
+    if (!correctLogoUrl && coupon.logoUrl) {
+      if (coupon.logoUrl.startsWith('http://') || coupon.logoUrl.startsWith('https://') || coupon.logoUrl.includes('cloudinary.com')) {
+        correctLogoUrl = coupon.logoUrl;
+      }
+    }
+    
+    // Priority 4: Coupon URL favicon
+    if (!correctLogoUrl && coupon.url) {
+      const domain = extractDomainForLogo(coupon.url);
+      if (domain) {
+        correctLogoUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+      }
+    }
+    
+    // Create enhanced coupon with correct logo URL for popup
+    const enhancedCoupon: Coupon = {
+      ...coupon,
+      logoUrl: correctLogoUrl || coupon.logoUrl,
+      storeName: store?.name || coupon.storeName,
+      url: urlToOpen || coupon.url,
+    };
+    
+    // Show popup with enhanced coupon (correct logo)
+    setSelectedCoupon(enhancedCoupon);
     setShowPopup(true);
     
     // Automatically open tracking URL in new tab after a short delay
@@ -656,11 +719,11 @@ export default function Home() {
       
       {/* Hero Banner Section - Retail Store Style */}
       {banners.length > 0 && (
-        <section className="relative w-full bg-white py-4 sm:py-6 md:py-8">
+        <section className="relative w-full bg-white py-2 sm:py-4 md:py-6">
           {/* Container with padding and max-width */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-            {/* Hero Slider with rounded corners */}
-            <div className="relative h-[300px] md:h-[350px] lg:h-[400px] w-full rounded-xl overflow-hidden">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8">
+            {/* Hero Slider with rounded corners - Compact */}
+            <div className="relative h-[180px] sm:h-[220px] md:h-[260px] lg:h-[300px] w-full rounded-xl overflow-hidden">
             <AnimatePresence initial={false} custom={direction} mode="wait">
               {banners.map((banner, index) => {
                 if (index !== currentBannerIndex) return null;
@@ -841,7 +904,10 @@ export default function Home() {
                   className="flex gap-4 md:gap-5"
                   style={{ 
                     width: 'fit-content',
-                    animation: 'scrollLeft 900s linear infinite',
+                    animationName: 'scrollLeft',
+                    animationDuration: '40s',
+                    animationTimingFunction: 'linear',
+                    animationIterationCount: 'infinite',
                     animationPlayState: isSliderPaused ? 'paused' : 'running',
                     willChange: 'transform'
                   }}
@@ -973,23 +1039,6 @@ export default function Home() {
                     className="bg-white rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 flex flex-col relative overflow-hidden group cursor-pointer w-[200px] sm:w-[220px] flex-shrink-0"
                     onClick={(e) => handleGetDeal(coupon, e)}
                   >
-                    {/* Label Badge - Top Left */}
-                    <div className="absolute top-3 left-3 z-10">
-                      {isExpired ? (
-                        <span className="bg-red-600 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
-                          EXPIRED
-                        </span>
-                      ) : coupon.dealScope === 'online-only' ? (
-                        <span className="bg-blue-700 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
-                          ONLINE ONLY
-                        </span>
-                      ) : (
-                        <span className="bg-blue-700 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
-                          SITEWIDE
-                        </span>
-                      )}
-                    </div>
-
                     {/* Logo Section - Centered */}
                     <div className="flex items-center justify-center h-32 sm:h-40 mb-4 relative">
                       {logoUrl ? (
@@ -1026,25 +1075,27 @@ export default function Home() {
                         </div>
                       )}
                       
-                      {/* Discount Badge - Bottom Right of Logo Area */}
-                      <div className="absolute bottom-0 right-0 bg-gray-200 rounded-lg px-3 py-1.5">
-                        <span className="text-gray-900 font-bold text-sm sm:text-base">
-                          {coupon.discount || 25}% OFF
-                        </span>
-                      </div>
+                      {/* Discount Badge - Bottom Right of Logo Area - Only show if real discount exists */}
+                      {Number(coupon.discount) > 0 && (
+                        <div className="absolute bottom-0 right-0 bg-gray-200 rounded-lg px-3 py-1.5">
+                          <span className="text-gray-900 font-bold text-sm sm:text-base">
+                            {coupon.discount}% OFF
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Brand Name */}
                     <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-2 text-center uppercase line-clamp-2">
-                      {storeName || `${coupon.discount || 25}% OFF DEAL`}
+                      {storeName || coupon.storeName || 'Store'}
                     </h3>
 
-                    {/* Description */}
+                    {/* Actual Coupon Title/Description */}
                     <p className="text-xs sm:text-sm text-gray-600 mb-4 text-center line-clamp-2 leading-relaxed flex-grow">
-                      {storeName ? `Visit ${storeName} for great deals` : `Save ${coupon.discount || 25}% on your order`}
+                      {coupon.title || coupon.description || (Number(coupon.discount) > 0 ? `Save ${coupon.discount}% on your order` : 'Great savings available')}
                     </p>
 
-                    {/* Get Code Button - With Code Preview on Hover */}
+                    {/* Get Code/Deal Button */}
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
@@ -1055,13 +1106,15 @@ export default function Home() {
                       <span className="text-sm flex-1">
                         {coupon.id && revealedCoupons.has(coupon.id) && coupon.code ? (
                           coupon.code
+                        ) : coupon.couponType === 'code' && coupon.code ? (
+                          'Get Code'
                         ) : (
-                          getCodePreview(coupon)
+                          'Get Deal'
                         )}
                       </span>
-                      {getLastTwoDigits(coupon) && !(coupon.id && revealedCoupons.has(coupon.id)) && (
+                      {coupon.couponType === 'code' && coupon.code && !(coupon.id && revealedCoupons.has(coupon.id)) && (
                         <span className="text-xs font-bold border-2 border-dashed border-white/50 rounded px-1.5 py-0.5 ml-2 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          ...{getLastTwoDigits(coupon)}
+                          ...{coupon.code.slice(-2)}
                         </span>
                       )}
                     </button>
@@ -1119,7 +1172,10 @@ export default function Home() {
                     className="flex gap-4 md:gap-5"
                     style={{ 
                       width: 'fit-content',
-                      animation: 'scrollLeft 900s linear infinite',
+                      animationName: 'scrollLeft',
+                      animationDuration: '40s',
+                      animationTimingFunction: 'linear',
+                      animationIterationCount: 'infinite',
                       animationPlayState: isFeaturedDealsPaused ? 'paused' : 'running',
                       willChange: 'transform'
                     }}
@@ -1214,13 +1270,6 @@ export default function Home() {
                             className="bg-white rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 flex flex-col relative overflow-hidden group cursor-pointer w-[200px] sm:w-[220px] flex-shrink-0"
                             onClick={(e) => handleGetDeal(storeCoupon, e)}
                           >
-                            {/* Label Badge - Top Left */}
-                            <div className="absolute top-3 left-3 z-10">
-                              <span className="bg-blue-700 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
-                                SITEWIDE
-                              </span>
-                            </div>
-
                             {/* Logo Section - Centered */}
                             <div className="flex items-center justify-center h-32 sm:h-40 mb-4 relative">
                               {logoUrl ? (
@@ -1257,12 +1306,6 @@ export default function Home() {
                                 </div>
                               )}
                               
-                              {/* Discount Badge - Bottom Right of Logo Area */}
-                              <div className="absolute bottom-0 right-0 bg-gray-200 rounded-lg px-3 py-1.5">
-                                <span className="text-gray-900 font-bold text-sm sm:text-base">
-                                  25% OFF
-                                </span>
-                              </div>
                             </div>
 
                             {/* Brand Name */}
@@ -1270,12 +1313,12 @@ export default function Home() {
                               {storeName}
                             </h3>
 
-                            {/* Description */}
+                            {/* Store Description */}
                             <p className="text-xs sm:text-sm text-gray-600 mb-4 text-center line-clamp-2 leading-relaxed flex-grow">
-                              Visit {storeName} for great deals
+                              {store.description || `Shop at ${storeName} for exclusive deals`}
                             </p>
 
-                            {/* Get Deal Button */}
+                            {/* Visit Store Button */}
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1283,7 +1326,7 @@ export default function Home() {
                               }}
                               className="w-full bg-[#ABC443] hover:bg-[#9BB03A] text-white font-semibold rounded-lg px-4 py-2.5 text-sm transition-colors"
                             >
-                              Get Deal
+                              Visit Store
                             </button>
                           </motion.div>
                         );
@@ -1321,23 +1364,6 @@ export default function Home() {
                           className="bg-white rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 flex flex-col relative overflow-hidden group cursor-pointer w-[200px] sm:w-[220px] flex-shrink-0"
                           onClick={(e) => handleGetDeal(coupon, e)}
                         >
-                        {/* Label Badge - Top Left */}
-                        <div className="absolute top-3 left-3 z-10">
-                          {isExpired ? (
-                            <span className="bg-red-600 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
-                              EXPIRED
-                            </span>
-                          ) : coupon.dealScope === 'online-only' ? (
-                            <span className="bg-blue-700 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
-                              ONLINE ONLY
-                            </span>
-                          ) : (
-                            <span className="bg-blue-700 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
-                              SITEWIDE
-                            </span>
-                          )}
-                        </div>
-
                         {/* Logo Section - Centered */}
                         <div className="flex items-center justify-center h-32 sm:h-40 mb-4 relative">
                           {(() => {
@@ -1497,31 +1523,27 @@ export default function Home() {
                             }
                           })()}
                           
-                          {/* Discount Badge - Bottom Right of Logo Area */}
-                          <div className="absolute bottom-0 right-0 bg-gray-200 rounded-lg px-3 py-1.5">
-                            <span className="text-gray-900 font-bold text-sm sm:text-base">
-                              {coupon.discount || 0}% OFF
-                            </span>
-                          </div>
+                          {/* Discount Badge - Bottom Right of Logo Area - Only show if real discount exists */}
+                          {Number(coupon.discount) > 0 && (
+                            <div className="absolute bottom-0 right-0 bg-gray-200 rounded-lg px-3 py-1.5">
+                              <span className="text-gray-900 font-bold text-sm sm:text-base">
+                                {coupon.discount}% OFF
+                              </span>
+                            </div>
+                          )}
                         </div>
 
                         {/* Brand Name */}
                         <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-2 text-center uppercase line-clamp-2">
-                          {(() => {
-                            const storeName = store?.name || coupon.storeName;
-                            return storeName || `${coupon.discount || 25}% OFF DEAL`;
-                          })()}
+                          {store?.name || coupon.storeName || 'Store'}
                         </h3>
 
-                        {/* Description */}
+                        {/* Actual Coupon Title/Description */}
                         <p className="text-xs sm:text-sm text-gray-600 mb-4 text-center line-clamp-2 leading-relaxed flex-grow">
-                          {(() => {
-                            const storeName = store?.name || coupon.storeName;
-                            return storeName ? `Visit ${storeName} for great deals` : `Save ${coupon.discount || 25}% on your order`;
-                          })()}
+                          {coupon.title || coupon.description || (Number(coupon.discount) > 0 ? `Save ${coupon.discount}% on your order` : 'Great savings available')}
                         </p>
 
-                        {/* Get Code Button - With Code Preview on Hover */}
+                        {/* Get Code/Deal Button */}
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1532,13 +1554,15 @@ export default function Home() {
                           <span className="text-sm flex-1">
                             {coupon.id && revealedCoupons.has(coupon.id) && coupon.code ? (
                               coupon.code
+                            ) : coupon.couponType === 'code' && coupon.code ? (
+                              'Get Code'
                             ) : (
-                              getCodePreview(coupon)
+                              'Get Deal'
                             )}
                           </span>
-                          {getLastTwoDigits(coupon) && !(coupon.id && revealedCoupons.has(coupon.id)) && (
+                          {coupon.couponType === 'code' && coupon.code && !(coupon.id && revealedCoupons.has(coupon.id)) && (
                             <span className="text-xs font-bold border-2 border-dashed border-white/50 rounded px-1.5 py-0.5 ml-2 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                              ...{getLastTwoDigits(coupon)}
+                              ...{coupon.code.slice(-2)}
                             </span>
                           )}
                         </button>
@@ -1581,7 +1605,10 @@ export default function Home() {
                       className="flex gap-4 md:gap-6 pb-4"
                       style={{ 
                         width: 'fit-content',
-                        animation: 'scrollLeft 900s linear infinite',
+                        animationName: 'scrollLeft',
+                        animationDuration: '1900s',
+                        animationTimingFunction: 'linear',
+                        animationIterationCount: 'infinite',
                         animationPlayState: isStoresOfSeasonPaused ? 'paused' : 'running',
                         willChange: 'transform'
                       }}
@@ -1640,31 +1667,23 @@ export default function Home() {
                   {/* Category Tags */}
                   {categories && categories.length > 0 && (
                     <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
-                      <button
-                        onClick={() => setSelectedCategoryId(null)}
-                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
-                          selectedCategoryId === null
-                            ? 'bg-gray-900 text-white'
-                            : 'bg-white text-gray-700 border border-gray-300 hover:border-gray-400'
-                        }`}
+                      <Link
+                        href="/categories"
+                        className="px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 bg-gray-900 text-white hover:bg-gray-800"
                       >
                         Discover more
-                      </button>
+                      </Link>
                       {categories.map((category) => (
-                        <button
+                        <Link
                           key={category.id}
-                          onClick={() => setSelectedCategoryId(category.id || null)}
-                          className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-1.5 ${
-                            selectedCategoryId === category.id
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-white text-blue-600 border border-gray-300 hover:border-blue-400'
-                          }`}
+                          href={`/categories/${category.slug || category.id}`}
+                          className="px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-1.5 bg-white text-blue-600 border border-gray-300 hover:border-blue-400 hover:bg-blue-50"
                         >
                           <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
                           </svg>
                           {category.name}
-                        </button>
+                        </Link>
                       ))}
                     </div>
                   )}

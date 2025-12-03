@@ -70,11 +70,22 @@ export default function PrivacyPolicyPage() {
           </h1>
           {data.lastUpdated && (
             <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8">
-              Last updated: {new Date(data?.lastUpdated).toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
+              Last updated: {(() => {
+                const date = data.lastUpdated;
+                let dateObj: Date;
+                if (date && typeof (date as any).toDate === 'function') {
+                  dateObj = (date as any).toDate();
+                } else if (date instanceof Date) {
+                  dateObj = date;
+                } else {
+                  dateObj = new Date(date as string | number);
+                }
+                return dateObj.toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                });
+              })()}
             </p>
           )}
 

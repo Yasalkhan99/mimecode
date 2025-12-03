@@ -244,7 +244,14 @@ export default function AdminLayout({
             onClick={() => setSidebarOpen(false)}
             className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
           >
-            Analytics
+            📊 Analytics
+          </Link>
+          <Link
+            href="/admin/analytics/clicks"
+            onClick={() => setSidebarOpen(false)}
+            className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base ml-4 border-l border-gray-700"
+          >
+            🖱️ Click Tracking
           </Link>
           <button
             onClick={handleLogout}

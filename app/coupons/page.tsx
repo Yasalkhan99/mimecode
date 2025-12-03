@@ -154,6 +154,28 @@ function CouponsContent() {
   };
 
 
+  // Helper to get store for a coupon
+  const getStoreForCoupon = (coupon: Coupon): Store | null => {
+    if (!stores || stores.length === 0) return null;
+    
+    // Try by storeIds first
+    if (coupon.storeIds && coupon.storeIds.length > 0) {
+      for (const storeId of coupon.storeIds) {
+        const match = stores.find(s => s.id === storeId || String(s.id).toLowerCase() === String(storeId).toLowerCase());
+        if (match) return match;
+      }
+    }
+    
+    // Try by store name
+    if (coupon.storeName) {
+      const couponStoreName = coupon.storeName.trim().toLowerCase();
+      const match = stores.find(s => s.name?.trim().toLowerCase() === couponStoreName);
+      if (match) return match;
+    }
+    
+    return null;
+  };
+
   const handleGetDeal = (coupon: Coupon, e?: React.MouseEvent) => {
     if (e) {
       e.preventDefault();
@@ -171,14 +193,72 @@ function CouponsContent() {
       setRevealedCoupons(prev => new Set(prev).add(coupon.id!));
     }
     
-    // Show popup
-    setSelectedCoupon(coupon);
+    // Get store for this coupon
+    const store = getStoreForCoupon(coupon);
+    const storeTrackingUrl = store?.websiteUrl || (store as any)?.['Tracking Url'] || (store as any)?.['Store Display Url'] || null;
+    
+    // Get URL to open
+    let urlToOpen = storeTrackingUrl || coupon.url || coupon.affiliateLink || null;
+    if (urlToOpen && !urlToOpen.startsWith('http')) {
+      urlToOpen = `https://${urlToOpen}`;
+    }
+    
+    // Helper to extract domain for favicon
+    const extractDomainForLogo = (url: string | null | undefined): string | null => {
+      if (!url) return null;
+      let cleanUrl = url.trim().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].replace(/\.+$/, '');
+      return cleanUrl || null;
+    };
+    
+    // Get the correct logo URL - SAME LOGIC as card display
+    let correctLogoUrl: string | null = null;
+    
+    // Priority 1: Store tracking URL favicon
+    if (storeTrackingUrl) {
+      const domain = extractDomainForLogo(storeTrackingUrl);
+      if (domain) {
+        correctLogoUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+      }
+    }
+    
+    // Priority 2: Store logo URL
+    if (!correctLogoUrl && store?.logoUrl) {
+      if (store.logoUrl.startsWith('http://') || store.logoUrl.startsWith('https://') || store.logoUrl.includes('cloudinary.com')) {
+        correctLogoUrl = store.logoUrl;
+      }
+    }
+    
+    // Priority 3: Coupon logo URL
+    if (!correctLogoUrl && coupon.logoUrl) {
+      if (coupon.logoUrl.startsWith('http://') || coupon.logoUrl.startsWith('https://') || coupon.logoUrl.includes('cloudinary.com')) {
+        correctLogoUrl = coupon.logoUrl;
+      }
+    }
+    
+    // Priority 4: Coupon URL favicon
+    if (!correctLogoUrl && coupon.url) {
+      const domain = extractDomainForLogo(coupon.url);
+      if (domain) {
+        correctLogoUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+      }
+    }
+    
+    // Create enhanced coupon with correct logo for popup
+    const enhancedCoupon: Coupon = {
+      ...coupon,
+      logoUrl: correctLogoUrl || coupon.logoUrl,
+      storeName: store?.name || coupon.storeName,
+      url: urlToOpen || coupon.url,
+    };
+    
+    // Show popup with enhanced coupon
+    setSelectedCoupon(enhancedCoupon);
     setShowPopup(true);
     
-    // Automatically open URL in new tab after a short delay (to ensure popup is visible first)
-    if (coupon.url && coupon.url.trim()) {
+    // Automatically open URL in new tab after a short delay
+    if (urlToOpen) {
       setTimeout(() => {
-        window.open(coupon.url, '_blank', 'noopener,noreferrer');
+        window.open(urlToOpen!, '_blank', 'noopener,noreferrer');
       }, 500);
     }
   };
