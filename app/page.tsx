@@ -1029,7 +1029,7 @@ export default function Home() {
 
                     {/* Actual Coupon Title/Description */}
                     <p className="text-xs sm:text-sm text-gray-600 mb-4 text-center line-clamp-2 leading-relaxed flex-grow">
-                      {coupon.title || coupon.description || (coupon.discount ? `Save ${coupon.discount}% on your order` : 'Great savings available')}
+                      {coupon.title || coupon.description || (coupon.discount && coupon.discount > 0 ? `Save ${coupon.discount}% on your order` : 'Great savings available')}
                     </p>
 
                     {/* Get Code/Deal Button */}
@@ -1477,7 +1477,7 @@ export default function Home() {
 
                         {/* Actual Coupon Title/Description */}
                         <p className="text-xs sm:text-sm text-gray-600 mb-4 text-center line-clamp-2 leading-relaxed flex-grow">
-                          {coupon.title || coupon.description || (coupon.discount ? `Save ${coupon.discount}% on your order` : 'Great savings available')}
+                          {coupon.title || coupon.description || (coupon.discount && coupon.discount > 0 ? `Save ${coupon.discount}% on your order` : 'Great savings available')}
                         </p>
 
                         {/* Get Code/Deal Button */}
