@@ -1024,15 +1024,15 @@ export default function Home() {
 
                     {/* Brand Name */}
                     <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-2 text-center uppercase line-clamp-2">
-                      {storeName || 'Special Deal'}
+                      {storeName || coupon.storeName || 'Store'}
                     </h3>
 
-                    {/* Description */}
+                    {/* Actual Coupon Title/Description */}
                     <p className="text-xs sm:text-sm text-gray-600 mb-4 text-center line-clamp-2 leading-relaxed flex-grow">
-                      {storeName ? `Visit ${storeName} for great deals` : 'Save on your order'}
+                      {coupon.title || coupon.description || (coupon.discount ? `Save ${coupon.discount}% on your order` : 'Great savings available')}
                     </p>
 
-                    {/* Get Code Button - With Code Preview on Hover */}
+                    {/* Get Code/Deal Button */}
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
@@ -1043,13 +1043,15 @@ export default function Home() {
                       <span className="text-sm flex-1">
                         {coupon.id && revealedCoupons.has(coupon.id) && coupon.code ? (
                           coupon.code
+                        ) : coupon.couponType === 'code' && coupon.code ? (
+                          'Get Code'
                         ) : (
-                          getCodePreview(coupon)
+                          'Get Deal'
                         )}
                       </span>
-                      {getLastTwoDigits(coupon) && !(coupon.id && revealedCoupons.has(coupon.id)) && (
+                      {coupon.couponType === 'code' && coupon.code && !(coupon.id && revealedCoupons.has(coupon.id)) && (
                         <span className="text-xs font-bold border-2 border-dashed border-white/50 rounded px-1.5 py-0.5 ml-2 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          ...{getLastTwoDigits(coupon)}
+                          ...{coupon.code.slice(-2)}
                         </span>
                       )}
                     </button>
@@ -1248,12 +1250,12 @@ export default function Home() {
                               {storeName}
                             </h3>
 
-                            {/* Description */}
+                            {/* Store Description */}
                             <p className="text-xs sm:text-sm text-gray-600 mb-4 text-center line-clamp-2 leading-relaxed flex-grow">
-                              Visit {storeName} for great deals
+                              {store.description || `Shop at ${storeName} for exclusive deals`}
                             </p>
 
-                            {/* Get Deal Button */}
+                            {/* Visit Store Button */}
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1261,7 +1263,7 @@ export default function Home() {
                               }}
                               className="w-full bg-[#ABC443] hover:bg-[#9BB03A] text-white font-semibold rounded-lg px-4 py-2.5 text-sm transition-colors"
                             >
-                              Get Deal
+                              Visit Store
                             </button>
                           </motion.div>
                         );
@@ -1470,21 +1472,15 @@ export default function Home() {
 
                         {/* Brand Name */}
                         <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-2 text-center uppercase line-clamp-2">
-                          {(() => {
-                            const storeName = store?.name || coupon.storeName;
-                            return storeName || 'Special Deal';
-                          })()}
+                          {store?.name || coupon.storeName || 'Store'}
                         </h3>
 
-                        {/* Description */}
+                        {/* Actual Coupon Title/Description */}
                         <p className="text-xs sm:text-sm text-gray-600 mb-4 text-center line-clamp-2 leading-relaxed flex-grow">
-                          {(() => {
-                            const storeName = store?.name || coupon.storeName;
-                            return storeName ? `Visit ${storeName} for great deals` : 'Save on your order';
-                          })()}
+                          {coupon.title || coupon.description || (coupon.discount ? `Save ${coupon.discount}% on your order` : 'Great savings available')}
                         </p>
 
-                        {/* Get Code Button - With Code Preview on Hover */}
+                        {/* Get Code/Deal Button */}
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1495,13 +1491,15 @@ export default function Home() {
                           <span className="text-sm flex-1">
                             {coupon.id && revealedCoupons.has(coupon.id) && coupon.code ? (
                               coupon.code
+                            ) : coupon.couponType === 'code' && coupon.code ? (
+                              'Get Code'
                             ) : (
-                              getCodePreview(coupon)
+                              'Get Deal'
                             )}
                           </span>
-                          {getLastTwoDigits(coupon) && !(coupon.id && revealedCoupons.has(coupon.id)) && (
+                          {coupon.couponType === 'code' && coupon.code && !(coupon.id && revealedCoupons.has(coupon.id)) && (
                             <span className="text-xs font-bold border-2 border-dashed border-white/50 rounded px-1.5 py-0.5 ml-2 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                              ...{getLastTwoDigits(coupon)}
+                              ...{coupon.code.slice(-2)}
                             </span>
                           )}
                         </button>
