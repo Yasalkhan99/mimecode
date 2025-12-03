@@ -656,11 +656,11 @@ export default function Home() {
       
       {/* Hero Banner Section - Retail Store Style */}
       {banners.length > 0 && (
-        <section className="relative w-full bg-white py-4 sm:py-6 md:py-8">
+        <section className="relative w-full bg-white py-2 sm:py-4 md:py-6">
           {/* Container with padding and max-width */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-            {/* Hero Slider with rounded corners */}
-            <div className="relative h-[300px] md:h-[350px] lg:h-[400px] w-full rounded-xl overflow-hidden">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8">
+            {/* Hero Slider with rounded corners - Compact */}
+            <div className="relative h-[180px] sm:h-[220px] md:h-[260px] lg:h-[300px] w-full rounded-xl overflow-hidden">
             <AnimatePresence initial={false} custom={direction} mode="wait">
               {banners.map((banner, index) => {
                 if (index !== currentBannerIndex) return null;
