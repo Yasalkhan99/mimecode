@@ -841,7 +841,10 @@ export default function Home() {
                   className="flex gap-4 md:gap-5"
                   style={{ 
                     width: 'fit-content',
-                    animation: 'scrollLeft 40s linear infinite',
+                    animationName: 'scrollLeft',
+                    animationDuration: '40s',
+                    animationTimingFunction: 'linear',
+                    animationIterationCount: 'infinite',
                     animationPlayState: isSliderPaused ? 'paused' : 'running',
                     willChange: 'transform'
                   }}
@@ -1104,7 +1107,10 @@ export default function Home() {
                     className="flex gap-4 md:gap-5"
                     style={{ 
                       width: 'fit-content',
-                      animation: 'scrollLeft 40s linear infinite',
+                      animationName: 'scrollLeft',
+                      animationDuration: '40s',
+                      animationTimingFunction: 'linear',
+                      animationIterationCount: 'infinite',
                       animationPlayState: isFeaturedDealsPaused ? 'paused' : 'running',
                       willChange: 'transform'
                     }}
@@ -1538,7 +1544,10 @@ export default function Home() {
                       className="flex gap-4 md:gap-6 pb-4"
                       style={{ 
                         width: 'fit-content',
-                        animation: 'scrollLeft 20s linear infinite',
+                        animationName: 'scrollLeft',
+                        animationDuration: '20s',
+                        animationTimingFunction: 'linear',
+                        animationIterationCount: 'infinite',
                         animationPlayState: isStoresOfSeasonPaused ? 'paused' : 'running',
                         willChange: 'transform'
                       }}
