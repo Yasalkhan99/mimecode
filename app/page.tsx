@@ -973,23 +973,6 @@ export default function Home() {
                     className="bg-white rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 flex flex-col relative overflow-hidden group cursor-pointer w-[200px] sm:w-[220px] flex-shrink-0"
                     onClick={(e) => handleGetDeal(coupon, e)}
                   >
-                    {/* Label Badge - Top Left */}
-                    <div className="absolute top-3 left-3 z-10">
-                      {isExpired ? (
-                        <span className="bg-red-600 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
-                          EXPIRED
-                        </span>
-                      ) : coupon.dealScope === 'online-only' ? (
-                        <span className="bg-blue-700 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
-                          ONLINE ONLY
-                        </span>
-                      ) : (
-                        <span className="bg-blue-700 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
-                          SITEWIDE
-                        </span>
-                      )}
-                    </div>
-
                     {/* Logo Section - Centered */}
                     <div className="flex items-center justify-center h-32 sm:h-40 mb-4 relative">
                       {logoUrl ? (
@@ -1216,13 +1199,6 @@ export default function Home() {
                             className="bg-white rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 flex flex-col relative overflow-hidden group cursor-pointer w-[200px] sm:w-[220px] flex-shrink-0"
                             onClick={(e) => handleGetDeal(storeCoupon, e)}
                           >
-                            {/* Label Badge - Top Left */}
-                            <div className="absolute top-3 left-3 z-10">
-                              <span className="bg-blue-700 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
-                                SITEWIDE
-                              </span>
-                            </div>
-
                             {/* Logo Section - Centered */}
                             <div className="flex items-center justify-center h-32 sm:h-40 mb-4 relative">
                               {logoUrl ? (
@@ -1317,23 +1293,6 @@ export default function Home() {
                           className="bg-white rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 flex flex-col relative overflow-hidden group cursor-pointer w-[200px] sm:w-[220px] flex-shrink-0"
                           onClick={(e) => handleGetDeal(coupon, e)}
                         >
-                        {/* Label Badge - Top Left */}
-                        <div className="absolute top-3 left-3 z-10">
-                          {isExpired ? (
-                            <span className="bg-red-600 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
-                              EXPIRED
-                            </span>
-                          ) : coupon.dealScope === 'online-only' ? (
-                            <span className="bg-blue-700 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
-                              ONLINE ONLY
-                            </span>
-                          ) : (
-                            <span className="bg-blue-700 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
-                              SITEWIDE
-                            </span>
-                          )}
-                        </div>
-
                         {/* Logo Section - Centered */}
                         <div className="flex items-center justify-center h-32 sm:h-40 mb-4 relative">
                           {(() => {
