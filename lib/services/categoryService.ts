@@ -14,6 +14,7 @@ import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage
 export interface Category {
   id?: string;
   name: string;
+  slug?: string;
   logoUrl?: string;
   backgroundColor: string; // Hex color for the circle background
   createdAt?: Timestamp;
