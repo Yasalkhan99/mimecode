@@ -344,10 +344,10 @@ export default function Home() {
     
     // Get tracking URL - ALWAYS use store's tracking URL if available
     let urlToOpen: string | null = null;
+    const storeTrackingUrl = store?.websiteUrl || (store as any)?.['Tracking Url'] || (store as any)?.['Store Display Url'] || null;
     
-    if (store) {
-      // Priority 1: Store tracking URL (most reliable)
-      urlToOpen = store.websiteUrl || (store as any)?.['Tracking Url'] || (store as any)?.['Store Display Url'] || null;
+    if (storeTrackingUrl) {
+      urlToOpen = storeTrackingUrl;
     }
     
     // Fallback to coupon URL or affiliate link if no store URL
@@ -358,8 +358,56 @@ export default function Home() {
     // Normalize URL to ensure it has protocol
     urlToOpen = normalizeUrl(urlToOpen);
     
-    // Show popup
-    setSelectedCoupon(coupon);
+    // Helper to extract domain for favicon
+    const extractDomainForLogo = (url: string | null | undefined): string | null => {
+      if (!url) return null;
+      let cleanUrl = url.trim().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].replace(/\.+$/, '');
+      return cleanUrl || null;
+    };
+    
+    // Get the correct logo URL - SAME LOGIC as card display
+    let correctLogoUrl: string | null = null;
+    
+    // Priority 1: Store tracking URL favicon (most reliable - matches what card shows)
+    if (storeTrackingUrl) {
+      const domain = extractDomainForLogo(storeTrackingUrl);
+      if (domain) {
+        correctLogoUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+      }
+    }
+    
+    // Priority 2: Store logo URL
+    if (!correctLogoUrl && store?.logoUrl) {
+      if (store.logoUrl.startsWith('http://') || store.logoUrl.startsWith('https://') || store.logoUrl.includes('cloudinary.com')) {
+        correctLogoUrl = store.logoUrl;
+      }
+    }
+    
+    // Priority 3: Coupon logo URL
+    if (!correctLogoUrl && coupon.logoUrl) {
+      if (coupon.logoUrl.startsWith('http://') || coupon.logoUrl.startsWith('https://') || coupon.logoUrl.includes('cloudinary.com')) {
+        correctLogoUrl = coupon.logoUrl;
+      }
+    }
+    
+    // Priority 4: Coupon URL favicon
+    if (!correctLogoUrl && coupon.url) {
+      const domain = extractDomainForLogo(coupon.url);
+      if (domain) {
+        correctLogoUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+      }
+    }
+    
+    // Create enhanced coupon with correct logo URL for popup
+    const enhancedCoupon: Coupon = {
+      ...coupon,
+      logoUrl: correctLogoUrl || coupon.logoUrl,
+      storeName: store?.name || coupon.storeName,
+      url: urlToOpen || coupon.url,
+    };
+    
+    // Show popup with enhanced coupon (correct logo)
+    setSelectedCoupon(enhancedCoupon);
     setShowPopup(true);
     
     // Automatically open tracking URL in new tab after a short delay
