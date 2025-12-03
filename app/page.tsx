@@ -1538,7 +1538,7 @@ export default function Home() {
                       className="flex gap-4 md:gap-6 pb-4"
                       style={{ 
                         width: 'fit-content',
-                        animation: 'scrollLeft 40s linear infinite',
+                        animation: 'scrollLeft 20s linear infinite',
                         animationPlayState: isStoresOfSeasonPaused ? 'paused' : 'running',
                         willChange: 'transform'
                       }}
