@@ -1545,7 +1545,7 @@ export default function Home() {
                       style={{ 
                         width: 'fit-content',
                         animationName: 'scrollLeft',
-                        animationDuration: '60s',
+                        animationDuration: '120s',
                         animationTimingFunction: 'linear',
                         animationIterationCount: 'infinite',
                         animationPlayState: isStoresOfSeasonPaused ? 'paused' : 'running',
