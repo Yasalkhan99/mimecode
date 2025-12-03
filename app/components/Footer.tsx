@@ -197,6 +197,11 @@ export default function Footer() {
                   FAQs
                 </Link>
               </li>
+              <li>
+                <Link href="/cookie-policy" className="text-sm text-gray-300 hover:text-white transition-colors">
+                  Cookie Policy
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -283,7 +288,7 @@ export default function Footer() {
               © 2025 MimeCode. All Rights Reserved.
             </p>
             <div className="flex items-center gap-4 text-sm">
-              <Link href="/affiliate-disclosure" className="text-gray-400 hover:text-white transition-colors">
+              <Link href="/affiliate-closure" className="text-gray-400 hover:text-white transition-colors">
                 Affiliate Disclosure
               </Link>
               <span className="text-gray-600">-</span>
