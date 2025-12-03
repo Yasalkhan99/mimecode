@@ -202,6 +202,11 @@ export default function Footer() {
                   Cookie Policy
                 </Link>
               </li>
+              <li>
+                <Link href="/imprint" className="text-sm text-gray-300 hover:text-white transition-colors">
+                  Imprint
+                </Link>
+              </li>
             </ul>
           </div>
 
