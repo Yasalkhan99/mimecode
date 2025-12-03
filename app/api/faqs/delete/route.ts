@@ -1,25 +1,45 @@
-import { getAdminFirestore } from '@/lib/firebase-admin';
+// Server-side FAQ deletion route
+// Uses MongoDB
+
 import { NextRequest, NextResponse } from 'next/server';
+import connectDB from '@/lib/mongodb';
+import FAQ from '@/lib/models/FAQ';
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const { id, collection } = body || {};
-
-  if (!id) {
-    return NextResponse.json({ success: false, error: 'Missing FAQ ID' }, { status: 400 });
-  }
-
-  const targetCollection = collection || process.env.NEXT_PUBLIC_FAQS_COLLECTION || 'faqs-mimecode';
-
   try {
-    const firestore = getAdminFirestore();
-    const docRef = firestore.collection(targetCollection).doc(id);
-    await docRef.delete();
+    await connectDB();
 
-    return NextResponse.json({ success: true }, { status: 200 });
-  } catch (error) {
-    console.error('Admin SDK delete FAQ error:', error);
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    const body = await req.json();
+    const { id } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: 'FAQ ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const faq = await FAQ.findByIdAndDelete(id);
+
+    if (!faq) {
+      return NextResponse.json(
+        { success: false, error: 'FAQ not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+    });
+  } catch (error: any) {
+    console.error('MongoDB delete FAQ error:', error);
+    
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message || 'Failed to delete FAQ',
+      },
+      { status: 500 }
+    );
   }
 }
-

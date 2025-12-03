@@ -418,8 +418,8 @@ export default function RegionSpecificOffers() {
           getStores()
         ]);
         
-        console.log('📊 Total stores fetched:', storesData.length);
-        console.log('📊 Regions from DB:', regionsData.map(r => r.name));
+        // console.log('📊 Total stores fetched:', storesData.length);
+        // console.log('📊 Regions from DB:', regionsData.map(r => r.name));
         
         setAllStores(storesData);
         
@@ -440,14 +440,14 @@ export default function RegionSpecificOffers() {
           } else {
             storesWithoutRegion++;
             // Debug: log first few stores without region
-            if (storesWithoutRegion <= 5) {
-              console.log('⚠️ Store without region:', store.name, 'URL:', url, 'Domain:', domain);
-            }
+            // if (storesWithoutRegion <= 5) {
+            //   console.log('⚠️ Store without region:', store.name, 'URL:', url, 'Domain:', domain);
+            // }
           }
         });
         
-        console.log('📊 Stores grouped by region:', Array.from(regionToStores.entries()).map(([name, stores]) => `${name}: ${stores.length}`));
-        console.log('📊 Stores without region:', storesWithoutRegion);
+        // console.log('📊 Stores grouped by region:', Array.from(regionToStores.entries()).map(([name, stores]) => `${name}: ${stores.length}`));
+        // console.log('📊 Stores without region:', storesWithoutRegion);
         
         // Create regions from detected regions in stores
         const detectedRegions: Region[] = [];
@@ -493,11 +493,11 @@ export default function RegionSpecificOffers() {
           return bStores - aStores;
         });
         
-        console.log('📊 Final regions to display:', regionsWithStores.map(r => ({
-          name: r.name,
-          countryCode: getCountryCode(r.name),
-          stores: regionToStores.get(r.name)?.length || 0
-        })));
+        // console.log('📊 Final regions to display:', regionsWithStores.map(r => ({
+        //   name: r.name,
+        //   countryCode: getCountryCode(r.name),
+        //   stores: regionToStores.get(r.name)?.length || 0
+        // })));
         
         setRegions(regionsWithStores);
       } catch (error) {

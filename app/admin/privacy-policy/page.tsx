@@ -162,7 +162,7 @@ export default function PrivacyPolicyPage() {
                   Content * (HTML supported)
                 </label>
                 <p className="text-xs text-gray-500 mb-2">
-                  Use HTML tags for formatting: &lt;h2&gt;, &lt;h3&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;strong&gt;, etc.
+                  Use HTML tags for formatting: &lt;h1&gt;, &lt;h2&gt;, &lt;h3&gt;, &lt;h4&gt;, &lt;h5&gt;, &lt;h6&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;strong&gt;, &lt;em&gt;, &lt;a&gt;, etc.
                 </p>
                 <textarea
                   value={content}
@@ -232,7 +232,7 @@ export default function PrivacyPolicyPage() {
             </div>
             <div className="p-6">
               <div 
-                className="prose prose-sm max-w-none"
+                className="prose prose-sm max-w-none prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-h5:text-base prose-h6:text-sm"
                 dangerouslySetInnerHTML={{ __html: policy.content }}
               />
             </div>

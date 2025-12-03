@@ -65,12 +65,12 @@ export default function PrivacyPolicyPage() {
       
       <div className="w-full px-4 sm:px-6 md:px-8 py-8 sm:py-12 md:py-16">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4 sm:mb-6">
+          <h1 className="text-3xl text-center sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4 sm:mb-6">
             {data.title}
           </h1>
           {data.lastUpdated && (
             <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8">
-              Last updated: {new Date(data.lastUpdated).toLocaleDateString('en-US', { 
+              Last updated: {new Date(data?.lastUpdated).toLocaleDateString('en-US', { 
                 year: 'numeric', 
                 month: 'long', 
                 day: 'numeric' 
@@ -78,13 +78,115 @@ export default function PrivacyPolicyPage() {
             </p>
           )}
 
+          <style dangerouslySetInnerHTML={{__html: `
+            .privacy-content h1 {
+              font-size: 2.25rem;
+              font-weight: 700;
+              color: #111827;
+              margin-top: 2rem;
+              margin-bottom: 1rem;
+              line-height: 1.2;
+            }
+            .privacy-content h2 {
+              font-size: 1.875rem;
+              font-weight: 700;
+              color: #111827;
+              margin-top: 1.75rem;
+              margin-bottom: 0.875rem;
+              line-height: 1.3;
+            }
+            .privacy-content h3 {
+              font-size: 1.5rem;
+              font-weight: 700;
+              color: #111827;
+              margin-top: 1.5rem;
+              margin-bottom: 0.75rem;
+              line-height: 1.4;
+            }
+            .privacy-content h4 {
+              font-size: 1.25rem;
+              font-weight: 700;
+              color: #111827;
+              margin-top: 1.25rem;
+              margin-bottom: 0.625rem;
+              line-height: 1.4;
+            }
+            .privacy-content h5 {
+              font-size: 1.125rem;
+              font-weight: 700;
+              color: #111827;
+              margin-top: 1rem;
+              margin-bottom: 0.5rem;
+              line-height: 1.5;
+            }
+            .privacy-content h6 {
+              font-size: 1rem;
+              font-weight: 700;
+              color: #111827;
+              margin-top: 0.875rem;
+              margin-bottom: 0.5rem;
+              line-height: 1.5;
+            }
+            .privacy-content p {
+              color: #374151;
+              line-height: 1.75;
+              margin-bottom: 1rem;
+            }
+            .privacy-content ul {
+              list-style: disc;
+              margin-top: 1rem;
+              margin-bottom: 1rem;
+              padding-left: 1.5rem;
+            }
+            .privacy-content ol {
+              margin-top: 1rem;
+              margin-bottom: 1rem;
+              padding-left: 1.5rem;
+            }
+            .privacy-content li {
+              margin-bottom: 0.5rem;
+              color: #374151;
+              line-height: 1.75;
+            }
+            .privacy-content strong {
+              font-weight: 700;
+              color: #111827;
+            }
+            .privacy-content a {
+              color: #2563eb;
+              text-decoration: underline;
+            }
+            .privacy-content a:hover {
+              color: #1d4ed8;
+            }
+            @media (min-width: 640px) {
+              .privacy-content h1 {
+                font-size: 2.5rem;
+              }
+              .privacy-content h2 {
+                font-size: 2.25rem;
+              }
+              .privacy-content h3 {
+                font-size: 1.875rem;
+              }
+              .privacy-content h4 {
+                font-size: 1.5rem;
+              }
+              .privacy-content h5 {
+                font-size: 1.25rem;
+              }
+              .privacy-content h6 {
+                font-size: 1.125rem;
+              }
+            }
+          `}} />
           <div 
-            className="prose prose-sm sm:prose-base max-w-none space-y-6 sm:space-y-8"
+            className="privacy-content max-w-none space-y-6 sm:space-y-8"
             dangerouslySetInnerHTML={{ __html: data.content }}
           />
 
           {/* Contact Section */}
-          <section className="mt-12 pt-8 border-t border-gray-200">
+          {/* <section className="mt-12 pt-8 border-t border-gray-200">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">
               Contact Us
             </h2>
@@ -99,7 +201,7 @@ export default function PrivacyPolicyPage() {
                 <strong>Website:</strong> {data.contactWebsite}
               </p>
             </div>
-          </section>
+          </section> */}
         </div>
       </div>
 

@@ -11,9 +11,9 @@ export default function SpotlightBanner() {
     const fetchBanner = async () => {
       setLoading(true);
       try {
-        console.log('🎯 SpotlightBanner: Fetching banner with layout position 5...');
+        // console.log('🎯 SpotlightBanner: Fetching banner with layout position 5...');
         const data = await getBannerByLayoutPosition(5);
-        console.log('🎯 SpotlightBanner: Received banner data:', data);
+        // console.log('🎯 SpotlightBanner: Received banner data:', data);
         setBanner(data);
         if (!data) {
           console.warn('⚠️ SpotlightBanner: No banner found for layout position 5');

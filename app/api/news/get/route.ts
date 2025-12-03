@@ -67,11 +67,11 @@ export async function GET(req: NextRequest) {
 
     if (error) throw error;
 
-    console.log(`📊 Supabase news API: Fetched ${data?.length || 0} news articles from database`);
+    // console.log(`📊 Supabase news API: Fetched ${data?.length || 0} news articles from database`);
 
     const convertedNews = (data || []).map(convertToAPIFormat);
 
-    console.log(`✅ Converted ${convertedNews.length} news articles`);
+    // console.log(`✅ Converted ${convertedNews.length} news articles`);
 
     return NextResponse.json({
       success: true,

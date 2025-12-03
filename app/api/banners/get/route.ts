@@ -42,34 +42,34 @@ export async function GET(req: NextRequest) {
 
     if (error) throw error;
 
-    console.log(`📊 Supabase banners API: Fetched ${data?.length || 0} banners from database`);
+    // console.log(`📊 Supabase banners API: Fetched ${data?.length || 0} banners from database`);
     if (data && data.length > 0) {
-      console.log(`📋 Banner layout positions:`, data.map((b: any) => ({ 
-        id: b.id, 
-        title: b.title, 
-        layout_position: b.layout_position,
-        layout_position_type: typeof b.layout_position,
-        raw_row: b // Full row for debugging
-      })));
+      // console.log(`📋 Banner layout positions:`, data.map((b: any) => ({ 
+      //   id: b.id, 
+      //   title: b.title, 
+      //   layout_position: b.layout_position,
+      //   layout_position_type: typeof b.layout_position,
+      //   raw_row: b 
+      // })));
       
       // Specifically check for layout position 5
       const layout5Banners = data.filter((b: any) => {
         const pos = b.layout_position;
         return pos === 5 || pos === '5' || Number(pos) === 5;
       });
-      console.log(`🎯 Banners with layout position 5:`, layout5Banners.length, layout5Banners);
+      // console.log(`🎯 Banners with layout position 5:`, layout5Banners.length, layout5Banners);
     }
 
     const convertedBanners = (data || []).map(convertToAPIFormat);
     
-    console.log(`✅ Converted ${convertedBanners.length} banners`);
+    // console.log(`✅ Converted ${convertedBanners.length} banners`);
     
     // Log converted banners with layout position 5
     const convertedLayout5 = convertedBanners.filter(b => {
       const pos = b.layoutPosition;
       return pos === 5 || pos === '5' || Number(pos) === 5;
     });
-    console.log(`🎯 Converted banners with layout position 5:`, convertedLayout5.length, convertedLayout5);
+    // console.log(`🎯 Converted banners with layout position 5:`, convertedLayout5.length, convertedLayout5);
 
     return NextResponse.json({
       success: true,

@@ -1,28 +1,51 @@
-import { getAdminFirestore, default as admin } from '@/lib/firebase-admin';
+// Server-side FAQ update route
+// Uses MongoDB
+
 import { NextRequest, NextResponse } from 'next/server';
+import connectDB from '@/lib/mongodb';
+import FAQ from '@/lib/models/FAQ';
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const { id, updates, collection } = body || {};
-
-  if (!id || !updates) {
-    return NextResponse.json({ success: false, error: 'Missing FAQ ID or updates' }, { status: 400 });
-  }
-
-  const targetCollection = collection || process.env.NEXT_PUBLIC_FAQS_COLLECTION || 'faqs-mimecode';
-
   try {
-    const firestore = getAdminFirestore();
-    const docRef = firestore.collection(targetCollection).doc(id);
-    await docRef.update({
-      ...updates,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    await connectDB();
 
-    return NextResponse.json({ success: true }, { status: 200 });
-  } catch (error) {
-    console.error('Admin SDK update FAQ error:', error);
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    const body = await req.json();
+    const { id, updates } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: 'FAQ ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const updateData: any = {};
+    if (updates.question !== undefined) updateData.question = updates.question;
+    if (updates.answer !== undefined) updateData.answer = updates.answer;
+    if (updates.order !== undefined) updateData.order = updates.order;
+    if (updates.isActive !== undefined) updateData.isActive = updates.isActive;
+
+    const faq = await FAQ.findByIdAndUpdate(id, updateData, { new: true });
+
+    if (!faq) {
+      return NextResponse.json(
+        { success: false, error: 'FAQ not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+    });
+  } catch (error: any) {
+    console.error('MongoDB update FAQ error:', error);
+    
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message || 'Failed to update FAQ',
+      },
+      { status: 500 }
+    );
   }
 }
-

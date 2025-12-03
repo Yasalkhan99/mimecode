@@ -19,7 +19,7 @@ export default function FAQsPage() {
   useEffect(() => {
     // Set page title
     document.title = 'FAQs - MimeCode';
-    
+
     const fetchData = async () => {
       setLoading(true);
       try {
@@ -46,7 +46,7 @@ export default function FAQsPage() {
   return (
     <div className="min-h-screen bg-white overflow-x-hidden w-full">
       <Navbar />
-      
+
       {/* Banner Section with Layout 11 - COMMENTED OUT (only on home page) */}
       {/* <div className="w-full">
         {loading ? (
@@ -90,7 +90,9 @@ export default function FAQsPage() {
       {/* FAQs Section */}
       <div className="w-full px-4 sm:px-6 md:px-8 py-8 sm:py-12 md:py-16 bg-white overflow-x-hidden">
         <div className="max-w-4xl mx-auto w-full">
-
+          <h1 className="text-3xl text-center sm:text-4xl md:text-5xl font-bold text-gray-900 pb-10 sm:mb-6">
+            Frequently Asked Questions
+          </h1>
           {loading ? (
             <div className="space-y-4">
               {[...Array(5)].map((_, i) => (
@@ -118,9 +120,8 @@ export default function FAQsPage() {
                     </h3>
                     <div className="flex-shrink-0">
                       <svg
-                        className={`w-5 h-5 sm:w-6 sm:h-6 text-[#ABC443] transition-transform duration-300 ${
-                          openIndex === index ? 'transform rotate-180' : ''
-                        }`}
+                        className={`w-5 h-5 sm:w-6 sm:h-6 text-[#ABC443] transition-transform duration-300 ${openIndex === index ? 'transform rotate-180' : ''
+                          }`}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -137,9 +138,8 @@ export default function FAQsPage() {
 
                   {/* Answer */}
                   <div
-                    className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                      openIndex === index ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
-                    }`}
+                    className={`overflow-hidden transition-all duration-300 ease-in-out ${openIndex === index ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
+                      }`}
                   >
                     <div className="px-4 sm:px-6 pb-4 sm:pb-5 pt-0">
                       <div className="pt-4 border-t border-gray-100">
@@ -171,17 +171,17 @@ export default function FAQsPage() {
           </div>
         </div>
       </div>
-      
+
       {/* Newsletter Subscription Section */}
       <NewsletterSubscription />
-      
+
       {/* Footer */}
       <Footer />
 
       {/* Contact Support Modal */}
-      <ContactSupportModal 
-        isOpen={isContactModalOpen} 
-        onClose={() => setIsContactModalOpen(false)} 
+      <ContactSupportModal
+        isOpen={isContactModalOpen}
+        onClose={() => setIsContactModalOpen(false)}
       />
     </div>
   );

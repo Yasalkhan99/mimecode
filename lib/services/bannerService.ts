@@ -174,14 +174,14 @@ export async function getBannersWithLayout(): Promise<(Banner | null)[]> {
 export async function getBannerByLayoutPosition(position: number): Promise<Banner | null> {
   try {
     const allBanners = await getBanners();
-    console.log(`🔍 Looking for banner with layout position ${position} (type: ${typeof position})`);
-    console.log(`📊 Total banners fetched: ${allBanners.length}`);
-    console.log(`📋 Banners with layout positions:`, allBanners.map(b => ({ 
-      id: b.id, 
-      title: b.title, 
-      layoutPosition: b.layoutPosition,
-      layoutPositionType: typeof b.layoutPosition 
-    })));
+    // console.log(`🔍 Looking for banner with layout position ${position} (type: ${typeof position})`);
+    // console.log(`📊 Total banners fetched: ${allBanners.length}`);
+    // console.log(`📋 Banners with layout positions:`, allBanners.map(b => ({ 
+    //   id: b.id, 
+    //   title: b.title, 
+    //   layoutPosition: b.layoutPosition,
+    //   layoutPositionType: typeof b.layoutPosition 
+    // })));
     
     // Try both strict and loose comparison to handle type mismatches
     const banner = allBanners.find(b => {
@@ -193,7 +193,7 @@ export async function getBannerByLayoutPosition(position: number): Promise<Banne
     });
     
     if (banner) {
-      console.log(`✅ Found banner for layout position ${position}:`, banner.title);
+      // console.log(`✅ Found banner for layout position ${position}:`, banner.title);
     } else {
       console.log(`❌ No banner found for layout position ${position}`);
       console.log(`🔍 Available layout positions:`, allBanners.map(b => b.layoutPosition).filter(Boolean));

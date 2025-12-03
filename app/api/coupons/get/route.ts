@@ -127,7 +127,7 @@ export async function GET(req: NextRequest) {
     
     // Apply storeId filter at database level (much faster!)
     if (storeId) {
-      console.log(`🔍 Filtering at DB level for storeId: ${storeId}`);
+      // console.log(`🔍 Filtering at DB level for storeId: ${storeId}`);
       // Filter by Store  Id column (with two spaces)
       query = query.eq('Store  Id', storeId);
     }
@@ -144,7 +144,7 @@ export async function GET(req: NextRequest) {
       throw couponsError;
     }
 
-    console.log(`📊 Fetched ${coupons?.length || 0} coupons from Supabase`);
+    // console.log(`📊 Fetched ${coupons?.length || 0} coupons from Supabase`);
 
     // Get unique store IDs for batch fetch
     const storeIds = new Set<string>();
@@ -180,7 +180,7 @@ export async function GET(req: NextRequest) {
     });
 
     // StoreId filtering is now done at database level (see query above)
-    console.log(`📊 Total coupons after conversion: ${convertedCoupons.length}`);
+    // console.log(`📊 Total coupons after conversion: ${convertedCoupons.length}`);
 
     // Apply activeOnly filtering
     if (activeOnly) {
@@ -188,7 +188,7 @@ export async function GET(req: NextRequest) {
       convertedCoupons = convertedCoupons.filter((coupon: any) => {
         return coupon.isActive !== false;
       });
-      console.log(`📊 After activeOnly filter: ${convertedCoupons.length} coupons (filtered out ${beforeFilter - convertedCoupons.length})`);
+      // console.log(`📊 After activeOnly filter: ${convertedCoupons.length} coupons (filtered out ${beforeFilter - convertedCoupons.length})`);
     }
 
     // Filter out expired coupons
@@ -230,8 +230,8 @@ export async function GET(req: NextRequest) {
       return true;
     });
 
-    console.log(`📊 After expiry filter: ${convertedCoupons.length} coupons (filtered out ${beforeExpiryFilter - convertedCoupons.length} expired)`);
-    console.log(`✅ Returning ${convertedCoupons.length} coupons to client`);
+    // console.log(`📊 After expiry filter: ${convertedCoupons.length} coupons (filtered out ${beforeExpiryFilter - convertedCoupons.length} expired)`);
+    // console.log(`✅ Returning ${convertedCoupons.length} coupons to client`);
 
     return NextResponse.json({
       success: true,

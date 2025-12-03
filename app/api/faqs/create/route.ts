@@ -1,36 +1,47 @@
-import { getAdminFirestore, default as admin } from '@/lib/firebase-admin';
+// Server-side FAQ creation route
+// Uses MongoDB
+
 import { NextRequest, NextResponse } from 'next/server';
+import connectDB from '@/lib/mongodb';
+import FAQ from '@/lib/models/FAQ';
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const { faq, collection } = body || {};
-
-  if (!faq) {
-    return NextResponse.json({ success: false, error: 'Missing FAQ data' }, { status: 400 });
-  }
-
-  if (!faq.question || !faq.answer) {
-    return NextResponse.json({ success: false, error: 'Question and answer are required' }, { status: 400 });
-  }
-
-  const targetCollection = collection || process.env.NEXT_PUBLIC_FAQS_COLLECTION || 'faqs-mimecode';
-
   try {
-    const firestore = getAdminFirestore();
-    const faqData: any = {
+    await connectDB();
+
+    const body = await req.json();
+    const { faq } = body;
+
+    if (!faq || !faq.question || !faq.answer) {
+      return NextResponse.json(
+        { success: false, error: 'Question and answer are required' },
+        { status: 400 }
+      );
+    }
+
+    const newFAQ = new FAQ({
       question: faq.question,
       answer: faq.answer,
       order: faq.order || 0,
       isActive: faq.isActive !== false,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    };
+    });
     
-    const docRef = await firestore.collection(targetCollection).add(faqData);
-    return NextResponse.json({ success: true, id: docRef.id }, { status: 200 });
-  } catch (error) {
-    console.error('Admin SDK create FAQ error:', error);
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    await newFAQ.save();
+
+    const faqObj = newFAQ.toObject();
+    return NextResponse.json({
+      success: true,
+      id: faqObj._id.toString(),
+    });
+  } catch (error: any) {
+    console.error('MongoDB create FAQ error:', error);
+    
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message || 'Failed to create FAQ',
+      },
+      { status: 500 }
+    );
   }
 }
-

@@ -142,11 +142,11 @@ export async function createCoupon(coupon: Omit<Coupon, 'id'>, logoFile?: File) 
     };
     
     // Debug log to verify storeIds are included
-    if (coupon.storeIds) {
-      console.log('✅ Saving coupon with storeIds:', coupon.storeIds);
-    } else {
-      console.log('⚠️ Coupon created without storeIds');
-    }
+    // if (coupon.storeIds) {
+    //   console.log('✅ Saving coupon with storeIds:', coupon.storeIds);
+    // } else {
+    //   console.log('⚠️ Coupon created without storeIds');
+    // }
     
     // Use server-side API route to create coupon (bypasses security rules)
     const res = await fetch('/api/coupons/create', {
@@ -481,11 +481,11 @@ export async function createCouponFromUrl(coupon: Omit<Coupon, 'id'>, logoUrl?: 
         if (logoUrl.includes('/image/image/upload/') || logoUrl.match(/res\.cloudinary\.com\/image\//)) {
           // Extract to fix malformed URL
           finalLogoUrl = extractOriginalCloudinaryUrl(logoUrl);
-          console.log('🔧 Fixed malformed Cloudinary URL:', { original: logoUrl, fixed: finalLogoUrl });
+          // console.log('🔧 Fixed malformed Cloudinary URL:', { original: logoUrl, fixed: finalLogoUrl });
         } else {
           // Use Cloudinary URL directly (it's already correct)
           finalLogoUrl = logoUrl;
-          console.log('✅ Using Cloudinary URL directly:', finalLogoUrl);
+          // console.log('✅ Using Cloudinary URL directly:', finalLogoUrl);
         }
       } else {
         // For non-Cloudinary URLs, use as-is
@@ -499,13 +499,13 @@ export async function createCouponFromUrl(coupon: Omit<Coupon, 'id'>, logoUrl?: 
     };
     
     // Debug log to verify storeIds and logoUrl are included
-    console.log('📝 Creating coupon from URL:', {
-      storeIds: coupon.storeIds,
-      logoUrl: finalLogoUrl,
-      hasLogoUrl: !!finalLogoUrl,
-      couponDataLogoUrl: couponData.logoUrl,
-      fullCouponData: JSON.stringify(couponData, null, 2)
-    });
+    // console.log('📝 Creating coupon from URL:', {
+    //   storeIds: coupon.storeIds,
+    //   logoUrl: finalLogoUrl,
+    //   hasLogoUrl: !!finalLogoUrl,
+    //   couponDataLogoUrl: couponData.logoUrl,
+    //   fullCouponData: JSON.stringify(couponData, null, 2)
+    // });
     
     // Use server-side API route to create coupon (bypasses security rules)
     const res = await fetch('/api/coupons/create', {
@@ -536,8 +536,8 @@ export async function createCouponFromUrl(coupon: Omit<Coupon, 'id'>, logoUrl?: 
       return { success: false, error: json.error || json.text || 'Failed to create coupon from URL' };
     }
 
-    console.log('✅ Coupon created successfully with ID:', json.id);
-    console.log('📋 Saved coupon data (logoUrl):', couponData.logoUrl);
+    // console.log('✅ Coupon created successfully with ID:', json.id);
+    // console.log('📋 Saved coupon data (logoUrl):', couponData.logoUrl);
     
     return { success: true, id: json.id };
   } catch (error) {
@@ -652,13 +652,13 @@ export async function getLatestCoupons(): Promise<(Coupon | null)[]> {
     const assignedCount = couponsWithPosition.length;
     const filledCount = result.filter(c => c !== null).length;
     
-    console.log(`📊 Latest coupons: ${assignedCount} with assigned positions, ${filledCount} total filled slots`);
-    if (couponsWithPosition.length > 0) {
-      console.log(`📋 Assigned positions:`, couponsWithPosition.map(c => ({
-        code: c.code,
-        position: c.latestLayoutPosition
-      })));
-    }
+    // console.log(`📊 Latest coupons: ${assignedCount} with assigned positions, ${filledCount} total filled slots`);
+    // if (couponsWithPosition.length > 0) {
+    //   console.log(`📋 Assigned positions:`, couponsWithPosition.map(c => ({
+    //     code: c.code,
+    //     position: c.latestLayoutPosition
+    //   })));
+    // }
     
     return result;
   } catch (error) {

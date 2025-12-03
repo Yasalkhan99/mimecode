@@ -21,7 +21,8 @@ const FAQSchema = new Schema<IFAQ>(
   }
 );
 
-FAQSchema.index({ isActive: 1, order: 1 });
+FAQSchema.index({ order: 1 });
+FAQSchema.index({ isActive: 1 });
+FAQSchema.index({ createdAt: -1 });
 
 export default mongoose.models.FAQ || mongoose.model<IFAQ>('FAQ', FAQSchema);
-
