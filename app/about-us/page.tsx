@@ -43,7 +43,7 @@ export default function AboutUsPage() {
       <Navbar />
  
       {/* Banner Section with Layout 7 - UNCOMMENTED */}
-      <div className="w-full">
+      {/* <div className="w-full">
         {loading ? (
           <div className="w-full bg-gray-100 aspect-[1728/547] min-h-[200px] sm:min-h-[250px] animate-pulse"></div>
         ) : banner7 ? (
@@ -64,7 +64,7 @@ export default function AboutUsPage() {
         ) : (
           <div className="w-full aspect-[1728/547] min-h-[200px] sm:min-h-[250px] bg-gradient-to-r from-[#ABC443]/20 to-[#41361A]/20"></div>
         )}
-      </div>
+      </div> */}
  
       {/* Main Content Section */}
       <div className="w-full px-2 sm:px-4 md:px-6 py-6 sm:py-8 md:py-12 lg:py-16 bg-white">
