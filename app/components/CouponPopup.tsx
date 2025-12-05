@@ -186,12 +186,12 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
             style={{ perspective: 1000 }}
           >
             {/* Glowing background effect */}
-            <div className="absolute inset-0 bg-gradient-to-br from-[#ABC443] via-[#9BB03A] to-[#ABC443] rounded-2xl blur-xl opacity-50 -z-10" />
+            <div className="absolute inset-0 bg-gradient-to-br from-[#FFE019] via-white to-[#FFE019] rounded-2xl blur-2xl opacity-40 -z-10" />
             
-            {/* Popup Card */}
-            <div className="relative bg-gradient-to-br from-[#ABC443] via-[#9BB03A] to-[#ABC443] rounded-2xl shadow-2xl overflow-hidden border border-white/20">
+            {/* Popup Card - theme: black / white / #FFE019 */}
+            <div className="relative bg-gradient-to-br from-black via-[#050505] to-black rounded-2xl shadow-2xl overflow-hidden border border-[#FFE019]/60">
               {/* Decorative top border */}
-              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#FFE019] to-transparent" />
               
               {/* Animated background pattern */}
               <div className="absolute inset-0 opacity-10">
@@ -206,7 +206,7 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                 whileHover={{ scale: 1.1, rotate: 90 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={onClose}
-                className="absolute top-3 right-3 z-20 w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white transition-all backdrop-blur-md border border-white/30 shadow-md"
+                className="absolute top-3 right-3 z-20 w-8 h-8 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all backdrop-blur-md border border-[#FFE019]/60 shadow-md"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
@@ -226,9 +226,9 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                   <motion.h2
                     animate={{
                       textShadow: [
-                        "0 0 15px rgba(255,255,255,0.4)",
-                        "0 0 25px rgba(255,255,255,0.6)",
-                        "0 0 15px rgba(255,255,255,0.4)"
+                        "0 0 18px rgba(255,224,25,0.6)",
+                        "0 0 26px rgba(255,224,25,0.9)",
+                        "0 0 18px rgba(255,224,25,0.6)"
                       ]
                     }}
                     transition={{
@@ -236,7 +236,7 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                       repeat: Infinity,
                       ease: "easeInOut"
                     }}
-                    className="text-white text-xl sm:text-2xl font-extrabold tracking-tight"
+                    className="text-white text-xl sm:text-xl font-extrabold tracking-tight"
                   >
                     {(() => {
                       // Helper to strip HTML tags
@@ -264,7 +264,7 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                       return coupon.code || 'Coupon';
                     })()}
                   </motion.h2>
-                  <div className="mt-1.5 h-0.5 w-16 bg-white/30 rounded-full mx-auto" />
+                  <div className="mt-1.5 h-0.5 w-16 bg-[#FFE019] rounded-full mx-auto" />
                 </motion.div>
 
                 {/* Logo Section with enhanced styling */}
@@ -273,11 +273,11 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                   variants={itemVariants}
                   initial="hidden"
                   animate="visible"
-                  className="bg-white/95 backdrop-blur-sm rounded-2xl p-4 mb-4 shadow-xl border border-white/40 relative overflow-hidden"
+                  className="bg-white backdrop-blur-sm rounded-2xl p-4 mb-4 shadow-xl border border-[#FFE019]/40 relative overflow-hidden"
                 >
                   {/* Decorative corner accents - smaller */}
-                  <div className="absolute top-0 left-0 w-12 h-12 bg-gradient-to-br from-[#ABC443]/20 to-transparent rounded-br-full opacity-40" />
-                  <div className="absolute bottom-0 right-0 w-12 h-12 bg-gradient-to-tl from-[#9BB03A]/20 to-transparent rounded-tl-full opacity-40" />
+                  <div className="absolute top-0 left-0 w-12 h-12 bg-gradient-to-br from-[#FFE019]/25 to-transparent rounded-br-full opacity-70" />
+                  <div className="absolute bottom-0 right-0 w-12 h-12 bg-gradient-to-tl from-[#FFE019]/25 to-transparent rounded-tl-full opacity-70" />
                   
                   {(() => {
                     const logoUrl = getCouponLogoUrl();
@@ -286,7 +286,7 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                       <div className="flex flex-col items-center relative z-10">
                         <motion.div
                           whileHover={{ scale: 1.05 }}
-                          className="w-28 h-28 mb-2 rounded-xl overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center shadow-inner border border-gray-200"
+                          className="w-28 h-28 mb-2 rounded-xl overflow-hidden bg-gradient-to-br from-white to-gray-100 flex items-center justify-center shadow-inner border border-[#FFE019]/40"
                         >
                           <img
                             src={logoUrl}
@@ -301,7 +301,7 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                             }}
                           />
                         </motion.div>
-                        <p className="text-gray-800 text-sm font-bold text-center">
+                        <p className="text-gray-900 text-sm font-bold text-center">
                           {coupon.storeName || 'Store'}
                         </p>
                         {coupon.url && (
@@ -314,13 +314,13 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                       <div className="flex flex-col items-center relative z-10">
                         <motion.div
                           whileHover={{ scale: 1.05 }}
-                          className="w-28 h-28 mb-2 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center shadow-inner border border-gray-300"
+                          className="w-28 h-28 mb-2 rounded-xl bg-gradient-to-br from-gray-900 to-gray-700 flex items-center justify-center shadow-inner border border-[#FFE019]/40"
                         >
                           <span className="text-4xl font-bold text-gray-400">
                             {coupon.storeName?.charAt(0) || '?'}
                           </span>
                         </motion.div>
-                        <p className="text-gray-800 text-sm font-bold text-center">
+                        <p className="text-gray-900 text-sm font-bold text-center">
                           {coupon.storeName || 'Store'}
                         </p>
                       </div>
@@ -335,9 +335,9 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                     variants={itemVariants}
                     initial="hidden"
                     animate="visible"
-                    whileHover={{ scale: 1.03, boxShadow: "0 20px 40px rgba(171, 196, 67, 0.4)" }}
+                    whileHover={{ scale: 1.03, boxShadow: "0 20px 40px rgba(0,0,0,0.75)" }}
                     whileTap={{ scale: 0.97 }}
-                    className="relative bg-gradient-to-r from-[#41361A] via-[#5A4A2A] to-[#41361A] rounded-2xl p-5 mb-4 shadow-xl cursor-pointer overflow-hidden border border-white/20"
+                    className="relative bg-gradient-to-r from-black via-[#111111] to-black rounded-2xl p-5 mb-4 shadow-xl cursor-pointer overflow-hidden border border-[#FFE019]/60"
                     onClick={handleCopyCode}
                   >
                     {/* Shimmer effect */}
@@ -360,7 +360,7 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                           scale: [1, 1.08, 1],
                           color: ['#ffffff', '#10b981', '#ffffff']
                         } : {}}
-                        className="text-white text-3xl sm:text-4xl font-black mb-2 tracking-wider select-all drop-shadow-md"
+                        className="text-white text-3xl sm:text-3xl font-black mb-2 tracking-wider select-all drop-shadow-md"
                       >
                         {coupon.code}
                       </motion.div>
@@ -393,12 +393,10 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                     variants={itemVariants}
                     initial="hidden"
                     animate="visible"
-                    className="relative bg-gradient-to-r from-[#41361A] via-[#5A4A2A] to-[#41361A] rounded-2xl p-5 mb-4 shadow-xl overflow-hidden border border-white/20"
+                    className="relative bg-gradient-to-r from-black via-[#111111] to-black rounded-2xl p-5 mb-4 shadow-xl overflow-hidden border-[#FFE019]/60 border"
                   >
                     <div className="relative z-10 text-center">
-                      <motion.div
-                        className="text-white text-xl sm:text-2xl font-bold mb-2 tracking-wide drop-shadow-md"
-                      >
+                      <motion.div className="text-[#FFE019] text-xl sm:text-2xl font-bold mb-2 tracking-wide drop-shadow-md">
                         Exclusive Deal Available!
                       </motion.div>
                       <motion.p
@@ -421,14 +419,14 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                   <motion.button
                     whileHover={{ 
                       scale: 1.02,
-                      boxShadow: "0 8px 20px rgba(0,0,0,0.25)"
+                    boxShadow: "0 8px 20px rgba(0,0,0,0.35)"
                     }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => {
                       handleCopyCode();
                       onContinue();
                     }}
-                    className="relative bg-white text-[#ABC443] font-bold py-3.5 px-6 rounded-xl hover:bg-gray-50 transition-all shadow-xl text-base overflow-hidden group"
+                  className="relative bg-[#FFE019] text-black font-bold py-3.5 px-6 rounded-xl hover:bg-[#e6cd17] transition-all shadow-xl text-base overflow-hidden group"
                   >
                     {/* Button shine effect */}
                     <motion.div
@@ -449,11 +447,11 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                   <motion.button
                     whileHover={{ 
                       scale: 1.02,
-                      backgroundColor: "rgba(255,255,255,0.3)"
+                    backgroundColor: "rgba(255,255,255,0.15)"
                     }}
                     whileTap={{ scale: 0.98 }}
                     onClick={onClose}
-                    className="bg-white/20 backdrop-blur-md text-white font-semibold py-2.5 px-6 rounded-xl hover:bg-white/30 transition-all text-xs border border-white/30 shadow-md"
+                  className="bg-transparent backdrop-blur-md text-white font-semibold py-2.5 px-6 rounded-xl hover:bg-white/10 transition-all text-xs border border-[#FFE019]/60 shadow-md"
                   >
                     Close
                   </motion.button>
