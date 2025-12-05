@@ -263,6 +263,26 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       return false;
     };
     
+    // Helper to detect server/API errors
+    const isServerError = (args: any[]): boolean => {
+      const message = args.join(' ').toLowerCase();
+      return (
+        message.includes('server update failed') ||
+        message.includes('server error') ||
+        message.includes('api error') ||
+        message.includes('failed to fetch') ||
+        message.includes('network error') ||
+        message.includes('500') ||
+        message.includes('503') ||
+        message.includes('502') ||
+        message.includes('admin sdk') ||
+        message.includes('firebase admin') ||
+        message.includes('supabase admin') ||
+        message.includes('unauthorized') ||
+        message.includes('forbidden')
+      );
+    };
+
     console.error = (...args: any[]) => {
       // Suppress favicon-related errors
       if (isFaviconError(args)) {
@@ -272,6 +292,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       // Suppress browser compatibility/performance/security warnings
       if (isBrowserWarning(args)) {
         return; // Silently ignore browser warnings
+      }
+      
+      // Suppress server/API errors in production
+      if (process.env.NODE_ENV === 'production' && isServerError(args)) {
+        return; // Silently ignore server errors in production
       }
       
       const message = args.join(' ');
@@ -285,7 +310,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       ) {
         setShowQuotaError(true);
       }
-      originalError.apply(console, args);
+      
+      // Only log errors in development or non-server errors
+      if (process.env.NODE_ENV === 'development' || !isServerError(args)) {
+        originalError.apply(console, args);
+      }
     };
     
     // Also suppress favicon warnings and browser warnings
@@ -297,6 +326,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       // Suppress browser compatibility/performance/security warnings
       if (isBrowserWarning(args)) {
         return; // Silently ignore browser warnings
+      }
+      
+      // Suppress server/API warnings in production
+      if (process.env.NODE_ENV === 'production' && isServerError(args)) {
+        return; // Silently ignore server warnings in production
       }
       
       originalWarn.apply(console, args);
