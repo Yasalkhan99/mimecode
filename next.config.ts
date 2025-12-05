@@ -26,7 +26,6 @@ const nextConfig: NextConfig = {
   // Enable compression
   compress: true,
   // Optimize production builds
-  swcMinify: true,
   // Reduce bundle size
   experimental: {
     optimizePackageImports: ['framer-motion', 'date-fns'],

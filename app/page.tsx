@@ -191,7 +191,7 @@ export default function Home() {
           // Set first 8 code coupons immediately (will be enhanced when stores load)
           const initialCoupons = codeCouponsOnly.slice(0, 8).map(c => c || null);
           // Pad to 8 items
-          const paddedCoupons = [...initialCoupons];
+          const paddedCoupons: (Coupon | null)[] = [...initialCoupons];
           while (paddedCoupons.length < 8) {
             paddedCoupons.push(null);
           }
@@ -978,7 +978,7 @@ export default function Home() {
       
       // STRICT: Check if store is already used (by ID or name)
       // Also check if coupon ID is already used
-      if (!usedCouponIds.has(coupon.id) && !isStoreAlreadyUsed(storeIdentifier, store, couponStoreName)) {
+      if (coupon.id && !usedCouponIds.has(coupon.id) && !isStoreAlreadyUsed(storeIdentifier, store, couponStoreName)) {
         result.push(coupon);
         usedCouponIds.add(coupon.id);
         if (storeIdentifier) usedStoreIds.add(storeIdentifier);
@@ -1289,7 +1289,7 @@ export default function Home() {
       
       // STRICT: Check if store is already used (by ID or name)
       // This includes stores from Latest Coupons
-      if (!usedCouponIds.has(coupon.id) && !isStoreAlreadyUsed(storeIdentifier, store, couponStoreName)) {
+      if (coupon.id && !usedCouponIds.has(coupon.id) && !isStoreAlreadyUsed(storeIdentifier, store, couponStoreName)) {
         result.push(coupon);
         usedCouponIds.add(coupon.id);
         if (storeIdentifier) usedStoreIds.add(storeIdentifier);

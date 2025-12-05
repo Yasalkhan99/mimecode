@@ -351,7 +351,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     
     console.groupEnd = function(...args: any[]) {
       // Allow groupEnd to proceed normally
-      return originalConsoleGroupEnd.apply(console, args);
+      return originalConsoleGroupEnd.apply(console, args as []);
     };
 
     window.addEventListener('error', handleError, true);
