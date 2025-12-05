@@ -5,7 +5,6 @@ import { getUserProfile } from '@/lib/services/userService';
 
 export interface UserWithRole extends User {
   role?: 'admin' | 'user';
-  displayName?: string | null;
 }
 
 export function useAuth() {
