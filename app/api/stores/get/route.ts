@@ -185,6 +185,16 @@ const convertToAPIFormat = (row: any) => {
 const enrichStoresWithCategory = async (stores: any[]) => {
   if (!stores || stores.length === 0) return stores;
 
+  // If Supabase admin client is not initialized, still return stores with basic category info
+  const admin = supabaseAdmin;
+  if (!admin) {
+    return stores.map((store) => ({
+      ...store,
+      mainCategoryId: store.mainCategoryId || store.categoryId || null,
+      categoryName: null,
+    }));
+  }
+
   // Collect unique, truthy categoryIds from the already converted stores
   const categoryIds = Array.from(
     new Set(
@@ -204,7 +214,7 @@ const enrichStoresWithCategory = async (stores: any[]) => {
   }
 
   try {
-    const { data: categories, error } = await supabaseAdmin
+    const { data: categories, error } = await admin
       .from('categories')
       .select('id, name')
       .in('id', categoryIds);
