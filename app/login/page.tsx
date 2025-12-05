@@ -19,7 +19,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (user && !authLoading) {
-      // User is logged in, redirect to home
+      // User is logged in, redirect to home (not admin panel)
       router.push('/');
     }
   }, [user, authLoading, router]);
@@ -32,8 +32,21 @@ export default function LoginPage() {
     try {
       if (isSignUp) {
         // Sign up
-        await createUserWithEmailAndPassword(auth, email, password);
-        // After sign up, user will be automatically signed in
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        
+        // Create user profile in Supabase with 'user' role
+        await fetch('/api/users/create-user-profile-supabase', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            uid: userCredential.user.uid,
+            email: userCredential.user.email,
+            displayName: userCredential.user.displayName,
+            role: 'user', // Regular users get 'user' role
+          }),
+        });
+        
+        // After sign up, redirect to home
         router.push('/');
       } else {
         // Sign in

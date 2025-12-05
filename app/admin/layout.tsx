@@ -22,12 +22,25 @@ export default function AdminLayout({
   const [authLoadingLocal, setAuthLoadingLocal] = useState(false);
   const [authErrorLocal, setAuthErrorLocal] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [systemPagesOpen, setSystemPagesOpen] = useState(false);
 
   useEffect(() => {
-    // Avoid redirecting to login if we're already on the login page
+    // Allow access to login page without authentication
+    if (pathname === '/admin/login' || pathname === '/admin') {
+      return;
+    }
+    
+    // Redirect to login if not authenticated
     if (!loading && !user) {
-      if (!pathname || pathname === '/admin/login') return;
       router.push('/admin/login');
+      return;
+    }
+    
+    // Check if user has admin role (skip on login page)
+    if (!loading && user && user.role !== 'admin') {
+      // User is logged in but doesn't have admin role
+      // Redirect to home with error message
+      router.push('/?error=unauthorized');
     }
   }, [user, loading, router, pathname]);
 
@@ -163,53 +176,11 @@ export default function AdminLayout({
             Coupons
           </Link>
           <Link
-            href="/admin/categories"
-            onClick={() => setSidebarOpen(false)}
-            className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
-          >
-            Categories
-          </Link>
-          <Link
-            href="/admin/banners"
-            onClick={() => setSidebarOpen(false)}
-            className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
-          >
-            Banners
-          </Link>
-          <Link
-            href="/admin/events"
-            onClick={() => setSidebarOpen(false)}
-            className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
-          >
-            Events
-          </Link>
-          <Link
             href="/admin/stores"
             onClick={() => setSidebarOpen(false)}
             className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
           >
             Stores
-          </Link>
-          <Link
-            href="/admin/regions"
-            onClick={() => setSidebarOpen(false)}
-            className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
-          >
-            Regions
-          </Link>
-          <Link
-            href="/admin/logos"
-            onClick={() => setSidebarOpen(false)}
-            className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
-          >
-            Logos
-          </Link>
-          <Link
-            href="/admin/news"
-            onClick={() => setSidebarOpen(false)}
-            className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
-          >
-            News & Articles
           </Link>
           <Link
             href="/admin/email"
@@ -218,27 +189,83 @@ export default function AdminLayout({
           >
             Email
           </Link>
-          <Link
-            href="/admin/faqs"
-            onClick={() => setSidebarOpen(false)}
-            className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
-          >
-            FAQs
-          </Link>
-          <Link
-            href="/admin/privacy-policy"
-            onClick={() => setSidebarOpen(false)}
-            className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
-          >
-            Privacy Policy
-          </Link>
-          <Link
-            href="/admin/terms"
-            onClick={() => setSidebarOpen(false)}
-            className="block px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base"
-          >
-            Terms & Conditions
-          </Link>
+          
+          {/* System Pages Dropdown */}
+          <div>
+            <button
+              onClick={() => setSystemPagesOpen(!systemPagesOpen)}
+              className="w-full flex items-center justify-between px-4 lg:px-6 py-3 hover:bg-gray-800 transition text-sm lg:text-base text-left"
+            >
+              <span className="flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                System Pages
+              </span>
+              <svg 
+                className={`w-4 h-4 transition-transform ${systemPagesOpen ? 'rotate-180' : ''}`} 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {systemPagesOpen && (
+              <div className="bg-gray-800/50">
+                <Link
+                  href="/admin/categories"
+                  onClick={() => setSidebarOpen(false)}
+                  className="block pl-8 lg:pl-10 pr-4 lg:pr-6 py-2.5 hover:bg-gray-800 transition text-sm"
+                >
+                  🏷️ Categories
+                </Link>
+                <Link
+                  href="/admin/banners"
+                  onClick={() => setSidebarOpen(false)}
+                  className="block pl-8 lg:pl-10 pr-4 lg:pr-6 py-2.5 hover:bg-gray-800 transition text-sm"
+                >
+                  🎨 Banners
+                </Link>
+                <Link
+                  href="/admin/events"
+                  onClick={() => setSidebarOpen(false)}
+                  className="block pl-8 lg:pl-10 pr-4 lg:pr-6 py-2.5 hover:bg-gray-800 transition text-sm"
+                >
+                  🎉 Events
+                </Link>
+                <Link
+                  href="/admin/news"
+                  onClick={() => setSidebarOpen(false)}
+                  className="block pl-8 lg:pl-10 pr-4 lg:pr-6 py-2.5 hover:bg-gray-800 transition text-sm"
+                >
+                  📰 News & Articles
+                </Link>
+                <Link
+                  href="/admin/faqs"
+                  onClick={() => setSidebarOpen(false)}
+                  className="block pl-8 lg:pl-10 pr-4 lg:pr-6 py-2.5 hover:bg-gray-800 transition text-sm"
+                >
+                  📋 FAQs
+                </Link>
+                <Link
+                  href="/admin/privacy-policy"
+                  onClick={() => setSidebarOpen(false)}
+                  className="block pl-8 lg:pl-10 pr-4 lg:pr-6 py-2.5 hover:bg-gray-800 transition text-sm"
+                >
+                  🔒 Privacy Policy
+                </Link>
+                <Link
+                  href="/admin/terms"
+                  onClick={() => setSidebarOpen(false)}
+                  className="block pl-8 lg:pl-10 pr-4 lg:pr-6 py-2.5 hover:bg-gray-800 transition text-sm"
+                >
+                  📜 Terms & Conditions
+                </Link>
+              </div>
+            )}
+          </div>
           <Link
             href="/admin/analytics"
             onClick={() => setSidebarOpen(false)}

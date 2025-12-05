@@ -7,9 +7,15 @@ import { getAdminFirestore } from '@/lib/firebase-admin';
 // Collection name for banners
 const BANNERS_COLLECTION = process.env.NEXT_PUBLIC_BANNERS_COLLECTION || 'banners-mimecode';
 
-// Simple in-memory cache with longer TTL for better performance
+// Simple in-memory cache with shorter TTL for better real-time updates
 let bannersCache: { data: any[] | null; timestamp: number } = { data: null, timestamp: 0 };
-const CACHE_TTL = 10 * 60 * 1000; // 10 minutes cache (banners don't change often) - longer cache = faster responses
+const CACHE_TTL = 5 * 1000; // 5 seconds cache - faster real-time updates
+
+// Export function to clear cache (called by create/update/delete routes)
+export function clearBannersCache() {
+  bannersCache = { data: null, timestamp: 0 };
+  console.log('🗑️ Banners cache cleared');
+}
 
 // Helper function to convert Firebase doc to API format
 const convertToAPIFormat = (doc: any) => {

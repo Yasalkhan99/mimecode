@@ -79,6 +79,11 @@ export default function Home() {
       return () => clearTimeout(timer);
     }
   }, []);
+
+  // Debug: Monitor FAQs state
+  useEffect(() => {
+    console.log('FAQs state updated:', { count: faqs.length, faqs });
+  }, [faqs]);
   
   // CRITICAL: Handle popup from query parameters (for code type coupons opened in new tab)
   useEffect(() => {
@@ -268,6 +273,16 @@ export default function Home() {
         // Set stores (needed for filtering coupons)
         setAllStores(allStoresData);
         
+        // Debug: Check if stores have categoryId
+        console.log('📦 STORES LOADED:', {
+          totalStores: allStoresData.length,
+          sampleWithCategoryId: allStoresData.slice(0, 10).map(s => ({
+            name: s.name,
+            categoryId: s.categoryId,
+            hasCategoryId: !!s.categoryId
+          }))
+        });
+        
         // Process coupons with stores (if coupons already loaded) - NON-BLOCKING
         if (allCoupons.length > 0) {
           const codeCouponsOnly = allCoupons.filter(coupon => coupon.couponType === 'code');
@@ -291,6 +306,7 @@ export default function Home() {
         setLatestNews(newsData.slice(0, 4));
         setCategories(categoriesData.slice(0, 6));
         setFaqs(faqsData);
+        console.log('FAQs loaded:', faqsData.length, faqsData);
       } catch (error) {
         // Silently handle errors
       } finally {
@@ -846,7 +862,28 @@ export default function Home() {
   // Memoize filtered stores by category
   const filteredStoresByCategory = useMemo(() => {
     if (!selectedCategoryId) return storesWithLogos;
-    return storesWithLogos.filter(store => store.categoryId === selectedCategoryId);
+    
+    // Detailed debugging
+    console.log('🔍 CATEGORY FILTER DEBUG:', {
+      selectedCategoryId,
+      totalStores: storesWithLogos.length,
+      // Show first 10 stores with their categoryId
+      sampleStores: storesWithLogos.slice(0, 10).map(s => ({
+        name: s.name,
+        categoryId: s.categoryId,
+        matches: s.categoryId === selectedCategoryId ? '✅ MATCH' : '❌ NO MATCH'
+      }))
+    });
+    
+    const filtered = storesWithLogos.filter(store => store.categoryId === selectedCategoryId);
+    
+    console.log('✅ FILTERED RESULT:', {
+      filteredCount: filtered.length,
+      filteredStores: filtered.slice(0, 5).map(s => ({ name: s.name, categoryId: s.categoryId }))
+    });
+    
+    // If no stores match, show all stores instead of empty
+    return filtered.length > 0 ? filtered : storesWithLogos;
   }, [storesWithLogos, selectedCategoryId]);
 
   const handlePopupContinue = () => {
@@ -1524,20 +1561,80 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Section Heading - Coupons and Deals */}
-      <section className="py-8 md:py-12 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center"
-          >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900">
-              Exclusive <span className="text-[#16a34a]">Coupons</span> and <span className="text-[#16a34a]">Deals</span> from Your Favorite Stores
-            </h2>
-          </motion.div>
+      {/* Section Heading - Coupons and Deals with Stats */}
+      <section className="py-4 sm:py-6 md:py-8 lg:py-12 bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8">
+          <div className="bg-[#FFE019] rounded-lg sm:rounded-xl py-3 px-4 sm:py-4 sm:px-6 md:px-8 lg:px-10 min-h-[80px] sm:min-h-[90px] md:min-h-[100px] lg:min-h-[110px]">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-4 sm:gap-5 lg:gap-12">
+            {/* Left Side - Text Content */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="flex-1 text-center lg:text-left"
+            >
+              <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
+                Exclusive Coupons & Deals
+              </h2>
+              <div className="flex justify-center lg:justify-start">
+                <img 
+                  src="/From Your Favorite Stores.svg" 
+                  alt="From Your Favorite Stores" 
+                  className="h-6 sm:h-7 md:h-9 lg:h-12 w-auto"
+                />
+              </div>
+            </motion.div>
+
+            {/* Right Side - Circular Stats Badges */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 lg:gap-4"
+            >
+              {/* Badge 1 - Total Categories */}
+              <div className="bg-white rounded-full shadow-md p-2 sm:p-2.5 flex items-center gap-1.5 sm:gap-2 min-w-[120px] sm:min-w-[140px]">
+                <div className="bg-gray-900 rounded-full p-1.5 sm:p-2 flex-shrink-0 border-2 border-[#FFE019]">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <div className="text-[9px] sm:text-[10px] text-gray-600 font-medium leading-tight">Total Categories</div>
+                  <div className="text-xs sm:text-sm font-bold text-gray-900">500+</div>
+                </div>
+              </div>
+
+              {/* Badge 2 - 20% OFF */}
+              <div className="bg-white rounded-full shadow-md p-2 sm:p-2.5 flex items-center gap-1.5 sm:gap-2 min-w-[120px] sm:min-w-[140px]">
+                <div className="bg-gray-900 rounded-full p-1.5 sm:p-2 flex-shrink-0 border-2 border-[#FFE019]">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <div className="text-[9px] sm:text-[10px] text-gray-600 font-medium leading-tight">20% OFF</div>
+                  <div className="text-xs sm:text-sm font-bold text-gray-900">For All Coupons</div>
+                </div>
+              </div>
+
+              {/* Badge 3 - Reviews */}
+              <div className="bg-white rounded-full shadow-md p-2 sm:p-2.5 flex items-center gap-1.5 sm:gap-2 min-w-[120px] sm:min-w-[140px]">
+                <div className="bg-gray-900 rounded-full p-1.5 sm:p-2 flex-shrink-0 border-2 border-[#FFE019]">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <div className="text-[9px] sm:text-[10px] text-gray-600 font-medium leading-tight">4.9 (8.6K)</div>
+                  <div className="text-xs sm:text-sm font-bold text-gray-900">AVG Reviews</div>
+                </div>
+              </div>
+            </motion.div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -2078,17 +2175,28 @@ export default function Home() {
             {storesWithLogos.length > 0 && (
               <section className="py-12 md:py-16 bg-gray-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                  {/* Header Text */}
+                  {/* Header with SVG and Button */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.6 }}
-                    className="text-center mb-8 md:mb-12"
+                    className="flex items-center justify-between mb-8 md:mb-12"
                   >
-                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-                      Stores Of The <span className="text-[#16a34a]">Season</span>
-                    </h2>
+                    {/* SVG Logo - Left Aligned */}
+                    <img
+                      src="/Group 1171275113.svg"
+                      alt="Stores Of The Season"
+                      className="h-14 sm:h-16 md:h-20 lg:h-24 w-auto"
+                    />
+                    
+                    {/* Discover More Stores Button - Right Aligned */}
+                    <button className="bg-[#FFE019] hover:bg-[#f5d600] text-black font-semibold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap shadow-md hover:shadow-lg -mt-1 sm:-mt-2">
+                      Discover More Stores
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
                   </motion.div>
                   
                   {/* Horizontal Scrollable Store Logos - Auto Scroll */}
@@ -2155,27 +2263,47 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Category Tags */}
+                  {/* Category Tags - Black Bar Design */}
                   {categories && categories.length > 0 && (
-                    <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
-                      <Link
-                        href="/categories"
-                        className="px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 bg-gray-900 text-white hover:bg-gray-800"
-                      >
-                        Discover more
-                      </Link>
-                      {categories.map((category) => (
-                        <Link
-                          key={category.id}
-                          href={`/categories/${category.slug || category.id}`}
-                          className="px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-1.5 bg-white text-blue-600 border border-gray-300 hover:border-blue-400 hover:bg-blue-50"
-                        >
-                          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
-                          </svg>
-                          {category.name}
-                        </Link>
-                      ))}
+                    <div className="flex justify-center">
+                      <div className="bg-black rounded-full py-1.5 px-2 overflow-x-auto max-w-full">
+                        <div className="flex items-center gap-1.5 min-w-max">
+                          {/* All categories - highlight selected one */}
+                          {categories.map((category) => (
+                            <button
+                            key={category.id}
+                            onClick={() => {
+                              const categoryId = category.id || null;
+                              
+                              // Debug logging
+                              console.log('🎯 CATEGORY CLICKED:', {
+                                categoryName: category.name,
+                                categoryId: categoryId,
+                                previousSelection: selectedCategoryId,
+                                willToggle: categoryId === selectedCategoryId
+                              });
+                              
+                              setSelectedCategoryId(categoryId === selectedCategoryId ? null : categoryId);
+                              // Scroll to Stores of the Season section
+                              const storesSection = document.querySelector('section.bg-gray-50');
+                              if (storesSection) {
+                                storesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                              }
+                            }}
+                              className={`px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap ${
+                                selectedCategoryId === category.id
+                                  ? 'bg-[#FFE019] text-black hover:bg-[#f5d600]'
+                                  : 'bg-gray-800 text-white hover:bg-gray-700'
+                              }`}
+                            >
+                              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                              </svg>
+                              {category.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   )}
 
@@ -2187,44 +2315,68 @@ export default function Home() {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.6 }}
-                        className="bg-white rounded-lg shadow-sm p-6 md:p-8"
                       >
-                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-6 md:mb-8">
-                          Frequently Asked <span className="text-[#16a34a]">Questions</span>
-                        </h2>
-                        <div className="space-y-0">
+                        <div className="mb-6 md:mb-8 flex justify-center">
+                          <img 
+                            src="/Group 1171275116.svg" 
+                            alt="Frequently Asked Questions" 
+                            className="h-16 sm:h-20 md:h-24 lg:h-28 w-auto"
+                          />
+                        </div>
+                        <div className="space-y-2 md:space-y-3">
                           {faqs.map((faq, index) => (
                             <div
                               key={faq.id}
-                              className="border-b border-gray-200 last:border-b-0"
+                              className={`rounded-lg overflow-hidden transition-all duration-300 ${
+                                openFAQIndex === index 
+                                  ? 'bg-[#FFE019]' 
+                                  : 'bg-black'
+                              }`}
                             >
                               <button
                                 onClick={() => setOpenFAQIndex(openFAQIndex === index ? null : index)}
-                                className="w-full flex items-center justify-between py-4 md:py-5 text-left hover:bg-gray-50 transition-colors"
+                                className="w-full flex items-start gap-2.5 px-4 md:px-5 py-3 md:py-3.5 text-left hover:opacity-90 transition-opacity"
                               >
-                                <span className="text-[#16a34a] font-medium text-sm sm:text-base md:text-lg pr-4">
+                                {/* Yellow Bullet Point */}
+                                <span className={`text-xl leading-none mt-0.5 flex-shrink-0 ${
+                                  openFAQIndex === index ? 'text-black' : 'text-[#FFE019]'
+                                }`}>
+                                  •
+                                </span>
+                                
+                                {/* Question Text */}
+                                <span className={`flex-1 font-medium text-sm sm:text-base pr-3 ${
+                                  openFAQIndex === index ? 'text-black' : 'text-white'
+                                }`}>
                                   {faq.question}
                                 </span>
+                                
+                                {/* Dropdown Arrow */}
                                 <svg
-                                  className={`w-5 h-5 text-gray-900 flex-shrink-0 transition-transform duration-200 ${
-                                    openFAQIndex === index ? 'rotate-180' : ''
+                                  className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 ${
+                                    openFAQIndex === index 
+                                      ? 'rotate-180 text-black' 
+                                      : 'text-[#FFE019]'
                                   }`}
                                   fill="none"
                                   stroke="currentColor"
+                                  strokeWidth={2.5}
                                   viewBox="0 0 24 24"
                                 >
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                                 </svg>
                               </button>
+                              
+                              {/* Answer - Only show when open */}
                               {openFAQIndex === index && (
                                 <motion.div
                                   initial={{ opacity: 0, height: 0 }}
                                   animate={{ opacity: 1, height: 'auto' }}
                                   exit={{ opacity: 0, height: 0 }}
                                   transition={{ duration: 0.3 }}
-                                  className="overflow-hidden"
+                                  className="overflow-hidden bg-black"
                                 >
-                                  <div className="pb-4 md:pb-5 text-gray-700 text-sm sm:text-base leading-relaxed">
+                                  <div className="px-4 md:px-5 py-3 md:py-4 text-white text-sm leading-relaxed">
                                     {faq.answer}
                                   </div>
                                 </motion.div>
@@ -2331,39 +2483,47 @@ export default function Home() {
             {latestNews.filter(article => article && article.id).length > 0 && (
               <section>
                 <div className="flex items-center justify-between mb-6 md:mb-8">
-                  <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Savings Tips</h2>
+                  {/* Savings Tips SVG Logo */}
+                  <div className="flex-shrink-0">
+                    <img 
+                      src="/Group 1171275131.svg" 
+                      alt="Savings Tips" 
+                      className="h-16 sm:h-20 md:h-24 w-auto"
+                    />
+                  </div>
+                  
+                  {/* View All Button */}
                   <Link 
                     href="/blogs" 
-                    className="hidden sm:flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium text-sm group"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-[#FFE019] text-gray-900 rounded-full font-semibold text-sm hover:bg-[#f5d600] transition-colors"
                   >
                     View All
-                    <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                     </svg>
                   </Link>
                 </div>
                 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
-                  {latestNews.filter(a => a && a.id).slice(0, 8).map((article, index) => {
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                  {latestNews.filter(a => a && a.id).slice(0, 4).map((article, index) => {
                     return (
                       <motion.article
                         key={`savings-tips-article-${article.id}`}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4, delay: index * 0.05 }}
-                        className="flex gap-4 p-4 border-b border-gray-200 last:border-b-0 hover:bg-gray-50 transition-colors group"
+                        className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow group h-[200px] sm:h-[220px]"
                       >
-                        <Link href={`/blogs/${article.id}`} className="flex gap-4 w-full">
-                          {/* Circular Thumbnail */}
-                          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden flex-shrink-0 bg-gray-100">
+                        <Link href={`/blogs/${article.id}`} className="flex flex-row h-full">
+                          {/* Image with Date Badge - LEFT SIDE */}
+                          <div className="relative w-2/5 flex-shrink-0 bg-gray-100">
                             {article.imageUrl ? (
                               article.imageUrl.includes('res.cloudinary.com') || article.imageUrl.includes('storage.googleapis.com') ? (
                                 <Image
                                   src={article.imageUrl}
                                   alt={article.title || 'Article'}
-                                  width={96}
-                                  height={96}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                  fill
+                                  className="object-cover group-hover:scale-105 transition-transform duration-300"
                                 />
                               ) : (
                                 <img
@@ -2377,59 +2537,39 @@ export default function Home() {
                                 />
                               )
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                                <span className="text-gray-400 text-xs font-semibold">
-                                  {(article.title || 'A').charAt(0)}
-                                </span>
+                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                                <svg className="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                                </svg>
                               </div>
                             )}
+                            
+                            {/* Date Badge */}
+                            <div className="absolute top-3 left-3 bg-black text-white text-xs font-medium px-3 py-1 rounded-full">
+                              {formatArticleDate(article.date || article.createdAt) || '15 Oct 2025'}
+                            </div>
                           </div>
                           
-                          {/* Content */}
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
-                              {article.title || 'Article'}
-                            </h3>
-                            
-                            {/* Author and Date */}
-                            <div className="flex items-center gap-2 mb-2 text-sm">
-                              <span className="text-blue-600 hover:text-blue-700 cursor-pointer">
-                                MimeCode Staff
-                              </span>
-                              <span className="text-gray-400">•</span>
-                              <span className="text-blue-600 hover:text-blue-700 cursor-pointer">
-                                {formatArticleDate(article.date || article.createdAt) || 'Recently'}
-                              </span>
+                          {/* Content - RIGHT SIDE */}
+                          <div className="flex-1 p-4 sm:p-6 flex flex-col justify-between">
+                            <div>
+                              <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                                {article.title || 'Trendsetter Chronicles: Lorem Ipsum is simply a dummy text'}
+                              </h3>
                             </div>
                             
-                            {/* Description */}
-                            <p className="text-sm text-gray-700 mb-2 line-clamp-2 leading-relaxed">
-                              {article.description || article.content?.substring(0, 120) || ''}
-                            </p>
-                            
-                            {/* Categories */}
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-blue-600 hover:text-blue-700 text-xs cursor-pointer">
-                                Guides
-                              </span>
-                            </div>
+                            {/* Read More Button */}
+                            <button className="inline-flex items-center gap-2 px-4 py-2 border-2 border-gray-900 rounded-full text-xs sm:text-sm font-medium text-gray-900 hover:bg-gray-900 hover:text-white transition-all self-start">
+                              READ MORE
+                              <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                              </svg>
+                            </button>
                           </div>
                         </Link>
                       </motion.article>
                     );
                   })}
-                </div>
-                
-                <div className="mt-6 text-center sm:hidden">
-                  <Link 
-                    href="/blogs" 
-                    className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium text-sm"
-                  >
-                    View All Articles
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </Link>
                 </div>
               </section>
             )}

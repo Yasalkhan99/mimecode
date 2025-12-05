@@ -152,27 +152,133 @@ export default function Navbar() {
   };
 
   return (
-    <header className="w-full">
-      {/* Green header with logo, navigation, search and login */}
-      <div className="bg-[#16a34a] py-2 sm:py-2.5 md:py-3 px-2 sm:px-4">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-2 md:gap-3 max-w-7xl mx-auto">
-          {/* Logo and Navigation Links */}
-          <div className="flex items-center gap-3 sm:gap-4 lg:gap-6 w-full lg:w-auto justify-between lg:justify-start">
-            <Link href="/" className="flex items-center gap-2">
-              <span className="text-white font-bold text-lg sm:text-xl md:text-2xl hidden sm:inline" style={{ fontFamily: 'var(--font-pacifico), cursive' }}>MimeCode</span>
+    <header className="w-full bg-white shadow-sm">
+      {/* Top bar with logo, search, and auth buttons */}
+      <div className="border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-4">
+            {/* Logo */}
+            <Link href="/" className="flex-shrink-0">
               <img 
-                src="/Group 1171275295.svg" 
-                alt="MimeCode Logo" 
-                className="h-6 sm:h-7 md:h-8 lg:h-9 w-auto"
+                src="/Group 1171275050 (1).svg" 
+                alt="HB Mime Code Logo" 
+                className="h-10 sm:h-12 md:h-14 w-auto"
               />
             </Link>
-            
+
+            {/* Search Bar - Center */}
+            <div className="flex-1 max-w-2xl mx-4 hidden md:block">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search here..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setShowSearchResults(true);
+                  }}
+                  onFocus={() => setShowSearchResults(true)}
+                  className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#FFE019] focus:border-transparent"
+                />
+                <button className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#FFE019] rounded-full p-1.5 hover:bg-yellow-400 transition">
+                  <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </button>
+                
+                {/* Search Results Dropdown */}
+                {showSearchResults && searchQuery && filteredStores.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-96 overflow-y-auto z-50 search-results-container">
+                    {filteredStores.map((store) => (
+                      <Link
+                        key={store.id}
+                        href={`/stores/${store.id}`}
+                        onClick={() => {
+                          setShowSearchResults(false);
+                          setSearchQuery('');
+                        }}
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                      >
+                        {store.logoUrl && (
+                          <img 
+                            src={store.logoUrl} 
+                            alt={store.name} 
+                            className="w-10 h-10 object-contain flex-shrink-0"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <div className="font-semibold text-gray-900">{store.name}</div>
+                          {store.description && (
+                            <div className="text-xs text-gray-600 line-clamp-1">{store.description}</div>
+                          )}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Auth Buttons */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              {user ? (
+                <>
+                  {user.role !== 'admin' && (
+                    <Link
+                      href="/dashboard"
+                      className="px-4 py-2 border border-gray-300 rounded-full text-gray-700 font-semibold text-sm hover:bg-gray-50 transition whitespace-nowrap"
+                    >
+                      My Dashboard
+                    </Link>
+                  )}
+                  {user.role === 'admin' && (
+                    <Link
+                      href="/admin/dashboard"
+                      className="px-4 py-2 border border-gray-300 rounded-full text-gray-700 font-semibold text-sm hover:bg-gray-50 transition whitespace-nowrap"
+                    >
+                      Admin Panel
+                    </Link>
+                  )}
+                  <button
+                    onClick={handleSignOut}
+                    className="px-4 py-2 border border-gray-300 rounded-full text-gray-700 font-semibold text-sm hover:bg-gray-50 transition whitespace-nowrap"
+                  >
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="px-4 py-2 border border-gray-300 rounded-full text-gray-700 font-semibold text-sm hover:bg-gray-50 transition whitespace-nowrap"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/login"
+                    className="px-4 py-2 bg-[#FFE019] rounded-full text-gray-900 font-semibold text-sm hover:bg-yellow-400 transition whitespace-nowrap"
+                  >
+                    Sign Up
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation Menu */}
+      <div className="border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center gap-6 py-3">
             {/* Navigation Links - Desktop */}
-            <div className="hidden md:flex items-center gap-3 lg:gap-4">
+            <div className="hidden md:flex items-center gap-6">
               <Link 
                 href="/" 
-                className={`text-white font-semibold text-xs lg:text-sm transition-colors hover:text-gray-200 ${
-                  isActive('/') ? 'underline' : ''
+                className={`px-4 py-2 font-semibold text-sm transition-colors ${
+                  isActive('/') 
+                    ? 'bg-[#FFE019] text-gray-900 rounded-full' 
+                    : 'text-gray-700 hover:text-gray-900'
                 }`}
               >
                 Home
@@ -184,8 +290,10 @@ export default function Navbar() {
               >
                 <Link 
                   href="/stores" 
-                  className={`text-white font-semibold text-xs lg:text-sm transition-colors hover:text-gray-200 flex items-center gap-1 ${
-                    isActive('/stores') ? 'underline' : ''
+                  className={`px-4 py-2 font-semibold text-sm transition-colors flex items-center gap-1 ${
+                    isActive('/stores') 
+                      ? 'bg-[#FFE019] text-gray-900 rounded-full' 
+                      : 'text-gray-700 hover:text-gray-900'
                   }`}
                 >
                   Stores
@@ -332,8 +440,10 @@ export default function Navbar() {
               </div>
               <Link 
                 href="/blogs" 
-                className={`text-white font-semibold text-xs lg:text-sm transition-colors hover:text-gray-200 ${
-                  isActive('/blogs') ? 'underline' : ''
+                className={`px-4 py-2 font-semibold text-sm transition-colors ${
+                  isActive('/blogs') 
+                    ? 'bg-[#FFE019] text-gray-900 rounded-full' 
+                    : 'text-gray-700 hover:text-gray-900'
                 }`}
               >
                 Blogs
@@ -341,8 +451,10 @@ export default function Navbar() {
               {hasEvents && (
                 <Link 
                   href="/events" 
-                  className={`text-white font-semibold text-xs lg:text-sm transition-colors hover:text-gray-200 ${
-                    isActive('/events') ? 'underline' : ''
+                  className={`px-4 py-2 font-semibold text-sm transition-colors ${
+                    isActive('/events') 
+                      ? 'bg-[#FFE019] text-gray-900 rounded-full' 
+                      : 'text-gray-700 hover:text-gray-900'
                   }`}
                 >
                   Events
@@ -350,149 +462,62 @@ export default function Navbar() {
               )}
             </div>
           </div>
-
-          {/* Search Bar - Center */}
-          <form onSubmit={handleSearch} className="relative flex items-center bg-white rounded-lg shadow px-2 sm:px-3 py-1 sm:py-1.5 w-full lg:w-auto lg:max-w-md lg:flex-1 lg:mx-4 search-results-container">
-            <div className="relative category-dropdown-container">
-              {/* <button
-                type="button"
-                className={`flex items-center px-2 sm:px-3 py-1 text-gray-700 font-semibold text-xs sm:text-sm focus:outline-none transition-colors ${
-                  selectedCategory ? 'text-[#16a34a] bg-[#16a34a]/10' : ''
-                }`}
-                onClick={() => setSearchCategoryOpen((v) => !v)}
-              >
-                <span className="hidden sm:inline">
-                  {selectedCategory ? categories.find(c => c.id === selectedCategory)?.name || 'Category' : 'Category'}
-                </span>
-                <span className="sm:hidden">
-                  {selectedCategory ? '✓' : 'Cat'}
-                </span>
-                <svg className="ml-1 sm:ml-2 w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button> */}
-              {/* Category Dropdown */}
-              {/* {searchCategoryOpen && (
-                <div className="absolute left-0 top-full mt-1 bg-white border rounded-lg shadow-lg z-50 min-w-[180px] max-h-[300px] overflow-y-auto">
-                  <div 
-                    className="px-4 py-2 text-gray-700 hover:bg-gray-100 cursor-pointer text-sm"
-                    onClick={() => handleCategorySelect('')}
-                  >
-                    <span className={selectedCategory === '' ? 'font-semibold text-[#16a34a]' : ''}>All Categories</span>
-                  </div>
-                  {categories.map((category) => (
-                    <div
-                      key={category.id}
-                      className="px-4 py-2 text-gray-700 hover:bg-gray-100 cursor-pointer text-sm flex items-center gap-2"
-                      onClick={() => handleCategorySelect(category.id || '')}
-                    >
-                      {category.logoUrl && (
-                        <img src={category.logoUrl} alt={category.name} className="w-5 h-5 object-contain" />
-                      )}
-                      <span className={selectedCategory === category.id ? 'font-semibold text-[#16a34a]' : ''}>
-                        {category.name}
-                      </span>
-                      {selectedCategory === category.id && (
-                        <svg className="w-4 h-4 text-[#16a34a] ml-auto" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )} */}
-            </div>
-            <svg className="w-4 h-4 text-gray-400 ml-1 sm:ml-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search on MimeCode"
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setShowSearchResults(e.target.value.trim().length > 0);
-              }}
-              onFocus={() => {
-                if (searchQuery.trim().length > 0) {
-                  setShowSearchResults(true);
-                }
-              }}
-              className="flex-1 px-2 sm:px-3 py-1 border-none outline-none bg-transparent text-gray-700 text-xs sm:text-sm min-w-0"
-            />
-            
-            {/* Search Results Dropdown */}
-            {showSearchResults && filteredStores.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-[400px] overflow-y-auto">
-                <div className="px-3 py-2 text-xs font-semibold text-gray-500 border-b border-gray-200 bg-gray-50 sticky top-0">
-                  Stores ({filteredStores.length})
-                </div>
-                {filteredStores.map((store) => (
-                  <Link
-                    key={store.id}
-                    href={`/stores/${store.slug || store.id}`}
-                    onClick={() => {
-                      setShowSearchResults(false);
-                      setSearchQuery('');
-                    }}
-                    className="flex items-center gap-3 px-3 py-2 hover:bg-gray-100 transition-colors border-b border-gray-100 last:border-b-0"
-                  >
-                    {store.logoUrl && (
-                      <img
-                        src={store.logoUrl}
-                        alt={store.name}
-                        className="w-8 h-8 object-contain flex-shrink-0"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                        }}
-                      />
-                    )}
-                    <span className="flex-1 text-sm text-gray-700 truncate">{store.name}</span>
-                    <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </Link>
-                ))}
-              </div>
-            )}
-            
-            {/* No Results Message */}
-            {showSearchResults && searchQuery.trim().length > 0 && filteredStores.length === 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50">
-                <div className="px-4 py-6 text-center text-sm text-gray-500">
-                  No stores found matching "{searchQuery}"
-                </div>
-              </div>
-            )}
-          </form>
-
-          {/* Login/Sign Out Button - Right */}
-          <div className="flex items-center gap-2 w-full lg:w-auto justify-end lg:justify-start">
-            {user ? (
-              <div className="flex items-center gap-3">
-                <span className="text-white text-xs sm:text-sm">
-                  {user.email}
-                </span>
-                <button
-                  onClick={handleSignOut}
-                  className="text-white font-semibold text-xs sm:text-sm hover:text-gray-200 transition-colors whitespace-nowrap"
-                >
-                  Sign Out
-                </button>
-              </div>
-            ) : (
-              <Link
-                href="/login"
-                className="text-white font-semibold text-xs sm:text-sm hover:text-gray-200 transition-colors whitespace-nowrap"
-              >
-                Login
-              </Link>
-            )}
-          </div>
         </div>
       </div>
       
+      {/* Mobile Search Bar */}
+      <div className="md:hidden border-b border-gray-200 bg-white px-4 py-3">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search here..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setShowSearchResults(true);
+            }}
+            onFocus={() => setShowSearchResults(true)}
+            className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#FFE019] focus:border-transparent"
+          />
+          <button className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#FFE019] rounded-full p-1.5">
+            <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </button>
+          
+          {/* Mobile Search Results */}
+          {showSearchResults && searchQuery && filteredStores.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-96 overflow-y-auto z-50 search-results-container">
+              {filteredStores.map((store) => (
+                <Link
+                  key={store.id}
+                  href={`/stores/${store.id}`}
+                  onClick={() => {
+                    setShowSearchResults(false);
+                    setSearchQuery('');
+                  }}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                >
+                  {store.logoUrl && (
+                    <img 
+                      src={store.logoUrl} 
+                      alt={store.name} 
+                      className="w-10 h-10 object-contain flex-shrink-0"
+                    />
+                  )}
+                  <div className="flex-1">
+                    <div className="font-semibold text-gray-900">{store.name}</div>
+                    {store.description && (
+                      <div className="text-xs text-gray-600 line-clamp-1">{store.description}</div>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Mobile Navigation - Only show on mobile */}
       <nav className="bg-white border-b border-gray-200 md:hidden">
         <style jsx>{`

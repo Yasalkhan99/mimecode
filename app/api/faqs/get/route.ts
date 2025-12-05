@@ -1,14 +1,17 @@
 // Server-side FAQs read route
-// Uses MongoDB
+// Uses Supabase
 
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import FAQ from '@/lib/models/FAQ';
-import { convertToAPIFormat, convertArrayToAPIFormat } from '@/lib/utils/mongodbHelpers';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function GET(req: NextRequest) {
   try {
-    await connectDB();
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { success: false, error: 'Supabase admin client not initialized' },
+        { status: 500 }
+      );
+    }
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
@@ -16,35 +19,67 @@ export async function GET(req: NextRequest) {
 
     // Get FAQ by ID
     if (id) {
-      const faq = await FAQ.findById(id);
-      if (faq) {
-        return NextResponse.json({
-          success: true,
-          faq: convertToAPIFormat(faq),
-        });
+      const { data, error } = await supabaseAdmin
+        .from('faqs')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Supabase get FAQ by ID error:', error);
       }
+
       return NextResponse.json({
         success: true,
-        faq: null,
+        faq: data ? {
+          id: data.id,
+          question: data.question,
+          answer: data.answer,
+          order: data.order,
+          isActive: data.is_active,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at,
+        } : null,
       });
     }
 
     // Build query
-    const query: any = {};
+    let query = supabaseAdmin
+      .from('faqs')
+      .select('*')
+      .order('order', { ascending: true })
+      .order('created_at', { ascending: false });
+
     if (activeOnly) {
-      query.isActive = true;
+      query = query.eq('is_active', true);
     }
 
-    // Get all FAQs, sorted by order (ascending), then by createdAt (descending)
-    const faqs = await FAQ.find(query).sort({ order: 1, createdAt: -1 });
-    const convertedFAQs = convertArrayToAPIFormat(faqs);
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Supabase get FAQs error:', error);
+      return NextResponse.json({
+        success: true,
+        faqs: [],
+      });
+    }
+
+    const faqs = (data || []).map((faq: any) => ({
+      id: faq.id,
+      question: faq.question,
+      answer: faq.answer,
+      order: faq.order,
+      isActive: faq.is_active,
+      createdAt: faq.created_at,
+      updatedAt: faq.updated_at,
+    }));
 
     return NextResponse.json({
       success: true,
-      faqs: convertedFAQs,
+      faqs,
     });
   } catch (error: any) {
-    console.error('MongoDB get FAQs error:', error);
+    console.error('Get FAQs error:', error);
     // Return 200 with empty array instead of 500 to prevent frontend errors
     return NextResponse.json(
       {

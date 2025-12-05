@@ -450,7 +450,7 @@ export default function StoresPage() {
       )}
 
       {banners.length === 0 && !loading && (
-        <section className="relative w-full overflow-hidden bg-gradient-to-br from-[#ABC443]/10 via-white to-[#9BB03A]/10 py-20 md:py-32">
+        <section className="relative w-full overflow-hidden bg-gradient-to-br from-black/10 via-white to-[#FFE019]/10 py-20 md:py-32">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 text-gray-900">Welcome to MimeCode</h1>
             <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-2xl mx-auto">Discover the best deals and savings</p>
@@ -464,8 +464,8 @@ export default function StoresPage() {
           {/* Store Search Bar */}
           <div className='pb-6 store-search-container'>
             <form onSubmit={handleStoreSearch} className="relative mx-auto">
-              <div className="border border-[#ABC443] relative flex items-center bg-white rounded-lg shadow-md  focus-within:border-[#16a34a] transition-colors px-4 py-3">
-                <svg className="w-5 h-5 text-[#ABC443] mr-3 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <div className="border border-[#FFE019] relative flex items-center bg-white rounded-lg shadow-md  focus-within:border-[#16a34a] transition-colors px-4 py-3">
+                <svg className="w-5 h-5 text-[#FFE019] mr-3 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <input
@@ -504,8 +504,8 @@ export default function StoresPage() {
               
               {/* Search Results Dropdown */}
               {showSearchResults && searchFilteredStores.length > 0 && (
-                <div ref={searchResultsRef} className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-[#ABC443]/30 rounded-lg shadow-lg z-50 max-h-[400px] overflow-y-auto">
-                  <div className="px-4 py-2 text-xs font-semibold text-[#16a34a] border-b border-gray-200 bg-[#ABC443]/5 sticky top-0">
+                <div ref={searchResultsRef} className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-[#FFE019]/30 rounded-lg shadow-lg z-50 max-h-[400px] overflow-y-auto">
+                  <div className="px-4 py-2 text-xs font-semibold text-black border-b border-gray-200 bg-[#FFE019]/5 sticky top-0">
                     Stores ({searchFilteredStores.length})
                   </div>
                   {searchFilteredStores.map((store) => (
@@ -516,7 +516,7 @@ export default function StoresPage() {
                         setShowSearchResults(false);
                         setSearchQuery('');
                       }}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-[#ABC443]/10 transition-colors border-b border-gray-100 last:border-b-0 group"
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-[#FFE019]/10 transition-colors border-b border-gray-100 last:border-b-0 group"
                     >
                       {store.logoUrl && (
                         <img
@@ -529,8 +529,8 @@ export default function StoresPage() {
                           }}
                         />
                       )}
-                      <span className="flex-1 text-sm text-gray-700 group-hover:text-[#16a34a] font-medium truncate">{store.name}</span>
-                      <svg className="w-4 h-4 text-gray-400 group-hover:text-[#16a34a] flex-shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <span className="flex-1 text-sm text-gray-700 group-hover:text-black font-medium truncate">{store.name}</span>
+                      <svg className="w-4 h-4 text-gray-400 group-hover:text-black flex-shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </Link>
@@ -540,7 +540,7 @@ export default function StoresPage() {
               
               {/* No Results Message */}
               {showSearchResults && searchQuery.trim().length > 0 && searchFilteredStores.length === 0 && (
-                <div ref={searchResultsRef} className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-[#ABC443]/30 rounded-lg shadow-lg z-50">
+                <div ref={searchResultsRef} className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-[#FFE019]/30 rounded-lg shadow-lg z-50">
                   <div className="px-4 py-6 text-center text-sm text-gray-500">
                     No stores found starting with "{searchQuery}"
                   </div>
@@ -549,7 +549,7 @@ export default function StoresPage() {
             </form>
           </div>
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-4 sm:mb-6 md:mb-8">
-            All <span className="text-[#ABC443]">Stores</span>
+            All <span className="text-[#FFE019]">Stores</span>
           </h2>
 
           {/* Main Content with Sidebar Layout */}
@@ -628,9 +628,9 @@ export default function StoresPage() {
               {filteredStores.length > 0 && (
                 <div className="mb-4 sm:mb-6 md:mb-12">
                   <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-3 sm:mb-4 md:mb-6 px-2 sm:px-0">
-                    Featured <span className="text-[#ABC443]">Stores</span>
+                    Featured <span className="text-[#FFE019]">Stores</span>
                   </h3>
-                  <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[#ABC443]/10 via-[#ABC443]/5 to-[#41361A]/10 p-2 sm:p-3 md:p-4 lg:p-6">
+                  <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[#FFE019]/10 via-[#ABC443]/5 to-black/10 p-2 sm:p-3 md:p-4 lg:p-6">
                     <div 
                       ref={sliderRef}
                       className="flex gap-2 sm:gap-3 md:gap-4 lg:gap-6 overflow-x-hidden scrollbar-hide pb-2 pt-2"
@@ -641,7 +641,7 @@ export default function StoresPage() {
                         <Link
                           key={`${store.id}-${index}`}
                           href={`/stores/${store.slug || store.id}`}
-                          className="group flex flex-col flex-shrink-0 w-[140px] xs:w-[160px] sm:w-[180px] md:w-[200px] lg:w-[220px] bg-white rounded-xl sm:rounded-2xl border border-gray-200 hover:border-[#ABC443] active:border-[#41361A] transition-all duration-300 shadow-md hover:shadow-xl active:shadow-lg overflow-hidden cursor-pointer transform active:scale-95 sm:hover:-translate-y-1 sm:hover:scale-[1.02] relative snap-start"
+                          className="group flex flex-col flex-shrink-0 w-[140px] xs:w-[160px] sm:w-[180px] md:w-[200px] lg:w-[220px] bg-white rounded-xl sm:rounded-2xl border border-gray-200 hover:border-[#FFE019] active:border-black transition-all duration-300 shadow-md hover:shadow-xl active:shadow-lg overflow-hidden cursor-pointer transform active:scale-95 sm:hover:-translate-y-1 sm:hover:scale-[1.02] relative snap-start"
                           style={{
                             animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`
                           }}
@@ -665,7 +665,7 @@ export default function StoresPage() {
                                 />
                               </div>
                             ) : (
-                              <div className="text-gray-400 text-sm text-center font-semibold group-hover:text-[#ABC443] transition-colors">
+                              <div className="text-gray-400 text-sm text-center font-semibold group-hover:text-[#FFE019] transition-colors">
                                 {store.name}
                               </div>
                             )}
@@ -673,12 +673,12 @@ export default function StoresPage() {
                           
                           {/* Content Section - Footer */}
                           <div className="px-2 py-1.5 sm:px-3 md:px-4 sm:py-2 border-t border-gray-100 bg-white relative z-20 mt-auto">
-                            <h3 className="font-bold text-xs sm:text-sm md:text-base text-gray-900 text-center break-words group-hover:text-[#ABC443] transition-colors duration-300 mb-1 line-clamp-2">
+                            <h3 className="font-bold text-xs sm:text-sm md:text-base text-gray-900 text-center break-words group-hover:text-[#FFE019] transition-colors duration-300 mb-1 line-clamp-2">
                               {store.name}
                             </h3>
                             {store.voucherText && (
                               <div className="flex justify-center mt-1">
-                                <span className="inline-block bg-gradient-to-r from-[#ABC443] to-[#41361A] text-white text-[10px] xs:text-xs font-bold px-2 xs:px-3 py-1 xs:py-1.5 rounded-full shadow-lg group-hover:shadow-xl transform group-hover:scale-110 transition-all duration-300 line-clamp-1">
+                                <span className="inline-block bg-gradient-to-r from-[#FFE019] to-black text-white text-[10px] xs:text-xs font-bold px-2 xs:px-3 py-1 xs:py-1.5 rounded-full shadow-lg group-hover:shadow-xl transform group-hover:scale-110 transition-all duration-300 line-clamp-1">
                                   {store.voucherText}
                                 </span>
                               </div>
@@ -719,7 +719,7 @@ export default function StoresPage() {
                         </p>
                         <button
                           onClick={() => setSearchQuery('')}
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-[#ABC443] hover:bg-[#16a34a] text-white font-medium rounded-lg transition-colors text-sm sm:text-base"
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-[#FFE019] hover:bg-black hover:text-white text-white font-medium rounded-lg transition-colors text-sm sm:text-base"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -734,7 +734,7 @@ export default function StoresPage() {
                 return storesForPagination.length > 0 ? (
                 <div className="mb-4 sm:mb-0">
                 <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-3 sm:mb-4 md:mb-6 px-2 sm:px-0">
-                  All <span className="text-[#ABC443]">Stores</span>
+                  All <span className="text-[#FFE019]">Stores</span>
                 </h3>
                 
                 {/* Mobile: Horizontal Scroll */}
@@ -748,7 +748,7 @@ export default function StoresPage() {
                         <Link
                           key={store.id}
                           href={`/stores/${store.slug || store.id}`}
-                          className="group flex flex-col bg-white rounded-xl sm:rounded-2xl border border-gray-200 hover:border-[#ABC443] active:border-[#41361A] transition-all duration-300 shadow-md hover:shadow-xl active:shadow-lg overflow-hidden cursor-pointer transform active:scale-95 relative flex-shrink-0 w-[140px] xs:w-[160px] snap-start"
+                          className="group flex flex-col bg-white rounded-xl sm:rounded-2xl border border-gray-200 hover:border-[#FFE019] active:border-black transition-all duration-300 shadow-md hover:shadow-xl active:shadow-lg overflow-hidden cursor-pointer transform active:scale-95 relative flex-shrink-0 w-[140px] xs:w-[160px] snap-start"
                         >
                           {/* Logo Section */}
                           <div className="aspect-[4/3] px-4 pt-3 pb-1.5 flex flex-col items-center justify-center relative bg-gradient-to-br from-gray-50 via-white to-gray-50 transition-all duration-500 flex-shrink-0">
@@ -846,7 +846,7 @@ export default function StoresPage() {
                     <Link
                       key={store.id}
                       href={`/stores/${store.slug || store.id}`}
-                      className="group flex flex-col bg-white rounded-2xl border border-gray-200 hover:border-[#ABC443] transition-all duration-500 shadow-md hover:shadow-2xl overflow-hidden cursor-pointer transform hover:-translate-y-2 hover:scale-105 relative"
+                      className="group flex flex-col bg-white rounded-2xl border border-gray-200 hover:border-[#FFE019] transition-all duration-500 shadow-md hover:shadow-2xl overflow-hidden cursor-pointer transform hover:-translate-y-2 hover:scale-105 relative"
                       style={{
                         animation: `fadeInUp 0.6s ease-out ${(index % 12) * 0.05}s both`
                       }}
@@ -870,7 +870,7 @@ export default function StoresPage() {
                           />
                         </div>
                       ) : (
-                        <div className="text-gray-400 text-sm text-center font-semibold group-hover:text-[#ABC443] transition-colors">
+                        <div className="text-gray-400 text-sm text-center font-semibold group-hover:text-[#FFE019] transition-colors">
                           {store.name}
                         </div>
                       )}
@@ -878,7 +878,7 @@ export default function StoresPage() {
                     
                     {/* Content Section - Footer */}
                     <div className="px-3 py-1.5 sm:px-4 sm:py-2 border-t border-gray-100 bg-white relative z-20 mt-auto">
-                      <h3 className="font-bold text-sm sm:text-base text-gray-900 text-center break-words group-hover:text-[#ABC443] transition-colors duration-300 mb-1">
+                      <h3 className="font-bold text-sm sm:text-base text-gray-900 text-center break-words group-hover:text-[#FFE019] transition-colors duration-300 mb-1">
                         {store.name}
                       </h3>
                       
@@ -925,7 +925,7 @@ export default function StoresPage() {
                       
                       {store.voucherText && (
                         <div className="flex justify-center mt-1">
-                          <span className="inline-block bg-gradient-to-r from-[#ABC443] to-[#41361A] text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg group-hover:shadow-xl transform group-hover:scale-110 transition-all duration-300">
+                          <span className="inline-block bg-gradient-to-r from-[#FFE019] to-black text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg group-hover:shadow-xl transform group-hover:scale-110 transition-all duration-300">
                             {store.voucherText}
                           </span>
                         </div>
@@ -948,7 +948,7 @@ export default function StoresPage() {
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
                       currentPage === 1
                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-[#ABC443] text-white hover:bg-[#9BB03A] hover:shadow-lg active:scale-95'
+                        : 'bg-[#FFE019] text-white hover:bg-black hover:shadow-lg active:scale-95'
                     }`}
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -995,7 +995,7 @@ export default function StoresPage() {
                           }}
                           className={`min-w-[40px] h-10 px-3 rounded-lg font-semibold transition-all duration-300 ${
                             currentPage === page
-                              ? 'bg-[#ABC443] text-white shadow-lg scale-105'
+                              ? 'bg-[#FFE019] text-white shadow-lg scale-105'
                               : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105 active:scale-95'
                           }`}
                         >
@@ -1012,7 +1012,7 @@ export default function StoresPage() {
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
                       currentPage === totalPages
                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-[#ABC443] text-white hover:bg-[#9BB03A] hover:shadow-lg active:scale-95'
+                        : 'bg-[#FFE019] text-white hover:bg-black hover:shadow-lg active:scale-95'
                     }`}
                   >
                     <span>Next</span>
@@ -1051,7 +1051,7 @@ export default function StoresPage() {
                   </div>
                   <Link
                     href="/about-us"
-                    className="mt-4 inline-block text-sm font-semibold text-[#16a34a] hover:text-[#15803d] transition-colors"
+                    className="mt-4 inline-block text-sm font-semibold text-black hover:text-[#15803d] transition-colors"
                   >
                     Learn More About Us →
                   </Link>
@@ -1092,7 +1092,7 @@ export default function StoresPage() {
                               </span>
                             </div>
                           )}
-                          <span className="text-xs text-gray-700 text-center line-clamp-2 group-hover:text-[#16a34a] transition-colors">
+                          <span className="text-xs text-gray-700 text-center line-clamp-2 group-hover:text-black transition-colors">
                             {store.name}
                           </span>
                         </Link>
@@ -1103,7 +1103,7 @@ export default function StoresPage() {
                   )}
                   <Link
                     href="/stores"
-                    className="mt-4 inline-block text-sm font-semibold text-[#16a34a] hover:text-[#15803d] transition-colors"
+                    className="mt-4 inline-block text-sm font-semibold text-black hover:text-[#15803d] transition-colors"
                   >
                     View All Stores →
                   </Link>
@@ -1127,10 +1127,10 @@ export default function StoresPage() {
                               className="w-8 h-8 object-contain flex-shrink-0"
                             />
                           )}
-                          <span className="text-sm text-gray-700 group-hover:text-[#16a34a] transition-colors flex-1">
+                          <span className="text-sm text-gray-700 group-hover:text-black transition-colors flex-1">
                             {category.name}
                           </span>
-                          <svg className="w-4 h-4 text-gray-400 group-hover:text-[#16a34a] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 text-gray-400 group-hover:text-black transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
                         </Link>
@@ -1138,7 +1138,7 @@ export default function StoresPage() {
                     </div>
                     <Link
                       href="/categories"
-                      className="mt-4 inline-block text-sm font-semibold text-[#16a34a] hover:text-[#15803d] transition-colors"
+                      className="mt-4 inline-block text-sm font-semibold text-black hover:text-[#15803d] transition-colors"
                     >
                       View All Categories →
                     </Link>

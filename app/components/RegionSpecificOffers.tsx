@@ -556,17 +556,19 @@ export default function RegionSpecificOffers() {
     <>
       <section className="py-8 md:py-12 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header */}
+          {/* Header - SVG */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="mb-4 md:mb-6"
+            className="mb-4 md:mb-6 flex justify-center"
           >
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">
-              Region <span className="text-orange-500">Specific Offers</span>
-            </h2>
+            <img
+              src="/Group 1171275088.svg"
+              alt="Region Specific Offers"
+              className="h-16 sm:h-20 md:h-24 lg:h-28 w-auto"
+            />
           </motion.div>
 
           {/* Regions Grid - Equal rows (6 per row) */}
@@ -648,7 +650,7 @@ export default function RegionSpecificOffers() {
               className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
             >
               {/* Modal Header */}
-              <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-6 flex items-center justify-between">
+              <div className="bg-black text-white p-6 flex items-center justify-between border-b-4 border-[#FFE019]">
                   <div className="flex items-center gap-3">
                   <div className="w-12 h-8 flex-shrink-0">
                     <img
@@ -662,15 +664,15 @@ export default function RegionSpecificOffers() {
                     />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold">{selectedRegion.name}</h3>
-                    <p className="text-sm text-orange-100">
+                    <h3 className="text-xl font-bold text-[#FFE019]">{selectedRegion.name}</h3>
+                    <p className="text-sm text-gray-300">
                       {filteredStores.length} {filteredStores.length === 1 ? 'Store' : 'Stores'} Available
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={closeModal}
-                  className="text-white hover:text-gray-200 transition-colors"
+                  className="text-[#FFE019] hover:text-white transition-colors"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -691,10 +693,10 @@ export default function RegionSpecificOffers() {
                         key={store.id}
                         href={`/stores/${store.slug || store.id}`}
                         onClick={closeModal}
-                        className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors group"
+                        className="bg-white border-2 border-gray-200 rounded-lg p-4 hover:border-[#FFE019] hover:shadow-lg transition-all group"
                       >
                         {store.logoUrl && (
-                          <div className="w-16 h-16 mx-auto mb-3 bg-white rounded-lg p-2 flex items-center justify-center group-hover:scale-105 transition-transform">
+                          <div className="w-16 h-16 mx-auto mb-3 bg-gray-50 rounded-lg p-2 flex items-center justify-center group-hover:scale-110 transition-transform">
                             <img
                               src={store.logoUrl}
                               alt={store.name}
@@ -702,7 +704,7 @@ export default function RegionSpecificOffers() {
                             />
                           </div>
                         )}
-                        <h4 className="text-sm font-semibold text-gray-900 text-center line-clamp-2">
+                        <h4 className="text-sm font-semibold text-gray-900 text-center line-clamp-2 group-hover:text-black">
                           {store.name}
                         </h4>
                       </Link>

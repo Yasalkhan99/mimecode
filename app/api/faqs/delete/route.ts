@@ -1,13 +1,17 @@
 // Server-side FAQ deletion route
-// Uses MongoDB
+// Uses Supabase
 
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import FAQ from '@/lib/models/FAQ';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   try {
-    await connectDB();
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { success: false, error: 'Supabase admin client not initialized' },
+        { status: 500 }
+      );
+    }
 
     const body = await req.json();
     const { id } = body;
@@ -19,20 +23,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const faq = await FAQ.findByIdAndDelete(id);
+    const { error } = await supabaseAdmin
+      .from('faqs')
+      .delete()
+      .eq('id', id);
 
-    if (!faq) {
+    if (error) {
+      console.error('Supabase delete FAQ error:', error);
       return NextResponse.json(
-        { success: false, error: 'FAQ not found' },
-        { status: 404 }
+        { success: false, error: error.message || 'FAQ not found' },
+        { status: error.code === 'PGRST116' ? 404 : 500 }
       );
     }
 
+    console.log('✅ FAQ deleted successfully:', id);
     return NextResponse.json({
       success: true,
     });
   } catch (error: any) {
-    console.error('MongoDB delete FAQ error:', error);
+    console.error('Delete FAQ error:', error);
     
     return NextResponse.json(
       {

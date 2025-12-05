@@ -3,6 +3,7 @@ import { extractOriginalCloudinaryUrl } from '@/lib/utils/cloudinary';
 
 export interface Store {
   id?: string;
+  merchantId?: string; // Merchant ID for the store
   name: string;
   subStoreName?: string; // Sub store name displayed on store page
   slug?: string; // URL-friendly slug (e.g., "nike", "amazon")
@@ -10,9 +11,11 @@ export interface Store {
   logoUrl?: string;
   voucherText?: string; // e.g., "Upto 58% Voucher"
   networkId?: string; // Network location ID to identify store location
+  affiliateFallbackUrl?: string; // Fallback affiliate URL for coupons without code/deal
   isTrending?: boolean;
   layoutPosition?: number | null; // Position in trending stores layout (1-8)
   categoryId?: string | null; // Category ID for this store
+  userId?: string; // User ID of the store owner (for user-created stores)
   // Detailed Store Info fields
   websiteUrl?: string; // Store's official website URL
   aboutText?: string; // Detailed about section for Store Info tab
