@@ -26,12 +26,18 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
                 (value.includes('favicon') && (value.includes('gstatic.com') || value.includes('google.com')))
               )) {
                 // Add error handler to suppress console errors (but allow request to complete)
-                img.onerror = function(e) {
-                  // Suppress error but don't prevent the request
-                  e.preventDefault?.();
-                  e.stopPropagation?.();
-                  return false;
-                };
+              img.onerror = function(e) {
+                // Suppress error but don't prevent the request
+                if (typeof e !== 'string' && e && typeof e === 'object') {
+                  if ('preventDefault' in e && typeof e.preventDefault === 'function') {
+                    e.preventDefault();
+                  }
+                  if ('stopPropagation' in e && typeof e.stopPropagation === 'function') {
+                    e.stopPropagation();
+                  }
+                }
+                return false;
+              };
               }
               // ALWAYS set the src - never block the request
               originalSrcSetter.call(this, value);
