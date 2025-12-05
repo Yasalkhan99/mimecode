@@ -57,6 +57,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Resource hints for faster connections */}
+        <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://storage.googleapis.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+        <link rel="dns-prefetch" href="https://storage.googleapis.com" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${barlow.variable} ${pacifico.variable} antialiased`}
       >

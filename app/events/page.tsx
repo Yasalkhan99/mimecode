@@ -183,7 +183,9 @@ export default function Events() {
                   fill
                   className="object-cover"
                   priority
+                  fetchPriority="high"
                   sizes="100vw"
+                  quality={90}
                 />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-[#ABC443] via-[#9BB03A] to-[#41361A]"></div>

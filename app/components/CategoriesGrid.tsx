@@ -82,27 +82,6 @@ export default function CategoriesGrid() {
   return (
     <div className="w-full px-2 sm:px-4 md:px-6 py-8 sm:py-12 md:py-16 bg-white">
       <div className="max-w-7xl mx-auto">
-        {/* Header with Sort */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
-          <div className="text-sm sm:text-base text-gray-600">
-            Showing {categories.length} of {categories.length} Results
-          </div>
-          <div className="flex items-center gap-2">
-            <label htmlFor="sortBy" className="text-sm sm:text-base text-gray-700 font-semibold">
-              Sort By:
-            </label>
-            <select
-              id="sortBy"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as 'newest' | 'name')}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-[#ABC443]"
-            >
-              <option value="newest">Newest</option>
-              <option value="name">Name</option>
-            </select>
-          </div>
-        </div>
-
         {/* Categories Grid */}
         <div className="bg-white rounded-lg p-4 sm:p-6 md:p-8 shadow-sm border border-gray-100">
           {/* Mobile: Horizontal Scrollable with 3 Rows */}

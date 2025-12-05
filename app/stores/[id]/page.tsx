@@ -241,18 +241,37 @@ export default function StoreDetailPage() {
   };
 
   const handleCouponClick = (coupon: Coupon) => {
-    // Copy code to clipboard FIRST (before showing popup) - only for code type
+    // CRITICAL: Different behavior for CODE vs DEAL
     if (coupon.couponType === 'code' && coupon.code) {
+      // FOR CODE TYPE: Copy code, open popup in NEW tab, redirect current tab to coupon link
+      
+      // Copy code to clipboard
       const codeToCopy = coupon.code.trim();
       copyToClipboard(codeToCopy);
+      
+      // Get redirect URL
+      const redirectUrl = (coupon.url && coupon.url.trim()) || (coupon.affiliateLink && coupon.affiliateLink.trim());
+      
+      if (redirectUrl) {
+        // Open popup in NEW tab (with site URL + coupon info in query params)
+        const siteUrl = window.location.origin;
+        const popupUrl = `${siteUrl}/?popup=coupon&id=${encodeURIComponent(coupon.id || '')}&code=${encodeURIComponent(coupon.code || '')}&store=${encodeURIComponent(coupon.storeName || store?.name || '')}`;
+        window.open(popupUrl, '_blank', 'noopener,noreferrer');
+        
+        // Redirect current tab to coupon link after brief delay (to ensure popup opens first)
+        setTimeout(() => {
+          window.location.href = redirectUrl;
+        }, 200);
+      }
+      
+      return; // Exit early for code type
     }
     
-    // Show popup
+    // FOR DEAL TYPE: Show popup on same page, open link in new tab
     setSelectedCoupon(coupon);
     setShowPopup(true);
     
     // Automatically open URL in new tab after a short delay (to ensure popup is visible first)
-    // Use url first, then affiliateLink as fallback
     const redirectUrl = (coupon.url && coupon.url.trim()) || (coupon.affiliateLink && coupon.affiliateLink.trim());
     if (redirectUrl) {
       setTimeout(() => {
@@ -954,19 +973,6 @@ export default function StoreDetailPage() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Back to Stores Link */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 pb-8">
-        <Link
-          href="/stores"
-          className="inline-flex items-center gap-2 text-[#16a34a] hover:text-[#15803d] font-semibold"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to All Stores
-        </Link>
       </div>
 
       {/* Newsletter Subscription */}

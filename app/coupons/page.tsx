@@ -428,7 +428,7 @@ function CouponsContent() {
                     }}
                     className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing rounded-xl"
                   >
-                    <Link href="#" className="block w-full h-full rounded-xl overflow-hidden bg-gray-50">
+                    <Link href="#" className="relative block w-full h-full rounded-xl overflow-hidden bg-gray-50">
                       {banner.imageUrl.includes('res.cloudinary.com') || banner.imageUrl.includes('storage.googleapis.com') ? (
                         <Image
                           src={banner.imageUrl}
@@ -436,7 +436,7 @@ function CouponsContent() {
                           fill
                           className="object-contain rounded-xl"
                           priority={index === 0}
-                          sizes="100vw"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 1152px, 1152px"
                         />
                       ) : (
                         <img

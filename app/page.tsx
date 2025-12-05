@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
 import ContactSupportModal from "./components/ContactSupportModal";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { getBannersWithLayout, Banner } from '@/lib/services/bannerService';
 import { getCoupons, Coupon } from '@/lib/services/couponService';
 import { getNews, NewsArticle } from '@/lib/services/newsService';
@@ -14,16 +13,30 @@ import { getLatestCoupons } from '@/lib/services/couponService';
 import { getCategories, Category } from '@/lib/services/categoryService';
 import { getActiveFAQs, FAQ } from '@/lib/services/faqService';
 import { addToFavorites, removeFromFavorites, isFavorite } from '@/lib/services/favoritesService';
-import CouponPopup from './components/CouponPopup';
-import RegionSpecificOffers from './components/RegionSpecificOffers';
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// Lazy load heavy components
+const CouponPopup = dynamic(() => import('./components/CouponPopup'), {
+  ssr: false,
+  loading: () => null
+});
+
+const RegionSpecificOffers = dynamic(() => import('./components/RegionSpecificOffers'), {
+  ssr: false,
+  loading: () => null
+});
 
 const SpotlightBanner = dynamic(() => import('./components/SpotlightBanner'), {
   ssr: false,
   loading: () => null
 });
-import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
+
+// Lazy load Footer (not critical for initial render)
+const Footer = dynamic(() => import('./components/Footer'), {
+  ssr: true
+});
 
 export default function Home() {
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
@@ -37,6 +50,9 @@ export default function Home() {
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [openFAQIndex, setOpenFAQIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [bannersLoading, setBannersLoading] = useState(true); // Separate state for banners
+  const [couponsLoading, setCouponsLoading] = useState(true); // Separate state for coupons
+  const [featuredDealsLoading, setFeaturedDealsLoading] = useState(true); // Separate state for featured deals
   const [revealedCoupons, setRevealedCoupons] = useState<Set<string>>(new Set());
   const [showPopup, setShowPopup] = useState(false);
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
@@ -63,33 +79,217 @@ export default function Home() {
       return () => clearTimeout(timer);
     }
   }, []);
+  
+  // CRITICAL: Handle popup from query parameters (for code type coupons opened in new tab)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const popup = urlParams.get('popup');
+    const couponId = urlParams.get('id');
+    const code = urlParams.get('code');
+    const storeName = urlParams.get('store');
+    
+    // If popup query param exists and it's for a coupon
+    if (popup === 'coupon' && couponId && code) {
+      // Create a temporary coupon object for the popup
+      const tempCoupon: Coupon = {
+        id: couponId,
+        code: decodeURIComponent(code),
+        storeName: decodeURIComponent(storeName || ''),
+        title: `Use code: ${decodeURIComponent(code)}`,
+        description: 'Code copied to clipboard!',
+        couponType: 'code',
+        discount: 0,
+        discountType: 'percentage',
+        url: '',
+        logoUrl: '',
+        isActive: true,
+        maxUses: 1,
+        currentUses: 0,
+        expiryDate: null,
+        dealScope: 'sitewide',
+      };
+      
+      // Show popup with temporary coupon data
+      setSelectedCoupon(tempCoupon);
+      setShowPopup(true);
+      setRevealedCoupons(prev => new Set(prev).add(couponId));
+      
+      // Try to fetch full coupon details in background
+      setTimeout(async () => {
+        try {
+          const response = await fetch(`/api/coupons/${couponId}`);
+          if (response.ok) {
+            const fullCoupon = await response.json();
+            setSelectedCoupon(fullCoupon);
+          }
+        } catch (error) {
+          // Silently fail, keep temporary coupon
+        }
+      }, 100);
+      
+      // Clean up URL (remove query params) after a brief delay
+      setTimeout(() => {
+        const cleanUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+      }, 500);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
+    // CRITICAL: Fetch banners FIRST and IMMEDIATELY (don't wait for other data)
+    const fetchBanners = async () => {
       try {
-        const [bannersData, couponsData, newsData, latestCouponsData, categoriesData, allStoresData, faqsData] = await Promise.all([
+        // Very short timeout (1.5 seconds) - if banners don't load fast, show placeholder
+        const bannersData = await Promise.race([
           getBannersWithLayout(),
-          getCoupons(),
-          getNews(),
-          getLatestCoupons(), // Get latest coupons with layout positions
-          getCategories(),
-          getStores(), // Get all stores for count and logos
-          getActiveFAQs() // Get active FAQs
+          new Promise<Banner[]>((resolve) => 
+            setTimeout(() => resolve([]), 1500)
+          )
         ]);
         
-        const bannersList = bannersData.filter(Boolean) as Banner[];
-        setBanners(bannersList.slice(0, 4)); // Get first 4 banners
-        setLatestCoupons(couponsData.slice(0, 6));
-        setAllCoupons(couponsData); // Store all coupons for Featured Deals
-        setLatestNews(newsData.slice(0, 4));
+        const bannersList = (bannersData || []).filter(Boolean) as Banner[];
+        const firstFourBanners = bannersList.slice(0, 4);
+        setBanners(firstFourBanners);
+        setBannersLoading(false);
         
-        // Filter latest coupons: Only show CODE type coupons (not deals)
-        // Get 8 unique store coupons from all code type coupons
-        const codeCouponsOnly = couponsData.filter(coupon => coupon.couponType === 'code');
-        const filteredLatestCoupons = filterCouponsWithFavicons(codeCouponsOnly, allStoresData);
-        setLatestCouponsWithLayout(filteredLatestCoupons);
-        setCategories(categoriesData.slice(0, 6));
+        // CRITICAL: Preload first banner image SYNCHRONOUSLY (no requestIdleCallback delay)
+        if (firstFourBanners.length > 0 && firstFourBanners[0].imageUrl) {
+          const link = document.createElement('link');
+          link.rel = 'preload';
+          link.as = 'image';
+          link.href = firstFourBanners[0].imageUrl;
+          link.setAttribute('fetchpriority', 'high');
+          document.head.appendChild(link);
+        }
+      } catch (error) {
+        setBannersLoading(false);
+      }
+    };
+    
+    // CRITICAL: Fetch coupons IMMEDIATELY and separately (like banners)
+    const fetchCoupons = async () => {
+      try {
+        // Increased timeout to 3 seconds - give API more time to respond
+        const couponsData = await Promise.race([
+          getCoupons(),
+          new Promise<Coupon[]>((resolve) => 
+            setTimeout(() => resolve([]), 3000)
+          )
+        ]);
+        
+        // Set coupons immediately when they arrive
+        setAllCoupons(couponsData);
+        setLatestCoupons(couponsData.slice(0, 6));
+        
+        // Show basic coupons immediately (even without stores) - don't wait for filtering
+        const codeCouponsOnly = couponsData.filter(coupon => coupon && coupon.couponType === 'code');
+        
+        // ALWAYS set latestCouponsWithLayout, even if empty
+        if (codeCouponsOnly.length > 0) {
+          // Set first 8 code coupons immediately (will be enhanced when stores load)
+          const initialCoupons = codeCouponsOnly.slice(0, 8).map(c => c || null);
+          // Pad to 8 items
+          const paddedCoupons = [...initialCoupons];
+          while (paddedCoupons.length < 8) {
+            paddedCoupons.push(null);
+          }
+          setLatestCouponsWithLayout(paddedCoupons.slice(0, 8));
+          setCouponsLoading(false); // Stop loading immediately!
+          
+          // CRITICAL: Preload coupon logo images IMMEDIATELY (synchronously for first 4)
+          // Don't wait for filtering - preload what we have
+          const firstFourCoupons = initialCoupons.slice(0, 4).filter(c => c !== null) as Coupon[];
+          firstFourCoupons.forEach((coupon) => {
+            if (coupon.logoUrl && (coupon.logoUrl.includes('res.cloudinary.com') || coupon.logoUrl.includes('storage.googleapis.com'))) {
+              const link = document.createElement('link');
+              link.rel = 'preload';
+              link.as = 'image';
+              link.href = coupon.logoUrl;
+              link.setAttribute('fetchpriority', 'high');
+              document.head.appendChild(link);
+            }
+          });
+        } else {
+          // No code coupons found - set empty array and stop loading
+          setLatestCouponsWithLayout(Array(8).fill(null));
+          setCouponsLoading(false);
+        }
+        
+        // CRITICAL: Stop featured deals loading immediately when coupons are loaded
+        // Featured deals can work with coupons alone (stores are optional for deduplication)
+        setFeaturedDealsLoading(false);
+        
+        // CRITICAL: Preload featured deals logo images immediately (first 6 deal coupons)
+        setTimeout(() => {
+          const dealCoupons = couponsData.filter(c => c && c.couponType === 'deal' && c.url);
+          dealCoupons.slice(0, 6).forEach((coupon) => {
+            if (coupon.logoUrl && (coupon.logoUrl.includes('res.cloudinary.com') || coupon.logoUrl.includes('storage.googleapis.com'))) {
+              const link = document.createElement('link');
+              link.rel = 'preload';
+              link.as = 'image';
+              link.href = coupon.logoUrl;
+              link.setAttribute('fetchpriority', 'high');
+              document.head.appendChild(link);
+            }
+          });
+        }, 0);
+      } catch (error) {
+        // On error, set empty state and stop loading
+        console.error('Error fetching coupons:', error);
+        setAllCoupons([]);
+        setLatestCoupons([]);
+        setLatestCouponsWithLayout(Array(8).fill(null));
+        setCouponsLoading(false);
+        setFeaturedDealsLoading(false);
+      }
+    };
+    
+    // Start fetching banners and coupons immediately (in parallel)
+    fetchBanners();
+    fetchCoupons();
+    
+    // Fetch other data in parallel (non-blocking)
+    const fetchOtherData = async () => {
+      try {
+        const [
+          newsData,
+          categoriesData,
+          allStoresData,
+          faqsData
+        ] = await Promise.all([
+          getNews(),
+          getCategories(),
+          getStores(),
+          getActiveFAQs()
+        ]);
+        
+        // Set stores (needed for filtering coupons)
         setAllStores(allStoresData);
+        
+        // Process coupons with stores (if coupons already loaded) - NON-BLOCKING
+        if (allCoupons.length > 0) {
+          const codeCouponsOnly = allCoupons.filter(coupon => coupon.couponType === 'code');
+          
+          // Use requestIdleCallback for heavy filtering (non-blocking)
+          const processFiltering = () => {
+            const filteredLatestCoupons = filterCouponsWithFavicons(codeCouponsOnly, allStoresData);
+            setLatestCouponsWithLayout(filteredLatestCoupons);
+          };
+          
+          // Use requestIdleCallback with setTimeout fallback for better browser support
+          if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+            requestIdleCallback(processFiltering, { timeout: 1000 });
+          } else {
+            // Fallback: use setTimeout with multiple chunks to avoid blocking
+            setTimeout(processFiltering, 0);
+          }
+        }
+        
+        // Set other data immediately
+        setLatestNews(newsData.slice(0, 4));
+        setCategories(categoriesData.slice(0, 6));
         setFaqs(faqsData);
       } catch (error) {
         // Silently handle errors
@@ -97,15 +297,59 @@ export default function Home() {
         setLoading(false);
       }
     };
-    fetchData();
+    
+    fetchOtherData();
+    
+    // Safety timeouts
+    const bannerTimeoutId = setTimeout(() => {
+      setBannersLoading(false);
+    }, 2000);
+    
+    const couponTimeoutId = setTimeout(() => {
+      // Safety timeout - if coupons haven't loaded after 4 seconds, stop loading
+      setCouponsLoading(false);
+      // Ensure we have some state set even if empty
+      if (latestCouponsWithLayout.every(c => c === null)) {
+        setLatestCouponsWithLayout(Array(8).fill(null));
+      }
+    }, 4000);
+    
+    // Featured deals loading is stopped immediately when coupons load
+    // No timeout needed (already handled in fetchCoupons)
+    
+    return () => {
+      clearTimeout(bannerTimeoutId);
+      clearTimeout(couponTimeoutId);
+    };
   }, []);
 
   const handleCloseModal = () => {
     setIsContactModalOpen(false);
   };
 
+  // Memoized store map for O(1) lookups - defined before filterCouponsWithFavicons
+  const storeMap = useMemo(() => {
+    const map = new Map<string, Store>();
+    if (!allStores || allStores.length === 0) return map;
+    
+    allStores.forEach(store => {
+      if (store.id) {
+        map.set(String(store.id).toLowerCase(), store);
+      }
+      if (store.name) {
+        const normalizedName = store.name.trim().toLowerCase();
+        if (!map.has(normalizedName)) {
+          map.set(normalizedName, store);
+        }
+      }
+    });
+    
+    return map;
+  }, [allStores]);
+
   // Helper function to filter coupons that have extractable favicons and ensure unique stores
-  const filterCouponsWithFavicons = (coupons: (Coupon | null)[], stores: Store[]): (Coupon | null)[] => {
+  // OPTIMIZED: Uses storeMap for O(1) lookups instead of O(n) array searches
+  const filterCouponsWithFavicons = useCallback((coupons: (Coupon | null)[], stores: Store[]): (Coupon | null)[] => {
     const extractDomain = (url: string | null | undefined): string | null => {
       if (!url) return null;
       let cleanUrl = url.trim();
@@ -116,34 +360,57 @@ export default function Home() {
       return cleanUrl || null;
     };
 
-    const getStoreForCoupon = (coupon: Coupon) => {
-      // Try to find store by storeIds first
-      if (coupon.storeIds && coupon.storeIds.length > 0 && stores.length > 0) {
-        const firstStoreId = coupon.storeIds[0];
-        const store = stores.find(s => {
-          return s.id === firstStoreId || 
-                 (typeof s.id === 'string' && firstStoreId && s.id.includes(firstStoreId)) ||
-                 (typeof firstStoreId === 'string' && s.id && firstStoreId.includes(s.id));
-        });
-        if (store) return store;
+    // Use storeMap for O(1) lookups if available, otherwise fallback to array search
+    const getStoreForCoupon = (coupon: Coupon): Store | null => {
+      // Try storeMap first (O(1) lookup)
+      if (storeMap && storeMap.size > 0) {
+        // Try by storeIds first
+        if (coupon.storeIds && coupon.storeIds.length > 0) {
+          for (const storeId of coupon.storeIds) {
+            const match = storeMap.get(String(storeId).toLowerCase());
+            if (match) return match;
+          }
+        }
+        
+        // Try by store name
+        if (coupon.storeName) {
+          const couponStoreName = coupon.storeName.trim().toLowerCase();
+          const match = storeMap.get(couponStoreName);
+          if (match) return match;
+        }
       }
       
-      // Try to find store by name
-      if (coupon.storeName && stores.length > 0) {
-        const store = stores.find(s => {
-          const storeName = s.name?.trim().toLowerCase();
-          const couponStoreName = coupon.storeName?.trim().toLowerCase();
-          return storeName === couponStoreName || 
-                 storeName?.includes(couponStoreName || '') ||
-                 couponStoreName?.includes(storeName || '');
-        });
-        if (store) return store;
+      // Fallback to array search (O(n)) if storeMap not available
+      if (stores.length > 0) {
+        // Try to find store by storeIds first
+        if (coupon.storeIds && coupon.storeIds.length > 0) {
+          const firstStoreId = coupon.storeIds[0];
+          const store = stores.find(s => {
+            return s.id === firstStoreId || 
+                   (typeof s.id === 'string' && firstStoreId && s.id.includes(firstStoreId)) ||
+                   (typeof firstStoreId === 'string' && s.id && firstStoreId.includes(s.id));
+          });
+          if (store) return store;
+        }
+        
+        // Try to find store by name
+        if (coupon.storeName) {
+          const store = stores.find(s => {
+            const storeName = s.name?.trim().toLowerCase();
+            const couponStoreName = coupon.storeName?.trim().toLowerCase();
+            return storeName === couponStoreName || 
+                   storeName?.includes(couponStoreName || '') ||
+                   couponStoreName?.includes(storeName || '');
+          });
+          if (store) return store;
+        }
       }
       
       return null;
     };
 
     const hasExtractableFavicon = (coupon: Coupon): boolean => {
+      // OPTIMIZED: Fast checks first (no store lookup needed)
       // If logo exists and is a full URL, it's extractable
       if (coupon.logoUrl) {
         if (coupon.logoUrl.startsWith('http://') || coupon.logoUrl.startsWith('https://') || coupon.logoUrl.includes('cloudinary.com')) {
@@ -157,13 +424,15 @@ export default function Home() {
         if (domain) return true;
       }
       
-      // Check if store has URL (can extract favicon from store URL)
-      const store = getStoreForCoupon(coupon);
-      if (store) {
-        const storeUrl = store.websiteUrl || (store as any)?.['Tracking Url'] || (store as any)?.['Store Display Url'];
-        if (storeUrl) {
-          const domain = extractDomain(storeUrl);
-          if (domain) return true;
+      // Only check store URL if stores are available (avoid expensive lookup if not needed)
+      if (stores.length > 0 || (storeMap && storeMap.size > 0)) {
+        const store = getStoreForCoupon(coupon);
+        if (store) {
+          const storeUrl = store.websiteUrl || (store as any)?.['Tracking Url'] || (store as any)?.['Store Display Url'];
+          if (storeUrl) {
+            const domain = extractDomain(storeUrl);
+            if (domain) return true;
+          }
         }
       }
       
@@ -208,9 +477,37 @@ export default function Home() {
     }
     
     return filtered.slice(0, 8);
-  };
+  }, [storeMap]);
 
-  const formatDate = (timestamp: any) => {
+  // Separate effect to process coupons when both coupons and stores are ready
+  // OPTIMIZED: Non-blocking processing using requestIdleCallback
+  useEffect(() => {
+    if (allCoupons.length > 0 && allStores.length > 0) {
+      // Process latest coupons (code type) - NON-BLOCKING
+      const codeCouponsOnly = allCoupons.filter(coupon => coupon.couponType === 'code');
+      
+      // Use requestIdleCallback for heavy filtering (non-blocking)
+      const processFiltering = () => {
+        const filteredLatestCoupons = filterCouponsWithFavicons(codeCouponsOnly, allStores);
+        setLatestCouponsWithLayout(filteredLatestCoupons);
+      };
+      
+      // Use requestIdleCallback with setTimeout fallback for better browser support
+      if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+        requestIdleCallback(processFiltering, { timeout: 1000 });
+      } else {
+        // Fallback: use setTimeout with multiple chunks to avoid blocking
+        setTimeout(processFiltering, 0);
+      }
+      
+      // Featured deals are already shown (loading stopped when coupons loaded)
+      // This effect just ensures deduplication is better when stores are available
+      // No need to stop loading again or preload (already done)
+    }
+  }, [allCoupons, allStores, filterCouponsWithFavicons]);
+
+  // Memoized date formatter to avoid recreating on every render
+  const formatDate = useCallback((timestamp: any) => {
     if (!timestamp) return null;
     try {
       const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
@@ -218,9 +515,23 @@ export default function Home() {
     } catch {
       return null;
     }
-  };
+  }, []);
 
-  const getCodePreview = (coupon: Coupon): string => {
+  // Memoized article date formatter
+  const formatArticleDate = useCallback((date: any) => {
+    if (!date) return null;
+    try {
+      if (typeof date === 'string') {
+        return date;
+      }
+      const dateObj = date.toDate ? date.toDate() : new Date(date);
+      return dateObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const getCodePreview = useCallback((coupon: Coupon): string => {
     // Use custom button text if provided
     if (coupon.buttonText && coupon.buttonText.trim() !== '') {
       return coupon.buttonText;
@@ -230,7 +541,7 @@ export default function Home() {
       return 'Get Code';
     }
     return 'Get Deal';
-  };
+  }, []);
 
   const getLastTwoDigits = (coupon: Coupon): string | null => {
     if ((coupon.couponType || 'deal') === 'code' && coupon.code) {
@@ -262,163 +573,241 @@ export default function Home() {
     return `https://${trimmed}`;
   };
 
-  // Helper to get store for a coupon
-  const getStoreForCoupon = (coupon: Coupon): Store | null => {
-    if (!allStores || allStores.length === 0) return null;
+
+  // Optimized helper to get store for a coupon - O(1) lookup instead of O(n)
+  const getStoreForCoupon = useCallback((coupon: Coupon): Store | null => {
+    if (!storeMap || storeMap.size === 0) return null;
     
-    // Priority 1: Match by storeIds (exact match first)
+    // Priority 1: Match by storeIds (exact match)
     if (coupon.storeIds && coupon.storeIds.length > 0) {
       for (const storeId of coupon.storeIds) {
-        // Try exact match
-        const exactMatch = allStores.find(s => s.id === storeId);
-        if (exactMatch) return exactMatch;
-        
-        // Try partial match
-        const partialMatch = allStores.find(s => {
-          if (!s.id || !storeId) return false;
-          const sId = String(s.id).toLowerCase();
-          const cId = String(storeId).toLowerCase();
-          return sId === cId || sId.includes(cId) || cId.includes(sId);
-        });
-        if (partialMatch) return partialMatch;
+        const match = storeMap.get(String(storeId).toLowerCase());
+        if (match) return match;
       }
     }
     
-    // Priority 2: Match by store name (exact match first, then partial)
+    // Priority 2: Match by store name (exact match)
     if (coupon.storeName) {
       const couponStoreName = coupon.storeName.trim().toLowerCase();
-      
-      // Try exact match
-      const exactNameMatch = allStores.find(s => {
-        const storeName = s.name?.trim().toLowerCase();
-        return storeName === couponStoreName;
-      });
-      if (exactNameMatch) return exactNameMatch;
-      
-      // Try partial match
-      const partialNameMatch = allStores.find(s => {
-        const storeName = s.name?.trim().toLowerCase();
-        if (!storeName) return false;
-        return storeName.includes(couponStoreName) || couponStoreName.includes(storeName);
-      });
-      if (partialNameMatch) return partialNameMatch;
+      const match = storeMap.get(couponStoreName);
+      if (match) return match;
     }
     
     return null;
-  };
+  }, [storeMap]);
 
-  const handleGetDeal = (coupon: Coupon, e?: React.MouseEvent) => {
+  // Helper to extract domain for favicon - memoized
+  const extractDomainForLogo = useCallback((url: string | null | undefined): string | null => {
+    if (!url) return null;
+    let cleanUrl = url.trim().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].replace(/\.+$/, '');
+    return cleanUrl || null;
+  }, []);
+
+  // Optimized handleGetDeal - ULTRA LIGHTWEIGHT for best INP
+  // CRITICAL: Minimize synchronous work to reduce INP to < 200ms
+  const handleGetDeal = useCallback((coupon: Coupon, e?: React.MouseEvent) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
     
-    // Copy code to clipboard FIRST (before showing popup) - only for code type
+    // CRITICAL: Get raw URL immediately (no processing)
+    const rawUrl = coupon.url || coupon.affiliateLink || null;
+    
+    // CRITICAL: Different behavior for CODE vs DEAL
     if (coupon.couponType === 'code' && coupon.code) {
+      // FOR CODE TYPE: Open popup in NEW tab, redirect current tab to coupon link
+      
+      // Copy code to clipboard
       const codeToCopy = coupon.code.trim();
       navigator.clipboard.writeText(codeToCopy).catch(() => {});
-    }
-    
-    // Mark coupon as revealed
-    if (coupon.id) {
-      setRevealedCoupons(prev => new Set(prev).add(coupon.id!));
-    }
-    
-    // Get store for this specific coupon
-    const store = getStoreForCoupon(coupon);
-    
-    // Track coupon click (async - don't wait for response)
-    fetch('/api/track/coupon-click', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        couponId: coupon.id,
-        couponCode: coupon.code || null,
-        couponType: coupon.couponType || 'deal',
-        storeName: store?.name || coupon.storeName || null,
-        storeId: store?.id || coupon.storeIds?.[0] || null,
-        pageUrl: window.location.href,
-        referrer: document.referrer || null,
-      }),
-    }).catch(() => {}); // Ignore errors - tracking shouldn't block user
-    
-    // Get tracking URL - ALWAYS use store's tracking URL if available
-    let urlToOpen: string | null = null;
-    const storeTrackingUrl = store?.websiteUrl || (store as any)?.['Tracking Url'] || (store as any)?.['Store Display Url'] || null;
-    
-    if (storeTrackingUrl) {
-      urlToOpen = storeTrackingUrl;
-    }
-    
-    // Fallback to coupon URL or affiliate link if no store URL
-    if (!urlToOpen) {
-      urlToOpen = coupon.url || coupon.affiliateLink || null;
-    }
-    
-    // Normalize URL to ensure it has protocol
-    urlToOpen = normalizeUrl(urlToOpen);
-    
-    // Helper to extract domain for favicon
-    const extractDomainForLogo = (url: string | null | undefined): string | null => {
-      if (!url) return null;
-      let cleanUrl = url.trim().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].replace(/\.+$/, '');
-      return cleanUrl || null;
-    };
-    
-    // Get the correct logo URL - SAME LOGIC as card display
-    let correctLogoUrl: string | null = null;
-    
-    // Priority 1: Store tracking URL favicon (most reliable - matches what card shows)
-    if (storeTrackingUrl) {
-      const domain = extractDomainForLogo(storeTrackingUrl);
-      if (domain) {
-        correctLogoUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+      
+      // Normalize URL
+      const normalizedUrl = normalizeUrl(rawUrl);
+      
+      if (normalizedUrl) {
+        // Open popup in NEW tab (with site URL + coupon info in query params)
+        const siteUrl = window.location.origin;
+        const popupUrl = `${siteUrl}/?popup=coupon&id=${encodeURIComponent(coupon.id || '')}&code=${encodeURIComponent(coupon.code || '')}&store=${encodeURIComponent(coupon.storeName || '')}`;
+        window.open(popupUrl, '_blank', 'noopener,noreferrer');
+        
+        // Redirect current tab to coupon link after brief delay (to ensure popup opens first)
+        setTimeout(() => {
+          window.location.href = normalizedUrl;
+        }, 200);
       }
-    }
-    
-    // Priority 2: Store logo URL
-    if (!correctLogoUrl && store?.logoUrl) {
-      if (store.logoUrl.startsWith('http://') || store.logoUrl.startsWith('https://') || store.logoUrl.includes('cloudinary.com')) {
-        correctLogoUrl = store.logoUrl;
-      }
-    }
-    
-    // Priority 3: Coupon logo URL
-    if (!correctLogoUrl && coupon.logoUrl) {
-      if (coupon.logoUrl.startsWith('http://') || coupon.logoUrl.startsWith('https://') || coupon.logoUrl.includes('cloudinary.com')) {
-        correctLogoUrl = coupon.logoUrl;
-      }
-    }
-    
-    // Priority 4: Coupon URL favicon
-    if (!correctLogoUrl && coupon.url) {
-      const domain = extractDomainForLogo(coupon.url);
-      if (domain) {
-        correctLogoUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
-      }
-    }
-    
-    // Create enhanced coupon with correct logo URL for popup
-    const enhancedCoupon: Coupon = {
-      ...coupon,
-      logoUrl: correctLogoUrl || coupon.logoUrl,
-      storeName: store?.name || coupon.storeName,
-      url: urlToOpen || coupon.url,
-    };
-    
-    // Show popup with enhanced coupon (correct logo)
-    setSelectedCoupon(enhancedCoupon);
-    setShowPopup(true);
-    
-    // Automatically open tracking URL in new tab after a short delay
-    if (urlToOpen) {
+      
+      // Track in background (non-blocking)
       setTimeout(() => {
-        window.open(urlToOpen!, '_blank', 'noopener,noreferrer');
-      }, 500);
+        const store = getStoreForCoupon(coupon);
+        fetch('/api/track/coupon-click', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            couponId: coupon.id,
+            couponCode: coupon.code || null,
+            couponType: 'code',
+            storeName: store?.name || coupon.storeName || null,
+            storeId: store?.id || coupon.storeIds?.[0] || null,
+            pageUrl: window.location.href,
+            referrer: document.referrer || null,
+          }),
+        }).catch(() => {});
+      }, 1000);
+      
+      return; // Exit early for code type
     }
-  };
+    
+    // FOR DEAL TYPE: Keep existing behavior (popup on same page + link in new tab)
+    // CRITICAL: Batch all state updates in single requestAnimationFrame
+    requestAnimationFrame(() => {
+      // Batch state updates to minimize re-renders
+      if (coupon.id) {
+        setRevealedCoupons(prev => new Set(prev).add(coupon.id!));
+      }
+      setSelectedCoupon(coupon);
+      setShowPopup(true);
+      
+      // Defer clipboard and URL opening to microtask (non-blocking)
+      Promise.resolve().then(() => {
+        // Open link immediately after state update
+        if (rawUrl) {
+          const urlToOpen = normalizeUrl(rawUrl);
+          if (urlToOpen) {
+            window.open(urlToOpen, '_blank', 'noopener,noreferrer');
+          }
+        }
+      });
+    });
+    
+    // Defer ONLY heavy processing (store lookup, logo processing, tracking) - non-blocking
+    const processCallback = () => {
+      // Chunk 1: Store lookup (deferred)
+      setTimeout(() => {
+        const store = getStoreForCoupon(coupon);
+        
+        // Chunk 2: Enhanced URL processing (if store has better URL)
+        setTimeout(() => {
+          let enhancedUrl: string | null = null;
+          const storeTrackingUrl = store?.websiteUrl || (store as any)?.['Tracking Url'] || (store as any)?.['Store Display Url'] || null;
+          
+          if (storeTrackingUrl) {
+            enhancedUrl = normalizeUrl(storeTrackingUrl);
+            // Link already opened in microtask, but we can update coupon data for future reference
+          }
+          
+          // Chunk 3: Logo processing (deferred even further)
+          setTimeout(() => {
+            let correctLogoUrl: string | null = null;
+            
+            if (storeTrackingUrl) {
+              const domain = extractDomainForLogo(storeTrackingUrl);
+              if (domain) {
+                correctLogoUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+              }
+            }
+            
+            if (!correctLogoUrl && store?.logoUrl) {
+              if (store.logoUrl.startsWith('http://') || store.logoUrl.startsWith('https://') || store.logoUrl.includes('cloudinary.com')) {
+                correctLogoUrl = store.logoUrl;
+              }
+            }
+            
+            if (!correctLogoUrl && coupon.logoUrl) {
+              if (coupon.logoUrl.startsWith('http://') || coupon.logoUrl.startsWith('https://') || coupon.logoUrl.includes('cloudinary.com')) {
+                correctLogoUrl = coupon.logoUrl;
+              }
+            }
+            
+            if (!correctLogoUrl && coupon.url) {
+              const domain = extractDomainForLogo(coupon.url);
+              if (domain) {
+                correctLogoUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+              }
+            }
+            
+            // Update coupon with enhanced data (if different) - deferred
+            if (correctLogoUrl !== coupon.logoUrl || store?.name !== coupon.storeName || enhancedUrl !== coupon.url) {
+              const enhancedCoupon: Coupon = {
+                ...coupon,
+                logoUrl: correctLogoUrl || coupon.logoUrl,
+                storeName: store?.name || coupon.storeName,
+                url: enhancedUrl || coupon.url,
+              };
+              setSelectedCoupon(enhancedCoupon);
+            }
+          }, 0);
+        }, 0);
+      }, 0);
+      
+      // Defer tracking to idle time (lowest priority)
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => {
+          const store = getStoreForCoupon(coupon);
+          let urlToOpen: string | null = null;
+          const storeTrackingUrl = store?.websiteUrl || (store as any)?.['Tracking Url'] || (store as any)?.['Store Display Url'] || null;
+          if (storeTrackingUrl) {
+            urlToOpen = storeTrackingUrl;
+          } else {
+            urlToOpen = coupon.url || coupon.affiliateLink || null;
+          }
+          urlToOpen = normalizeUrl(urlToOpen);
+          
+          fetch('/api/track/coupon-click', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              couponId: coupon.id,
+              couponCode: coupon.code || null,
+              couponType: coupon.couponType || 'deal',
+              storeName: store?.name || coupon.storeName || null,
+              storeId: store?.id || coupon.storeIds?.[0] || null,
+              pageUrl: window.location.href,
+              referrer: document.referrer || null,
+            }),
+          }).catch(() => {});
+        }, { timeout: 3000 });
+      } else {
+        setTimeout(() => {
+          const store = getStoreForCoupon(coupon);
+          let urlToOpen: string | null = null;
+          const storeTrackingUrl = store?.websiteUrl || (store as any)?.['Tracking Url'] || (store as any)?.['Store Display Url'] || null;
+          if (storeTrackingUrl) {
+            urlToOpen = storeTrackingUrl;
+          } else {
+            urlToOpen = coupon.url || coupon.affiliateLink || null;
+          }
+          urlToOpen = normalizeUrl(urlToOpen);
+          
+          fetch('/api/track/coupon-click', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              couponId: coupon.id,
+              couponCode: coupon.code || null,
+              couponType: coupon.couponType || 'deal',
+              storeName: store?.name || coupon.storeName || null,
+              storeId: store?.id || coupon.storeIds?.[0] || null,
+              pageUrl: window.location.href,
+              referrer: document.referrer || null,
+            }),
+          }).catch(() => {});
+        }, 2000);
+      }
+    };
+    
+    // Use requestIdleCallback with very aggressive timeout for better INP, fallback to setTimeout(0)
+    // Lower timeout = faster response to user interaction
+    // Use requestAnimationFrame first for immediate visual update, then defer heavy work
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(processCallback, { timeout: 5 });
+    } else {
+      // Use setTimeout with minimal delay for better INP
+      setTimeout(processCallback, 0);
+    }
+  }, [getStoreForCoupon, extractDomainForLogo]);
 
-  const handleToggleFavorite = (e: React.MouseEvent, coupon: Coupon) => {
+  const handleToggleFavorite = useCallback((e: React.MouseEvent, coupon: Coupon) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -439,7 +828,26 @@ export default function Home() {
         addedAt: Date.now()
       });
     }
-  };
+  }, []);
+
+  // Memoized mouse handlers for sliders
+  const handleSliderMouseEnter = useCallback(() => setIsSliderPaused(true), []);
+  const handleSliderMouseLeave = useCallback(() => setIsSliderPaused(false), []);
+  const handleFeaturedDealsMouseEnter = useCallback(() => setIsFeaturedDealsPaused(true), []);
+  const handleFeaturedDealsMouseLeave = useCallback(() => setIsFeaturedDealsPaused(false), []);
+  const handleStoresOfSeasonMouseEnter = useCallback(() => setIsStoresOfSeasonPaused(true), []);
+  const handleStoresOfSeasonMouseLeave = useCallback(() => setIsStoresOfSeasonPaused(false), []);
+
+  // Memoize stores with logos to avoid re-filtering on every render
+  const storesWithLogos = useMemo(() => {
+    return allStores.filter(store => store && store.logoUrl);
+  }, [allStores]);
+
+  // Memoize filtered stores by category
+  const filteredStoresByCategory = useMemo(() => {
+    if (!selectedCategoryId) return storesWithLogos;
+    return storesWithLogos.filter(store => store.categoryId === selectedCategoryId);
+  }, [storesWithLogos, selectedCategoryId]);
 
   const handlePopupContinue = () => {
     if (!selectedCoupon) {
@@ -478,146 +886,109 @@ export default function Home() {
     setSelectedCoupon(null);
   };
 
-  // Ensure we always have 8 slots for latest coupons (code type)
-  const displayLatestCoupons = [...Array(8)].map((_, index) => latestCouponsWithLayout[index] || null);
-  
-  // Get random deals for Featured Deals - ensure unique stores (NO DUPLICATES)
-  // Fill empty slots with stores
-  const displayLatestDeals = useMemo(() => {
-    const result: (Coupon | Store | null)[] = [];
+  // Get latest coupons (code type) - ensure unique stores (NO DUPLICATES) - similar to Featured Deals
+  // CRITICAL: Each store appears only once with its own correct logo
+  // Each store should have only ONE coupon code
+  const displayLatestCoupons = useMemo(() => {
+    const result: (Coupon | null)[] = [];
     const usedCouponIds = new Set<string>();
     const usedStoreIds = new Set<string>();
     const usedStoreNames = new Set<string>(); // Track by name too to avoid duplicates
     
-    // Helper to get unique store identifier (use main getStoreForCoupon function)
-    const getStoreIdentifier = (coupon: Coupon): string | null => {
-      const store = getStoreForCoupon(coupon);
-      if (store) {
-        // Use store ID as primary identifier
-        if (store.id) return `id:${store.id}`;
-        // Fallback to store name
-        if (store.name) return `name:${store.name.trim().toLowerCase()}`;
-      }
-      // If no store found, use coupon's store ID or name
-      if (coupon.storeIds && coupon.storeIds.length > 0) {
-        return `coupon-store-id:${coupon.storeIds[0]}`;
-      }
-      if (coupon.storeName) {
-        return `coupon-store-name:${coupon.storeName.trim().toLowerCase()}`;
-      }
-      return null;
+    // Helper to normalize store name for comparison
+    const normalizeStoreName = (name: string | null | undefined): string | null => {
+      if (!name) return null;
+      return name.trim().toLowerCase().replace(/\s+/g, ' ');
     };
     
-    // First, try to get coupons from latestCouponsWithLayout (has layout positions)
-    for (let i = 0; i < latestCouponsWithLayout.length && result.length < 8; i++) {
-      const layoutCoupon = latestCouponsWithLayout[i];
-      if (layoutCoupon && layoutCoupon.couponType === 'deal' && layoutCoupon.url && layoutCoupon.id) {
-        const storeIdentifier = getStoreIdentifier(layoutCoupon);
-        const store = getStoreForCoupon(layoutCoupon);
-        
-        // Check if store is already used (by ID or name)
-        const isStoreUsed = storeIdentifier ? usedStoreIds.has(storeIdentifier) : false;
-        const isStoreNameUsed = store?.name ? usedStoreNames.has(store.name.trim().toLowerCase()) : false;
-        
-        // Only add if we haven't used this coupon or store yet
-        if (!usedCouponIds.has(layoutCoupon.id) && !isStoreUsed && !isStoreNameUsed) {
-          result.push(layoutCoupon);
-          usedCouponIds.add(layoutCoupon.id);
-          if (storeIdentifier) usedStoreIds.add(storeIdentifier);
-          if (store?.name) usedStoreNames.add(store.name.trim().toLowerCase());
+    // Helper to get unique store identifier - STRICT deduplication
+    const getStoreIdentifier = (coupon: Coupon): string | null => {
+      // Try to get store from storeMap/allStores if available
+      if (allStores.length > 0) {
+        const store = getStoreForCoupon(coupon);
+        if (store) {
+          // Use store ID as primary identifier (most reliable)
+          if (store.id) return `id:${String(store.id).toLowerCase()}`;
+          // Fallback to store name (normalized)
+          if (store.name) {
+            const normalized = normalizeStoreName(store.name);
+            if (normalized) return `name:${normalized}`;
+          }
         }
       }
-    }
+      // Fallback: use coupon's store ID or name (works without stores)
+      if (coupon.storeIds && coupon.storeIds.length > 0) {
+        return `coupon-store-id:${String(coupon.storeIds[0]).toLowerCase()}`;
+      }
+      if (coupon.storeName) {
+        const normalized = normalizeStoreName(coupon.storeName);
+        if (normalized) return `coupon-store-name:${normalized}`;
+      }
+      // Last resort: use coupon ID to ensure uniqueness (but prefer not to)
+      return coupon.id ? `coupon-id:${coupon.id}` : null;
+    };
     
-    // Get all deal type coupons with URLs (for favicon logos)
-    const dealCoupons = allCoupons.filter(c => 
+    // Helper to check if store is already used - STRICT check
+    const isStoreAlreadyUsed = (storeIdentifier: string | null, store: Store | null, couponStoreName: string | null): boolean => {
+      if (!storeIdentifier) return false;
+      
+      // Check by identifier
+      if (usedStoreIds.has(storeIdentifier)) return true;
+      
+      // Check by store name (if store is available) - normalized
+      if (store?.name) {
+        const normalizedName = normalizeStoreName(store.name);
+        if (normalizedName && usedStoreNames.has(normalizedName)) return true;
+      }
+      
+      // Check by coupon store name (if store object not available) - normalized
+      if (couponStoreName) {
+        const normalizedCouponName = normalizeStoreName(couponStoreName);
+        if (normalizedCouponName && usedStoreNames.has(normalizedCouponName)) return true;
+      }
+      
+      // Check by store ID (if store is available)
+      if (store?.id) {
+        const storeIdKey = `id:${String(store.id).toLowerCase()}`;
+        if (usedStoreIds.has(storeIdKey)) return true;
+      }
+      
+      return false;
+    };
+    
+    // Get ALL code type coupons from allCoupons (not just from latestCouponsWithLayout)
+    // This ensures we have the full pool to choose from
+    const allCodeCoupons = allCoupons.filter(c => 
       c && 
       c.id && 
-      c.couponType === 'deal' && 
-      c.url && 
-      c.isActive !== false &&
-      !usedCouponIds.has(c.id)
-    );
+      c.couponType === 'code' && 
+      c.isActive !== false
+    ) as Coupon[];
     
-    // Shuffle and pick unique stores - STRICT: no duplicate stores
-    const shuffled = [...dealCoupons].sort(() => Math.random() - 0.5);
+    // Shuffle to randomize selection
+    const shuffled = [...allCodeCoupons].sort(() => Math.random() - 0.5);
     
+    // Add coupons with STRICT deduplication - each store appears only once
     for (const coupon of shuffled) {
       if (result.length >= 8) break;
       
       const storeIdentifier = getStoreIdentifier(coupon);
-      const store = getStoreForCoupon(coupon);
+      const store = allStores.length > 0 ? getStoreForCoupon(coupon) : null;
+      const couponStoreName = coupon.storeName || null;
       
-      // Check if store is already used (by ID or name)
-      const isStoreUsed = storeIdentifier ? usedStoreIds.has(storeIdentifier) : false;
-      const isStoreNameUsed = store?.name ? usedStoreNames.has(store.name.trim().toLowerCase()) : false;
-      
-      // STRICT: Only add if store is completely unique (no duplicates by ID or name)
-      if (!isStoreUsed && !isStoreNameUsed) {
+      // STRICT: Check if store is already used (by ID or name)
+      // Also check if coupon ID is already used
+      if (!usedCouponIds.has(coupon.id) && !isStoreAlreadyUsed(storeIdentifier, store, couponStoreName)) {
         result.push(coupon);
-        if (coupon.id) usedCouponIds.add(coupon.id);
+        usedCouponIds.add(coupon.id);
         if (storeIdentifier) usedStoreIds.add(storeIdentifier);
-        if (store?.name) usedStoreNames.add(store.name.trim().toLowerCase());
-      }
-    }
-    
-    // If still need more, try any coupon with URL (but still avoid duplicate stores)
-    if (result.length < 8) {
-      const remainingDeals = allCoupons.filter(c => {
-        if (!c || !c.id || usedCouponIds.has(c.id)) return false;
-        if (c.couponType !== 'deal' || !c.url || c.isActive === false) return false;
-        
-        const storeIdentifier = getStoreIdentifier(c);
-        const store = getStoreForCoupon(c);
-        const isStoreUsed = storeIdentifier ? usedStoreIds.has(storeIdentifier) : false;
-        const isStoreNameUsed = store?.name ? usedStoreNames.has(store.name.trim().toLowerCase()) : false;
-        
-        // Still avoid duplicate stores
-        return !isStoreUsed && !isStoreNameUsed;
-      });
-      
-      const shuffledRemaining = [...remainingDeals].sort(() => Math.random() - 0.5);
-      
-      for (const coupon of shuffledRemaining) {
-        if (result.length >= 8) break;
-        const storeIdentifier = getStoreIdentifier(coupon);
-        const store = getStoreForCoupon(coupon);
-        const isStoreUsed = storeIdentifier ? usedStoreIds.has(storeIdentifier) : false;
-        const isStoreNameUsed = store?.name ? usedStoreNames.has(store.name.trim().toLowerCase()) : false;
-        
-        if (!isStoreUsed && !isStoreNameUsed && coupon.id) {
-          result.push(coupon);
-          usedCouponIds.add(coupon.id);
-          if (storeIdentifier) usedStoreIds.add(storeIdentifier);
-          if (store?.name) usedStoreNames.add(store.name.trim().toLowerCase());
-        }
-      }
-    }
-    
-    // Fill empty slots with stores (instead of nulls)
-    if (result.length < 8 && allStores.length > 0) {
-      // Get stores that haven't been used yet
-      const availableStores = allStores.filter(store => {
-        if (!store.id && !store.name) return false;
-        const storeId = store.id ? `id:${store.id}` : null;
-        const storeName = store.name ? store.name.trim().toLowerCase() : null;
-        const isStoreUsed = storeId ? usedStoreIds.has(storeId) : false;
-        const isStoreNameUsed = storeName ? usedStoreNames.has(storeName) : false;
-        return !isStoreUsed && !isStoreNameUsed;
-      });
-      
-      // Shuffle available stores
-      const shuffledStores = [...availableStores].sort(() => Math.random() - 0.5);
-      
-      // Fill remaining slots with stores
-      for (let i = 0; i < shuffledStores.length && result.length < 8; i++) {
-        const store = shuffledStores[i];
-        result.push(store as any); // Cast to any to allow Store in result array
-        if (store.id) {
-          usedStoreIds.add(`id:${store.id}`);
-        }
-        if (store.name) {
-          usedStoreNames.add(store.name.trim().toLowerCase());
+        if (store?.id) usedStoreIds.add(`id:${String(store.id).toLowerCase()}`);
+        if (store?.name) {
+          const normalized = normalizeStoreName(store.name);
+          if (normalized) usedStoreNames.add(normalized);
+        } else if (couponStoreName) {
+          const normalized = normalizeStoreName(couponStoreName);
+          if (normalized) usedStoreNames.add(normalized);
         }
       }
     }
@@ -628,7 +999,318 @@ export default function Home() {
     }
     
     return result.slice(0, 8);
-  }, [latestCouponsWithLayout, allCoupons, allStores]);
+  }, [allCoupons, allStores, getStoreForCoupon]);
+
+  // CRITICAL: Pre-compute all latest coupons data (store, logo, expiry) to avoid blocking render
+  // This prevents INP issues when clicking on coupons and ensures correct logos
+  // Similar to featuredDealsDataMap - ensures each store shows its own correct logo
+  const couponDataMap = useMemo(() => {
+    const map = new Map<string, {
+      store: Store | null;
+      storeUrl: string | null;
+      storeName: string;
+      logoUrl: string | null;
+      expiryDate: Date | null;
+      isExpired: boolean;
+    }>();
+
+    displayLatestCoupons.forEach((coupon) => {
+      if (!coupon || !coupon.id) return;
+
+      // Get store (use memoized function)
+      const store = getStoreForCoupon(coupon);
+      const storeUrl = store?.websiteUrl || (store as any)?.['Tracking Url'] || (store as any)?.['Store Display Url'] || null;
+      const storeName = store?.name || coupon.storeName || '';
+
+      // DEBUG: Log store and URL info
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Coupon:', coupon.storeName, {
+          storeFound: !!store,
+          storeName: store?.name,
+          storeUrl,
+          couponUrl: coupon.url,
+          couponLogoUrl: coupon.logoUrl
+        });
+      }
+
+      // Get logo URL - PRIORITY: Store URL favicon > Store logo > Coupon URL favicon > Coupon logo
+      // CRITICAL: Always try to fetch favicon from store URL first (most reliable)
+      let logoUrl: string | null = null;
+      
+      // Priority 1: Favicon from store URL (MOST RELIABLE - always try first)
+      if (storeUrl) {
+        const domain = extractDomainForLogo(storeUrl);
+        if (domain) {
+          logoUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+          if (process.env.NODE_ENV === 'development') {
+            console.log('  -> Using store URL favicon:', domain, logoUrl);
+          }
+        }
+      }
+      
+      // Priority 2: Favicon from coupon URL (if store URL not available)
+      if (!logoUrl && coupon.url) {
+        const domain = extractDomainForLogo(coupon.url);
+        if (domain) {
+          logoUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+          if (process.env.NODE_ENV === 'development') {
+            console.log('  -> Using coupon URL favicon:', domain, logoUrl);
+          }
+        }
+      }
+      
+      // Priority 3: Store's actual logo URL (fallback)
+      if (!logoUrl && store?.logoUrl && (store.logoUrl.startsWith('http://') || store.logoUrl.startsWith('https://') || store.logoUrl.includes('cloudinary.com'))) {
+        logoUrl = store.logoUrl;
+        if (process.env.NODE_ENV === 'development') {
+          console.log('  -> Using store logo URL:', logoUrl);
+        }
+      }
+      
+      // Priority 4: Coupon's logo URL (last resort)
+      if (!logoUrl && coupon.logoUrl && (coupon.logoUrl.startsWith('http://') || coupon.logoUrl.startsWith('https://') || coupon.logoUrl.includes('cloudinary.com'))) {
+        logoUrl = coupon.logoUrl;
+        if (process.env.NODE_ENV === 'development') {
+          console.log('  -> Using coupon logo URL:', logoUrl);
+        }
+      }
+
+      // Get expiry date
+      let expiryDateObj: Date | null = null;
+      if (coupon.expiryDate) {
+        if (coupon.expiryDate instanceof Date) {
+          expiryDateObj = coupon.expiryDate;
+        } else if (typeof coupon.expiryDate.toDate === 'function') {
+          expiryDateObj = coupon.expiryDate.toDate();
+        } else if (typeof coupon.expiryDate === 'string') {
+          const parsed = new Date(coupon.expiryDate);
+          expiryDateObj = isNaN(parsed.getTime()) ? null : parsed;
+        } else if (typeof coupon.expiryDate === 'number') {
+          expiryDateObj = new Date(coupon.expiryDate);
+        }
+      }
+      const isExpired = expiryDateObj ? expiryDateObj < new Date() : false;
+
+      map.set(coupon.id, {
+        store,
+        storeUrl,
+        storeName,
+        logoUrl,
+        expiryDate: expiryDateObj,
+        isExpired,
+      });
+    });
+
+    return map;
+  }, [displayLatestCoupons, getStoreForCoupon, extractDomainForLogo]);
+
+  // CRITICAL: Track stores used in Latest Coupons to avoid duplicates in Featured Deals
+  const storesUsedInLatestCoupons = useMemo(() => {
+    const usedStoreIds = new Set<string>();
+    const usedStoreNames = new Set<string>();
+    
+    displayLatestCoupons.forEach((coupon) => {
+      if (!coupon || !coupon.id) return;
+      
+      const couponData = couponDataMap.get(coupon.id);
+      const store = couponData?.store;
+      
+      // Track by store ID
+      if (store?.id) {
+        usedStoreIds.add(`id:${String(store.id).toLowerCase()}`);
+      }
+      
+      // Track by store name (normalized)
+      if (store?.name) {
+        usedStoreNames.add(store.name.trim().toLowerCase().replace(/\s+/g, ' '));
+      } else if (coupon.storeName) {
+        usedStoreNames.add(coupon.storeName.trim().toLowerCase().replace(/\s+/g, ' '));
+      }
+    });
+    
+    return { usedStoreIds, usedStoreNames };
+  }, [displayLatestCoupons, couponDataMap]);
+
+  // CRITICAL: Pre-compute all featured deals data (store, logo, etc.) to ensure correct logos
+  // This ensures each store shows its own correct logo and prevents duplicates
+  const featuredDealsDataMap = useMemo(() => {
+    const map = new Map<string, {
+      store: Store | null;
+      storeUrl: string | null;
+      storeName: string;
+      logoUrl: string | null;
+    }>();
+
+    // Process all coupons that might be in featured deals
+    allCoupons.forEach((coupon) => {
+      if (!coupon || !coupon.id || coupon.couponType !== 'deal' || !coupon.url) return;
+
+      // Get store (use memoized function)
+      const store = getStoreForCoupon(coupon);
+      const storeUrl = store?.websiteUrl || (store as any)?.['Tracking Url'] || (store as any)?.['Store Display Url'] || null;
+      const storeName = store?.name || coupon.storeName || '';
+
+      // Get logo URL - PRIORITY: Store URL favicon > Store logo > Coupon URL favicon > Coupon logo
+      // CRITICAL: Always try to fetch favicon from store URL first (most reliable)
+      let logoUrl: string | null = null;
+      
+      // Priority 1: Favicon from store URL (MOST RELIABLE - always try first)
+      if (storeUrl) {
+        const domain = extractDomainForLogo(storeUrl);
+        if (domain) {
+          logoUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+        }
+      }
+      
+      // Priority 2: Favicon from coupon URL (if store URL not available)
+      if (!logoUrl && coupon.url) {
+        const domain = extractDomainForLogo(coupon.url);
+        if (domain) {
+          logoUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+        }
+      }
+      
+      // Priority 3: Store's actual logo URL (fallback)
+      if (!logoUrl && store?.logoUrl && (store.logoUrl.startsWith('http://') || store.logoUrl.startsWith('https://') || store.logoUrl.includes('cloudinary.com'))) {
+        logoUrl = store.logoUrl;
+      }
+      
+      // Priority 4: Coupon's logo URL (last resort)
+      if (!logoUrl && coupon.logoUrl && (coupon.logoUrl.startsWith('http://') || coupon.logoUrl.startsWith('https://') || coupon.logoUrl.includes('cloudinary.com'))) {
+        logoUrl = coupon.logoUrl;
+      }
+
+      map.set(coupon.id, {
+        store,
+        storeUrl,
+        storeName,
+        logoUrl,
+      });
+    });
+
+    return map;
+  }, [allCoupons, getStoreForCoupon, extractDomainForLogo]);
+  
+  // Get random deals for Featured Deals - ensure unique stores (NO DUPLICATES)
+  // CRITICAL: Each store appears only once with its own correct logo
+  // CRITICAL: Avoid stores that are already shown in Latest Coupons
+  const displayLatestDeals = useMemo(() => {
+    const result: (Coupon | Store | null)[] = [];
+    const usedCouponIds = new Set<string>();
+    const usedStoreIds = new Set<string>();
+    const usedStoreNames = new Set<string>(); // Track by name too to avoid duplicates
+    
+    // CRITICAL: Initialize with stores already used in Latest Coupons
+    // This ensures no store appears in both Latest Coupons and Featured Deals
+    storesUsedInLatestCoupons.usedStoreIds.forEach(id => usedStoreIds.add(id));
+    storesUsedInLatestCoupons.usedStoreNames.forEach(name => usedStoreNames.add(name));
+    
+    // Helper to normalize store name for comparison
+    const normalizeStoreName = (name: string | null | undefined): string | null => {
+      if (!name) return null;
+      return name.trim().toLowerCase().replace(/\s+/g, ' ');
+    };
+    
+    // Helper to get unique store identifier - STRICT deduplication
+    const getStoreIdentifier = (coupon: Coupon): string | null => {
+      // Try to get store from storeMap/allStores if available
+      if (allStores.length > 0) {
+        const store = getStoreForCoupon(coupon);
+        if (store) {
+          // Use store ID as primary identifier (most reliable)
+          if (store.id) return `id:${String(store.id).toLowerCase()}`;
+          // Fallback to store name (normalized)
+          if (store.name) {
+            const normalized = normalizeStoreName(store.name);
+            if (normalized) return `name:${normalized}`;
+          }
+        }
+      }
+      // Fallback: use coupon's store ID or name (works without stores)
+      if (coupon.storeIds && coupon.storeIds.length > 0) {
+        return `coupon-store-id:${String(coupon.storeIds[0]).toLowerCase()}`;
+      }
+      if (coupon.storeName) {
+        const normalized = normalizeStoreName(coupon.storeName);
+        if (normalized) return `coupon-store-name:${normalized}`;
+      }
+      // Last resort: use coupon ID to ensure uniqueness (but prefer not to)
+      return coupon.id ? `coupon-id:${coupon.id}` : null;
+    };
+    
+    // Helper to check if store is already used - STRICT check
+    const isStoreAlreadyUsed = (storeIdentifier: string | null, store: Store | null, couponStoreName: string | null): boolean => {
+      if (!storeIdentifier) return false;
+      
+      // Check by identifier
+      if (usedStoreIds.has(storeIdentifier)) return true;
+      
+      // Check by store name (if store is available) - normalized
+      if (store?.name) {
+        const normalizedName = normalizeStoreName(store.name);
+        if (normalizedName && usedStoreNames.has(normalizedName)) return true;
+      }
+      
+      // Check by coupon store name (if store object not available) - normalized
+      if (couponStoreName) {
+        const normalizedCouponName = normalizeStoreName(couponStoreName);
+        if (normalizedCouponName && usedStoreNames.has(normalizedCouponName)) return true;
+      }
+      
+      // Check by store ID (if store is available)
+      if (store?.id) {
+        const storeIdKey = `id:${String(store.id).toLowerCase()}`;
+        if (usedStoreIds.has(storeIdKey)) return true;
+      }
+      
+      return false;
+    };
+    
+    // Get ALL deal type coupons from allCoupons
+    const allDealCoupons = allCoupons.filter(c => 
+      c && 
+      c.id && 
+      c.couponType === 'deal' && 
+      c.url &&
+      c.isActive !== false
+    ) as Coupon[];
+    
+    // Shuffle to randomize selection
+    const shuffled = [...allDealCoupons].sort(() => Math.random() - 0.5);
+    
+    // Add deals with STRICT deduplication - each store appears only once
+    // And NO store from Latest Coupons appears here
+    for (const coupon of shuffled) {
+      if (result.length >= 8) break;
+      
+      const storeIdentifier = getStoreIdentifier(coupon);
+      const store = allStores.length > 0 ? getStoreForCoupon(coupon) : null;
+      const couponStoreName = coupon.storeName || null;
+      
+      // STRICT: Check if store is already used (by ID or name)
+      // This includes stores from Latest Coupons
+      if (!usedCouponIds.has(coupon.id) && !isStoreAlreadyUsed(storeIdentifier, store, couponStoreName)) {
+        result.push(coupon);
+        usedCouponIds.add(coupon.id);
+        if (storeIdentifier) usedStoreIds.add(storeIdentifier);
+        if (store?.id) usedStoreIds.add(`id:${String(store.id).toLowerCase()}`);
+        if (store?.name) {
+          const normalized = normalizeStoreName(store.name);
+          if (normalized) usedStoreNames.add(normalized);
+        } else if (couponStoreName) {
+          const normalized = normalizeStoreName(couponStoreName);
+          if (normalized) usedStoreNames.add(normalized);
+        }
+      }
+    }
+    
+    // Pad with nulls if still not 8 items
+    while (result.length < 8) {
+      result.push(null);
+    }
+    
+    return result.slice(0, 8);
+  }, [allCoupons, allStores, getStoreForCoupon, storesUsedInLatestCoupons]);
 
   // Auto-slide banners
   useEffect(() => {
@@ -643,17 +1325,18 @@ export default function Home() {
   }, [banners.length]);
 
   // Swipe handlers
-  const handlePrev = () => {
+  const handlePrev = useCallback(() => {
     setDirection(-1);
     setCurrentBannerIndex((prev) => (prev - 1 + banners.length) % banners.length);
-  };
+  }, [banners.length]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     setDirection(1);
     setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
-  };
+  }, [banners.length]);
 
-  const slideVariants = {
+  // Memoize animation variants to prevent recreation on every render
+  const slideVariants = useMemo(() => ({
     enter: (direction: number) => ({
       x: direction > 0 ? '100%' : '-100%',
       opacity: 0,
@@ -671,7 +1354,7 @@ export default function Home() {
       opacity: 0,
       scale: 0.9
     })
-  };
+  }), []);
 
   const swipeConfidenceThreshold = 10000;
   const swipePower = (offset: number, velocity: number) => {
@@ -718,146 +1401,128 @@ export default function Home() {
       <Navbar />
       
       {/* Hero Banner Section - Retail Store Style */}
-      {banners.length > 0 && (
-        <section className="relative w-full bg-white py-2 sm:py-4 md:py-6">
-          {/* Container with padding and max-width */}
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8">
-            {/* Hero Slider with rounded corners - Compact */}
-            <div className="relative h-[180px] sm:h-[220px] md:h-[260px] lg:h-[300px] w-full rounded-xl overflow-hidden">
-            <AnimatePresence initial={false} custom={direction} mode="wait">
-              {banners.map((banner, index) => {
-                if (index !== currentBannerIndex) return null;
-                
-                return (
-                  <motion.div
-                    key={banner.id || `banner-${index}`}
-                    custom={direction}
-                    variants={slideVariants}
-                    initial="enter"
-                    animate="center"
-                    exit="exit"
-                    transition={{
-                      x: { type: "spring", stiffness: 300, damping: 30 },
-                      opacity: { duration: 0.4 }
-                    }}
-                    drag="x"
-                    dragConstraints={{ left: 0, right: 0 }}
-                    dragElastic={0.1}
-                    onDragEnd={(e, { offset, velocity }) => {
-                      const swipe = swipePower(offset.x, velocity.x);
-                      if (swipe < -swipeConfidenceThreshold) {
-                        handleNext();
-                      } else if (swipe > swipeConfidenceThreshold) {
-                        handlePrev();
-                      }
-                    }}
-                    className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing rounded-xl"
-                  >
-                    <Link href="#" className="block w-full h-full rounded-xl overflow-hidden bg-gray-50">
-                      {banner.imageUrl.includes('res.cloudinary.com') || banner.imageUrl.includes('storage.googleapis.com') ? (
-                        <Image
-                          src={banner.imageUrl}
-                          alt={`Banner ${index + 1}`}
-                          fill
-                          className="object-contain rounded-xl"
-                          priority={index === 0}
-                          sizes="100vw"
-                        />
-                      ) : (
-                        <img
-                          src={banner.imageUrl}
-                          alt={`Banner ${index + 1}`}
-                          className="w-full h-full object-contain rounded-xl"
-                          style={{ display: 'block', maxWidth: '100%', maxHeight: '100%' }}
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                          }}
-                        />
-                      )}
-                    </Link>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-
-            {/* Minimal Navigation - Bottom Right */}
-            {banners.length > 1 && (
+      {/* Always reserve space to prevent layout shift */}
+      <section className="relative w-full bg-white py-2 sm:py-4 md:py-6" style={{ minHeight: loading ? '180px' : 'auto' }}>
+        {/* Container with padding and max-width */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8">
+          {/* Hero Slider with rounded corners - Compact */}
+          <div className="relative h-[180px] sm:h-[220px] md:h-[260px] lg:h-[300px] w-full rounded-xl overflow-hidden">
+            {bannersLoading ? (
+              <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl animate-pulse"></div>
+            ) : banners.length > 0 ? (
               <>
-                {/* Arrow Navigation */}
-                <div className="absolute bottom-6 right-6 z-20 flex items-center gap-3">
-                  <motion.button
-                    onClick={handlePrev}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="w-10 h-10 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-300 group"
-                    aria-label="Previous banner"
-                  >
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-                    </svg>
-                  </motion.button>
-                  <motion.button
-                    onClick={handleNext}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="w-10 h-10 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-300 group"
-                    aria-label="Next banner"
-                  >
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </motion.button>
-                </div>
+                <AnimatePresence initial={false} custom={direction} mode="wait">
+                  {banners.map((banner, index) => {
+                    if (index !== currentBannerIndex) return null;
+                    
+                    return (
+                      <motion.div
+                        key={banner.id || `banner-${index}`}
+                        custom={direction}
+                        variants={slideVariants}
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
+                        transition={{
+                          x: { type: "spring", stiffness: 300, damping: 30 },
+                          opacity: { duration: 0.4 }
+                        }}
+                        drag="x"
+                        dragConstraints={{ left: 0, right: 0 }}
+                        dragElastic={0.1}
+                        onDragEnd={(e, { offset, velocity }) => {
+                          const swipe = swipePower(offset.x, velocity.x);
+                          if (swipe < -swipeConfidenceThreshold) {
+                            handleNext();
+                          } else if (swipe > swipeConfidenceThreshold) {
+                            handlePrev();
+                          }
+                        }}
+                        className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing rounded-xl"
+                      >
+                        <Link href="#" className="relative block w-full h-full rounded-xl overflow-hidden bg-gray-50">
+                          <Image
+                            src={banner.imageUrl}
+                            alt={`Banner ${index + 1}`}
+                            fill
+                            className="object-contain rounded-xl"
+                            priority={index === 0}
+                            fetchPriority={index === 0 ? "high" : "auto"}
+                            sizes="(max-width: 768px) 100vw, (max-width: 1280px) 1152px, 1152px"
+                            quality={index === 0 ? 80 : 75}
+                            loading={index === 0 ? "eager" : "lazy"}
+                            unoptimized={!banner.imageUrl.includes('res.cloudinary.com') && !banner.imageUrl.includes('storage.googleapis.com')}
+                            placeholder="blur"
+                            blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
+                          />
+                        </Link>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
 
-                {/* Dots Indicator - Bottom Center */}
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
-                  {banners.map((_, index) => (
-                    <button
-                      key={`banner-dot-${index}`}
-                      onClick={() => {
-                        setDirection(index > currentBannerIndex ? 1 : -1);
-                        setCurrentBannerIndex(index);
-                      }}
-                      className={`h-1.5 rounded-full transition-all duration-300 ${
-                        index === currentBannerIndex
-                          ? 'bg-white w-8'
-                          : 'bg-white/50 hover:bg-white/80 w-1.5'
-                      }`}
-                      aria-label={`Go to banner ${index + 1}`}
-                    />
-                  ))}
-                </div>
+                {/* Minimal Navigation - Bottom Right */}
+                {banners.length > 1 && (
+                  <>
+                    {/* Arrow Navigation */}
+                    <div className="absolute bottom-6 right-6 z-20 flex items-center gap-3">
+                      <motion.button
+                        onClick={handlePrev}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        className="w-10 h-10 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-300 group"
+                        aria-label="Previous banner"
+                      >
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </motion.button>
+                      <motion.button
+                        onClick={handleNext}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        className="w-10 h-10 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-300 group"
+                        aria-label="Next banner"
+                      >
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </motion.button>
+                    </div>
+
+                    {/* Dots Indicator - Bottom Center */}
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+                      {banners.map((_, index) => (
+                        <button
+                          key={`banner-dot-${index}`}
+                          onClick={() => {
+                            setDirection(index > currentBannerIndex ? 1 : -1);
+                            setCurrentBannerIndex(index);
+                          }}
+                          className={`h-1.5 rounded-full transition-all duration-300 ${
+                            index === currentBannerIndex
+                              ? 'bg-white w-8'
+                              : 'bg-white/50 hover:bg-white/80 w-1.5'
+                          }`}
+                          aria-label={`Go to banner ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
               </>
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center">
+                <p className="text-gray-400 text-sm">No banners available</p>
+              </div>
             )}
-            </div>
           </div>
-        </section>
-      )}
-
-      {/* Fallback if no banners */}
-      {banners.length === 0 && !loading && (
-        <section className="relative w-full overflow-hidden bg-gradient-to-br from-[#ABC443]/10 via-white to-[#9BB03A]/10 py-20 md:py-32">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 text-gray-900">Welcome to MimeCode</h1>
-            <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-2xl mx-auto">Discover the best deals and savings</p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/coupons"
-                className="px-8 py-4 bg-[#ABC443] text-white font-semibold rounded-xl hover:bg-[#9BB03A] transition-all"
-              >
-                Explore Deals
-              </Link>
-              <Link
-                href="/stores"
-                className="px-8 py-4 bg-white border-2 border-[#ABC443] text-[#ABC443] font-semibold rounded-xl hover:bg-[#ABC443] hover:text-white transition-all"
-              >
-                Browse Stores
-              </Link>
-            </div>
-          </div>
-        </section>
-      )}
+        </div>
+      </section>
 
       {/* Section Heading - Coupons and Deals */}
       <section className="py-8 md:py-12 bg-white">
@@ -894,25 +1559,39 @@ export default function Home() {
               </div>
 
               {/* Coupons Slider - Single Row Horizontal Scroll with Auto-scroll */}
-              <div 
-                className="overflow-hidden pb-4 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8"
-                onMouseEnter={() => setIsSliderPaused(true)}
-                onMouseLeave={() => setIsSliderPaused(false)}
-              >
+              {couponsLoading ? (
+                <div className="flex gap-4 md:gap-5 overflow-hidden">
+                  {[...Array(8)].map((_, index) => (
+                    <div
+                      key={`coupon-skeleton-${index}`}
+                      className="bg-gray-100 rounded-lg p-4 sm:p-5 min-h-[250px] w-[200px] sm:w-[220px] flex-shrink-0 animate-pulse"
+                    >
+                      <div className="w-24 h-24 bg-gray-200 rounded-lg mb-4 mx-auto"></div>
+                      <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
                 <div 
-                  ref={sliderRef}
-                  className="flex gap-4 md:gap-5"
-                  style={{ 
-                    width: 'fit-content',
-                    animationName: 'scrollLeft',
-                    animationDuration: '40s',
-                    animationTimingFunction: 'linear',
-                    animationIterationCount: 'infinite',
-                    animationPlayState: isSliderPaused ? 'paused' : 'running',
-                    willChange: 'transform'
-                  }}
+                  className="overflow-hidden pb-4 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8"
+                  onMouseEnter={handleSliderMouseEnter}
+                  onMouseLeave={handleSliderMouseLeave}
                 >
-              {[...displayLatestCoupons, ...displayLatestCoupons, ...displayLatestCoupons].map((coupon, index) => {
+                  <div 
+                    ref={sliderRef}
+                    className="flex gap-4 md:gap-5"
+                    style={{ 
+                      width: 'fit-content',
+                      animationName: 'scrollLeft',
+                      animationDuration: '40s',
+                      animationTimingFunction: 'linear',
+                      animationIterationCount: 'infinite',
+                      animationPlayState: isSliderPaused ? 'paused' : 'running',
+                      willChange: 'transform'
+                    }}
+                  >
+                    {[...displayLatestCoupons, ...displayLatestCoupons, ...displayLatestCoupons].map((coupon, index) => {
                 const layoutNumber = (index % displayLatestCoupons.length) + 1;
                 const isDuplicate = index >= displayLatestCoupons.length;
 
@@ -934,100 +1613,13 @@ export default function Home() {
                 }
 
                 // Coupon Card - Clean Minimalist Style
-                // Helper function to extract domain from URL
-                const extractDomain = (url: string | null | undefined): string | null => {
-                  if (!url) return null;
-                  let cleanUrl = url.trim();
-                  cleanUrl = cleanUrl.replace(/^https?:\/\//, '');
-                  cleanUrl = cleanUrl.replace(/^www\./, '');
-                  cleanUrl = cleanUrl.split('/')[0];
-                  cleanUrl = cleanUrl.replace(/\.+$/, '');
-                  return cleanUrl || null;
-                };
-
-                // Helper function to get favicon/logo from website URL
-                const getLogoFromWebsite = (websiteUrl: string | null | undefined): string | null => {
-                  const domain = extractDomain(websiteUrl);
-                  if (!domain) return null;
-                  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
-                };
-
-                // Get store object for name and URL
-                const getStoreForCoupon = () => {
-                  // Try to find store by storeIds first
-                  if (coupon.storeIds && coupon.storeIds.length > 0 && allStores.length > 0) {
-                    const firstStoreId = coupon.storeIds[0];
-                    const store = allStores.find(s => {
-                      return s.id === firstStoreId || 
-                             (typeof s.id === 'string' && firstStoreId && s.id.includes(firstStoreId)) ||
-                             (typeof firstStoreId === 'string' && s.id && firstStoreId.includes(s.id));
-                    });
-                    if (store) return store;
-                  }
-                  
-                  // Try to find store by name
-                  if (coupon.storeName && allStores.length > 0) {
-                    const store = allStores.find(s => {
-                      const storeName = s.name?.trim().toLowerCase();
-                      const couponStoreName = coupon.storeName?.trim().toLowerCase();
-                      return storeName === couponStoreName || 
-                             storeName?.includes(couponStoreName || '') ||
-                             couponStoreName?.includes(storeName || '');
-                    });
-                    if (store) return store;
-                  }
-                  
-                  return null;
-                };
-
-                const store = getStoreForCoupon();
-                const storeUrl = store?.websiteUrl || (store as any)?.['Tracking Url'] || (store as any)?.['Store Display Url'];
-                const storeName = store?.name || coupon.storeName || '';
-
-                // Get coupon logo URL with fallback to favicon - prioritize store URL
-                const getCouponLogoUrl = (): string | null => {
-                  // If logo exists and is a full URL, use it
-                  if (coupon.logoUrl) {
-                    if (coupon.logoUrl.startsWith('http://') || coupon.logoUrl.startsWith('https://') || coupon.logoUrl.includes('cloudinary.com')) {
-                      return coupon.logoUrl;
-                    }
-                  }
-                  
-                  // Priority 1: Try to get favicon from store URL (more reliable than coupon URL)
-                  if (storeUrl) {
-                    const favicon = getLogoFromWebsite(storeUrl);
-                    if (favicon) return favicon;
-                  }
-                  
-                  // Priority 2: Try to get favicon from coupon URL
-                  if (coupon.url) {
-                    const favicon = getLogoFromWebsite(coupon.url);
-                    if (favicon) return favicon;
-                  }
-                  
-                  return null;
-                };
-
-                const logoUrl = getCouponLogoUrl();
-
-                // Handle expiryDate
-                const getExpiryDate = (expiryDate: any): Date | null => {
-                  if (!expiryDate) return null;
-                  if (expiryDate instanceof Date) return expiryDate;
-                  if (expiryDate && typeof expiryDate.toDate === 'function') {
-                    return expiryDate.toDate();
-                  }
-                  if (typeof expiryDate === 'string') {
-                    const parsed = new Date(expiryDate);
-                    return isNaN(parsed.getTime()) ? null : parsed;
-                  }
-                  if (typeof expiryDate === 'number') {
-                    return new Date(expiryDate);
-                  }
-                  return null;
-                };
-                const expiryDateObj = getExpiryDate(coupon?.expiryDate);
-                const isExpired = expiryDateObj ? expiryDateObj < new Date() : false;
+                // Use pre-computed data from memoized map (avoids blocking render)
+                const couponData = coupon.id ? couponDataMap.get(coupon.id) : null;
+                const store = couponData?.store || null;
+                const storeUrl = couponData?.storeUrl || null;
+                const storeName = couponData?.storeName || coupon.storeName || '';
+                const logoUrl = couponData?.logoUrl || null;
+                const isExpired = couponData?.isExpired || false;
 
                 return (
                   <motion.div
@@ -1037,7 +1629,12 @@ export default function Home() {
                     viewport={{ once: true }}
                     transition={{ duration: 0.4, delay: (index % displayLatestCoupons.length) * 0.05 }}
                     className="bg-white rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 flex flex-col relative overflow-hidden group cursor-pointer w-[200px] sm:w-[220px] flex-shrink-0"
-                    onClick={(e) => handleGetDeal(coupon, e)}
+                    onClick={(e) => {
+                      // CRITICAL: Use requestAnimationFrame to avoid blocking INP
+                      requestAnimationFrame(() => {
+                        handleGetDeal(coupon, e);
+                      });
+                    }}
                   >
                     {/* Logo Section - Centered */}
                     <div className="flex items-center justify-center h-32 sm:h-40 mb-4 relative">
@@ -1099,7 +1696,10 @@ export default function Home() {
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleGetDeal(coupon, e);
+                        // CRITICAL: Use requestAnimationFrame to avoid blocking INP
+                        requestAnimationFrame(() => {
+                          handleGetDeal(coupon, e);
+                        });
                       }}
                       className="w-full bg-[#ABC443] hover:bg-[#9BB03A] text-white font-semibold rounded-lg px-4 py-2.5 flex items-center justify-between transition-all duration-300 shadow-sm hover:shadow-md group"
                     >
@@ -1121,8 +1721,9 @@ export default function Home() {
                   </motion.div>
                 );
                 })}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </section>
@@ -1145,10 +1746,10 @@ export default function Home() {
               </div>
 
               {/* Coupons Slider - Featured Deals Style with Auto-scroll */}
-              {loading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-5">
+              {featuredDealsLoading ? (
+                <div className="flex gap-4 md:gap-5 overflow-hidden">
                   {[...Array(8)].map((_, i) => (
-                    <div key={`featured-deal-loading-${i}`} className="bg-white rounded-lg p-4 sm:p-5 h-64 animate-pulse border border-gray-200 flex flex-col">
+                    <div key={`featured-deal-loading-${i}`} className="bg-white rounded-lg p-4 sm:p-5 h-64 w-[200px] sm:w-[220px] flex-shrink-0 animate-pulse border border-gray-200 flex flex-col">
                       <div className="flex items-center gap-3 mb-3">
                         <div className="w-12 h-12 bg-gray-200 rounded"></div>
                         <div className="w-24 h-4 bg-gray-200 rounded"></div>
@@ -1164,8 +1765,8 @@ export default function Home() {
               ) : (
                 <div 
                   className="overflow-hidden pb-4 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8"
-                  onMouseEnter={() => setIsFeaturedDealsPaused(true)}
-                  onMouseLeave={() => setIsFeaturedDealsPaused(false)}
+                  onMouseEnter={handleFeaturedDealsMouseEnter}
+                  onMouseLeave={handleFeaturedDealsMouseLeave}
                 >
                   <div 
                     ref={featuredDealsSliderRef}
@@ -1268,7 +1869,12 @@ export default function Home() {
                             viewport={{ once: true }}
                             transition={{ duration: 0.4, delay: (index % displayLatestDeals.length) * 0.05 }}
                             className="bg-white rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 flex flex-col relative overflow-hidden group cursor-pointer w-[200px] sm:w-[220px] flex-shrink-0"
-                            onClick={(e) => handleGetDeal(storeCoupon, e)}
+                            onClick={(e) => {
+                              // CRITICAL: Use requestAnimationFrame to avoid blocking INP
+                              requestAnimationFrame(() => {
+                                handleGetDeal(storeCoupon, e);
+                              });
+                            }}
                           >
                             {/* Logo Section - Centered */}
                             <div className="flex items-center justify-center h-32 sm:h-40 mb-4 relative">
@@ -1318,7 +1924,7 @@ export default function Home() {
                               {store.description || `Shop at ${storeName} for exclusive deals`}
                             </p>
 
-                            {/* Visit Store Button */}
+                            {/* Get Deal Button */}
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1326,7 +1932,7 @@ export default function Home() {
                               }}
                               className="w-full bg-[#ABC443] hover:bg-[#9BB03A] text-white font-semibold rounded-lg px-4 py-2.5 text-sm transition-colors"
                             >
-                              Visit Store
+                              Get Deal
                             </button>
                           </motion.div>
                         );
@@ -1334,6 +1940,12 @@ export default function Home() {
 
                       // Featured Deal Card - Modern Style (for coupons)
                       if (!coupon) return null;
+                      
+                      // Get pre-computed data for this coupon (store, logo, etc.)
+                      const dealData = coupon.id ? featuredDealsDataMap.get(coupon.id) : null;
+                      const dealStore = dealData?.store || null;
+                      const storeName = dealData?.storeName || coupon.storeName || 'Store';
+                      const logoUrl = dealData?.logoUrl || null;
                       
                       // Handle expiryDate - can be string, Date, or Firestore Timestamp
                       const getExpiryDate = (expiryDate: any): Date | null => {
@@ -1362,166 +1974,48 @@ export default function Home() {
                           viewport={{ once: true }}
                           transition={{ duration: 0.4, delay: (index % displayLatestDeals.length) * 0.05 }}
                           className="bg-white rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 flex flex-col relative overflow-hidden group cursor-pointer w-[200px] sm:w-[220px] flex-shrink-0"
-                          onClick={(e) => handleGetDeal(coupon, e)}
+                          onClick={(e) => {
+                            // CRITICAL: Use requestAnimationFrame to avoid blocking INP
+                            requestAnimationFrame(() => {
+                              handleGetDeal(coupon, e);
+                            });
+                          }}
                         >
                         {/* Logo Section - Centered */}
                         <div className="flex items-center justify-center h-32 sm:h-40 mb-4 relative">
-                          {(() => {
-                            // Helper to extract domain from URL
-                            const extractDomain = (url: string | null | undefined): string | null => {
-                              if (!url) return null;
-                              let cleanUrl = url.trim();
-                              cleanUrl = cleanUrl.replace(/^https?:\/\//, '');
-                              cleanUrl = cleanUrl.replace(/^www\./, '');
-                              cleanUrl = cleanUrl.split('/')[0];
-                              cleanUrl = cleanUrl.replace(/\.+$/, '');
-                              return cleanUrl || null;
-                            };
-
-                            // Helper to get favicon/logo from website URL - improved domain extraction
-                            const getLogoFromWebsite = (websiteUrl: string | null | undefined): string | null => {
-                              if (!websiteUrl) return null;
-                              
-                              // Clean and extract domain properly
-                              let cleanUrl = websiteUrl.trim();
-                              
-                              // Remove protocol
-                              cleanUrl = cleanUrl.replace(/^https?:\/\//i, '');
-                              
-                              // Remove www.
-                              cleanUrl = cleanUrl.replace(/^www\./i, '');
-                              
-                              // Get domain part only (before first /)
-                              cleanUrl = cleanUrl.split('/')[0];
-                              
-                              // Remove port if present
-                              cleanUrl = cleanUrl.split(':')[0];
-                              
-                              // Remove trailing dots
-                              cleanUrl = cleanUrl.replace(/\.+$/, '');
-                              
-                              if (!cleanUrl) return null;
-                              
-                              // Use Google favicon API with proper domain
-                              return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(cleanUrl)}&sz=128`;
-                            };
-
-                            // Get store object for logo - improved matching
-                            const getStoreForCoupon = () => {
-                              if (!allStores || allStores.length === 0) return null;
-                              
-                              // Priority 1: Match by storeIds (exact match first)
-                              if (coupon.storeIds && coupon.storeIds.length > 0) {
-                                for (const storeId of coupon.storeIds) {
-                                  // Try exact match
-                                  const exactMatch = allStores.find(s => s.id === storeId);
-                                  if (exactMatch) return exactMatch;
-                                  
-                                  // Try partial match
-                                  const partialMatch = allStores.find(s => {
-                                    if (!s.id || !storeId) return false;
-                                    const sId = String(s.id).toLowerCase();
-                                    const cId = String(storeId).toLowerCase();
-                                    return sId === cId || sId.includes(cId) || cId.includes(sId);
-                                  });
-                                  if (partialMatch) return partialMatch;
-                                }
-                              }
-                              
-                              // Priority 2: Match by store name (exact match first, then partial)
-                              if (coupon.storeName) {
-                                const couponStoreName = coupon.storeName.trim().toLowerCase();
-                                
-                                // Try exact match
-                                const exactNameMatch = allStores.find(s => {
-                                  const storeName = s.name?.trim().toLowerCase();
-                                  return storeName === couponStoreName;
-                                });
-                                if (exactNameMatch) return exactNameMatch;
-                                
-                                // Try partial match
-                                const partialNameMatch = allStores.find(s => {
-                                  const storeName = s.name?.trim().toLowerCase();
-                                  if (!storeName) return false;
-                                  return storeName.includes(couponStoreName) || couponStoreName.includes(storeName);
-                                });
-                                if (partialNameMatch) return partialNameMatch;
-                              }
-                              
-                              return null;
-                            };
-
-                            const store = getStoreForCoupon();
-                            // Get store tracking URL - this is the most reliable source
-                            const storeTrackingUrl = store?.websiteUrl || (store as any)?.['Tracking Url'] || (store as any)?.['Store Display Url'];
-                            
-                            // Get logo URL with priority: store tracking URL favicon > store.logoUrl > coupon.logoUrl > coupon URL favicon
-                            // MOST IMPORTANT: Use store tracking URL for favicon
-                            let logoUrl: string | null = null;
-                            
-                            // Priority 1: Favicon from store tracking URL (MOST IMPORTANT - most reliable)
-                            if (storeTrackingUrl) {
-                              logoUrl = getLogoFromWebsite(storeTrackingUrl);
-                            }
-                            
-                            // Priority 2: Store logo URL (if available)
-                            if (!logoUrl && store?.logoUrl) {
-                              if (store.logoUrl.startsWith('http://') || store.logoUrl.startsWith('https://') || store.logoUrl.includes('cloudinary.com')) {
-                                logoUrl = store.logoUrl;
-                              }
-                            }
-                            
-                            // Priority 3: Coupon logo URL (fallback)
-                            if (!logoUrl && coupon.logoUrl) {
-                              if (coupon.logoUrl.startsWith('http://') || coupon.logoUrl.startsWith('https://') || coupon.logoUrl.includes('cloudinary.com')) {
-                                logoUrl = coupon.logoUrl;
-                              }
-                            }
-                            
-                            // Priority 4: Favicon from coupon URL (last resort)
-                            if (!logoUrl && coupon.url) {
-                              logoUrl = getLogoFromWebsite(coupon.url);
-                            }
-
-                            if (logoUrl) {
-                              // Always use img tag for favicons (Google favicon API)
-                              return (
-                                <div className="w-full h-full flex items-center justify-center">
-                                  <img
-                                    src={logoUrl}
-                                    alt={coupon.storeName || coupon.code || 'Coupon'}
-                                    className="max-w-full max-h-full object-contain"
-                                    style={{ 
-                                      width: 'auto', 
-                                      height: 'auto',
-                                      maxWidth: '120px',
-                                      maxHeight: '120px'
-                                    }}
-                                    onError={(e) => {
-                                      const target = e.target as HTMLImageElement;
-                                      target.style.display = 'none';
-                                      const parent = target.parentElement;
-                                      if (parent) {
-                                        parent.innerHTML = `
-                                          <div class="w-24 h-24 rounded-lg bg-gradient-to-br from-[#ABC443] to-[#41361A] flex items-center justify-center">
-                                            <span class="text-white font-bold text-2xl">${(coupon.storeName || coupon.code || 'C').charAt(0)}</span>
-                                          </div>
-                                        `;
-                                      }
-                                    }}
-                                  />
-                                </div>
-                              );
-                            } else {
-                              return (
-                                <div className="w-24 h-24 rounded-lg bg-gradient-to-br from-[#ABC443] to-[#41361A] flex items-center justify-center">
-                                  <span className="text-white font-bold text-2xl">
-                                    {(coupon.storeName || coupon.code || 'C').charAt(0)}
-                                  </span>
-                                </div>
-                              );
-                            }
-                          })()}
+                          {logoUrl ? (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <img
+                                src={logoUrl}
+                                alt={storeName}
+                                className="max-w-full max-h-full object-contain"
+                                style={{ 
+                                  width: 'auto', 
+                                  height: 'auto',
+                                  maxWidth: '120px',
+                                  maxHeight: '120px'
+                                }}
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  const parent = target.parentElement;
+                                  if (parent) {
+                                    parent.innerHTML = `
+                                      <div class="w-24 h-24 rounded-lg bg-gradient-to-br from-[#ABC443] to-[#41361A] flex items-center justify-center">
+                                        <span class="text-white font-bold text-2xl">${storeName.charAt(0).toUpperCase()}</span>
+                                      </div>
+                                    `;
+                                  }
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-24 h-24 rounded-lg bg-gradient-to-br from-[#ABC443] to-[#41361A] flex items-center justify-center">
+                              <span className="text-white font-bold text-2xl">
+                                {storeName.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                          )}
                           
                           {/* Discount Badge - Bottom Right of Logo Area - Only show if real discount exists */}
                           {Number(coupon.discount) > 0 && (
@@ -1533,12 +2027,12 @@ export default function Home() {
                           )}
                         </div>
 
-                        {/* Brand Name */}
+                        {/* Store Name */}
                         <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-2 text-center uppercase line-clamp-2">
-                          {store?.name || coupon.storeName || 'Store'}
+                          {storeName}
                         </h3>
 
-                        {/* Actual Coupon Title/Description */}
+                        {/* Coupon/Deal Title and Description */}
                         <p className="text-xs sm:text-sm text-gray-600 mb-4 text-center line-clamp-2 leading-relaxed flex-grow">
                           {coupon.title || coupon.description || (Number(coupon.discount) > 0 ? `Save ${coupon.discount}% on your order` : 'Great savings available')}
                         </p>
@@ -1547,7 +2041,10 @@ export default function Home() {
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleGetDeal(coupon, e);
+                            // CRITICAL: Use requestAnimationFrame to avoid blocking INP
+                            requestAnimationFrame(() => {
+                              handleGetDeal(coupon, e);
+                            });
                           }}
                           className="w-full bg-[#ABC443] hover:bg-[#9BB03A] text-white font-semibold rounded-lg px-4 py-2.5 flex items-center justify-between transition-all duration-300 shadow-sm hover:shadow-md group"
                         >
@@ -1578,7 +2075,7 @@ export default function Home() {
             <RegionSpecificOffers />
 
             {/* Stores Of The Season Section */}
-            {allStores && allStores.length > 0 && allStores.filter(store => store && store.logoUrl).length > 0 && (
+            {storesWithLogos.length > 0 && (
               <section className="py-12 md:py-16 bg-gray-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                   {/* Header Text */}
@@ -1597,8 +2094,8 @@ export default function Home() {
                   {/* Horizontal Scrollable Store Logos - Auto Scroll */}
                   <div 
                     className="relative overflow-hidden mb-6 md:mb-8"
-                    onMouseEnter={() => setIsStoresOfSeasonPaused(true)}
-                    onMouseLeave={() => setIsStoresOfSeasonPaused(false)}
+                    onMouseEnter={handleStoresOfSeasonMouseEnter}
+                    onMouseLeave={handleStoresOfSeasonMouseLeave}
                   >
                     <div 
                       ref={storesOfSeasonSliderRef}
@@ -1614,53 +2111,47 @@ export default function Home() {
                       }}
                     >
                       {/* Duplicate stores 3 times for seamless infinite scroll */}
-                      {(() => {
-                        const storesWithLogos = selectedCategoryId 
-                          ? allStores.filter(store => store && store.logoUrl && store.categoryId === selectedCategoryId)
-                          : allStores.filter(store => store && store.logoUrl);
+                      {[...filteredStoresByCategory, ...filteredStoresByCategory, ...filteredStoresByCategory].map((store, index) => {
+                        const copyNumber = Math.floor(index / filteredStoresByCategory.length);
+                        const originalIndex = index % filteredStoresByCategory.length;
                         
-                        return [...storesWithLogos, ...storesWithLogos, ...storesWithLogos].map((store, index) => {
-                          const copyNumber = Math.floor(index / storesWithLogos.length);
-                          const originalIndex = index % storesWithLogos.length;
-                          
-                          return (
-                            <Link
-                              key={`store-${store.id || originalIndex}-copy-${copyNumber}-idx-${index}`}
-                              href={`/stores/${store.slug || store.id}`}
-                              className="flex flex-col items-center flex-shrink-0 group"
-                            >
-                          {/* Circular Logo Container */}
-                          <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full bg-white shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center p-3 mb-3 group-hover:scale-105">
-                            {store.logoUrl ? (
-                              <img
-                                src={store.logoUrl}
-                                alt={store.name || 'Store'}
-                                className="max-w-full max-h-full object-contain rounded-full"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.style.display = 'none';
-                                  const parent = target.parentElement;
-                                  if (parent) {
-                                    parent.innerHTML = `<div class="w-full h-full flex items-center justify-center rounded-full bg-gray-100"><span class="text-sm font-semibold text-gray-500">${(store.name || 'S').charAt(0)}</span></div>`;
-                                  }
-                                }}
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center rounded-full bg-gray-100">
-                                <span className="text-sm font-semibold text-gray-500">
-                                  {(store.name || 'S').charAt(0)}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                          {/* Store Name */}
-                          <p className="text-sm md:text-base font-medium text-gray-900 text-center max-w-[100px] sm:max-w-[120px] truncate">
-                            {store.name || 'Store'}
-                          </p>
-                        </Link>
-                          );
-                        });
-                      })()}
+                        return (
+                          <Link
+                            key={`store-${store.id || originalIndex}-copy-${copyNumber}-idx-${index}`}
+                            href={`/stores/${store.slug || store.id}`}
+                            className="flex flex-col items-center flex-shrink-0 group"
+                          >
+                            {/* Circular Logo Container */}
+                            <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full bg-white shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center p-3 mb-3 group-hover:scale-105">
+                              {store.logoUrl ? (
+                                <img
+                                  src={store.logoUrl}
+                                  alt={store.name || 'Store'}
+                                  className="max-w-full max-h-full object-contain rounded-full"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    const parent = target.parentElement;
+                                    if (parent) {
+                                      parent.innerHTML = `<div class="w-full h-full flex items-center justify-center rounded-full bg-gray-100"><span class="text-sm font-semibold text-gray-500">${(store.name || 'S').charAt(0)}</span></div>`;
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center rounded-full bg-gray-100">
+                                  <span className="text-sm font-semibold text-gray-500">
+                                    {(store.name || 'S').charAt(0)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            {/* Store Name */}
+                            <p className="text-sm md:text-base font-medium text-gray-900 text-center max-w-[100px] sm:max-w-[120px] truncate">
+                              {store.name || 'Store'}
+                            </p>
+                          </Link>
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -1854,20 +2345,6 @@ export default function Home() {
                 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
                   {latestNews.filter(a => a && a.id).slice(0, 8).map((article, index) => {
-                    
-                    const formatArticleDate = (date: any) => {
-                      if (!date) return null;
-                      try {
-                        if (typeof date === 'string') {
-                          return date;
-                        }
-                        const dateObj = date.toDate ? date.toDate() : new Date(date);
-                        return dateObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-                      } catch {
-                        return null;
-                      }
-                    };
-                    
                     return (
                       <motion.article
                         key={`savings-tips-article-${article.id}`}

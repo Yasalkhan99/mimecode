@@ -7,9 +7,9 @@ import { getAdminFirestore } from '@/lib/firebase-admin';
 // Collection name for banners
 const BANNERS_COLLECTION = process.env.NEXT_PUBLIC_BANNERS_COLLECTION || 'banners-mimecode';
 
-// Simple in-memory cache
+// Simple in-memory cache with longer TTL for better performance
 let bannersCache: { data: any[] | null; timestamp: number } = { data: null, timestamp: 0 };
-const CACHE_TTL = 60 * 1000; // 60 seconds cache
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes cache (banners don't change often) - longer cache = faster responses
 
 // Helper function to convert Firebase doc to API format
 const convertToAPIFormat = (doc: any) => {
@@ -50,7 +50,13 @@ export async function GET(req: NextRequest) {
     if (bannersCache.data && (now - bannersCache.timestamp) < CACHE_TTL) {
       return NextResponse.json(
         { success: true, banners: bannersCache.data },
-        { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' } }
+        { 
+          headers: { 
+            'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600, max-age=60',
+            'CDN-Cache-Control': 'public, s-maxage=300',
+            'Vary': 'Accept-Encoding'
+          } 
+        }
       );
     }
 
@@ -80,13 +86,27 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(
       { success: true, banners: banners },
-      { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' } }
+      { 
+        headers: { 
+          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600, max-age=60',
+          'CDN-Cache-Control': 'public, s-maxage=300',
+          'Vary': 'Accept-Encoding'
+        } 
+      }
     );
   } catch (error: any) {
     console.error('Firebase get banners error:', error);
+    // Return 200 with empty array to prevent frontend errors
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to get banners', banners: [] },
-      { status: 500 }
+      { 
+        status: 200,
+        headers: { 
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120, max-age=30',
+          'CDN-Cache-Control': 'public, s-maxage=60',
+          'Vary': 'Accept-Encoding'
+        }
+      }
     );
   }
 }

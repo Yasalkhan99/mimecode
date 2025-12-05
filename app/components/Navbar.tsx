@@ -7,11 +7,15 @@ import { getCategories, Category } from "@/lib/services/categoryService";
 import { getStores, Store } from "@/lib/services/storeService";
 import { getFavoritesCount } from "@/lib/services/favoritesService";
 import { getUnreadCount, getNotifications, initializeSampleNotifications } from "@/lib/services/notificationsService";
+import { useAuth } from "@/lib/hooks/useAuth";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { getEvents } from "@/lib/services/eventService";
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { user } = useAuth();
   const [searchCategoryOpen, setSearchCategoryOpen] = useState(false);
   const [storesDropdownOpen, setStoresDropdownOpen] = useState(false);
   const [hoveredCategoryId, setHoveredCategoryId] = useState<string | null>(null);
@@ -24,6 +28,15 @@ export default function Navbar() {
   const [notificationsCount, setNotificationsCount] = useState(0);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [hasEvents, setHasEvents] = useState(false);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      router.push('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
   
   useEffect(() => {
     const fetchData = async () => {
@@ -454,14 +467,28 @@ export default function Navbar() {
             )}
           </form>
 
-          {/* Login Button - Right */}
+          {/* Login/Sign Out Button - Right */}
           <div className="flex items-center gap-2 w-full lg:w-auto justify-end lg:justify-start">
-            <Link
-              href="/contact-us"
-              className="text-white font-semibold text-xs sm:text-sm hover:text-gray-200 transition-colors whitespace-nowrap"
-            >
-              Login
-            </Link>
+            {user ? (
+              <div className="flex items-center gap-3">
+                <span className="text-white text-xs sm:text-sm">
+                  {user.email}
+                </span>
+                <button
+                  onClick={handleSignOut}
+                  className="text-white font-semibold text-xs sm:text-sm hover:text-gray-200 transition-colors whitespace-nowrap"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="text-white font-semibold text-xs sm:text-sm hover:text-gray-200 transition-colors whitespace-nowrap"
+              >
+                Login
+              </Link>
+            )}
           </div>
         </div>
       </div>
