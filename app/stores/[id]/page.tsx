@@ -329,7 +329,7 @@ export default function StoreDetailPage() {
         <Navbar />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#ABC443] mb-4"></div>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#FFE019] mb-4"></div>
             <p className="text-gray-600">Loading store...</p>
           </div>
         </div>
@@ -348,7 +348,7 @@ export default function StoreDetailPage() {
             <p className="text-gray-600 mb-6">The store you're looking for doesn't exist.</p>
             <Link
               href="/stores"
-              className="inline-block px-6 py-3 bg-gradient-to-r from-[#ABC443] to-[#41361A] hover:from-[#41361A] hover:to-[#ABC443] text-white rounded-lg transition-all duration-300"
+              className="inline-block px-6 py-3 bg-black hover:bg-[#FFE019] text-[#FFE019] hover:text-black border-2 border-[#FFE019] rounded-lg transition-all duration-300 font-semibold"
             >
               Browse All Stores
             </Link>
@@ -496,7 +496,7 @@ export default function StoreDetailPage() {
                   href={store.websiteUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block w-full bg-[#16a34a] hover:bg-[#15803d] text-white font-bold text-center py-3 px-4 rounded-lg transition-colors"
+                  className="block w-full bg-[#FFE019] hover:bg-black text-black hover:text-[#FFE019] border-2 border-black font-bold text-center py-3 px-4 rounded-lg transition-all duration-300"
                 >
                   Visit Store
                 </a>
@@ -696,7 +696,7 @@ export default function StoreDetailPage() {
                 <p className="text-gray-500 text-lg">No {filterTab === 'all' ? 'coupons' : filterTab} available for this store right now.</p>
                 <Link
                   href="/stores"
-                  className="inline-block mt-4 px-6 py-3 bg-[#ABC443] text-white rounded-lg hover:bg-[#9BB03A] transition-colors"
+                  className="inline-block mt-4 px-6 py-3 bg-black hover:bg-[#FFE019] text-[#FFE019] hover:text-black border-2 border-[#FFE019] rounded-lg transition-all duration-300 font-semibold"
                 >
                   Browse Other Stores
                 </Link>
@@ -859,7 +859,7 @@ export default function StoreDetailPage() {
                             e.stopPropagation();
                             handleCouponClick(coupon);
                           }}
-                          className="bg-[#ABC443] hover:bg-[#9BB03A] text-white font-semibold rounded-lg px-4 py-2.5 sm:px-6 sm:py-3 flex items-center justify-between transition-all duration-300 shadow-md hover:shadow-lg whitespace-nowrap group relative overflow-hidden"
+                          className="bg-[#FFE019] hover:bg-black text-black hover:text-[#FFE019] border-2 border-black font-semibold rounded-lg px-4 py-2.5 sm:px-6 sm:py-3 flex items-center justify-between transition-all duration-300 shadow-md hover:shadow-lg whitespace-nowrap group relative overflow-hidden"
                         >
                           <span className="flex-1 flex items-center justify-center">
                             {coupon.couponType === 'code' && coupon.code ? (
@@ -964,7 +964,7 @@ export default function StoreDetailPage() {
                   <p className="text-gray-600 text-lg mb-4">No FAQs available for this store at the moment.</p>
                   <Link
                     href="/faqs"
-                    className="inline-block px-6 py-3 bg-[#16a34a] text-white rounded-lg hover:bg-[#15803d] transition-colors"
+                    className="inline-block px-6 py-3 bg-black hover:bg-[#FFE019] text-[#FFE019] hover:text-black border-2 border-[#FFE019] rounded-lg transition-all duration-300 font-semibold"
                   >
                     View General FAQs
                   </Link>

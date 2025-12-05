@@ -2,6 +2,7 @@
 // Uses Firebase Firestore
 
 import { getAdminFirestore } from '@/lib/firebase-admin';
+import { clearBannersCache } from '../get/route';
 
 // Collection name for banners
 const BANNERS_COLLECTION = process.env.NEXT_PUBLIC_BANNERS_COLLECTION || 'banners-mimecode';
@@ -29,6 +30,9 @@ export async function POST(req: Request) {
     await db.collection(BANNERS_COLLECTION).doc(id).update(firebaseUpdates);
 
     console.log(`✅ Banner updated successfully: ${id}`, firebaseUpdates);
+
+    // Clear cache to show updated banner immediately
+    clearBannersCache();
 
     return new Response(
       JSON.stringify({ success: true }),

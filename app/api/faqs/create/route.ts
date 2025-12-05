@@ -1,13 +1,17 @@
 // Server-side FAQ creation route
-// Uses MongoDB
+// Uses Supabase
 
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import FAQ from '@/lib/models/FAQ';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   try {
-    await connectDB();
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { success: false, error: 'Supabase admin client not initialized' },
+        { status: 500 }
+      );
+    }
 
     const body = await req.json();
     const { faq } = body;
@@ -19,22 +23,37 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const newFAQ = new FAQ({
-      question: faq.question,
-      answer: faq.answer,
-      order: faq.order || 0,
-      isActive: faq.isActive !== false,
-    });
-    
-    await newFAQ.save();
+    const { data, error } = await supabaseAdmin
+      .from('faqs')
+      .insert([
+        {
+          question: faq.question,
+          answer: faq.answer,
+          order: faq.order || 0,
+          is_active: faq.isActive !== false,
+        },
+      ])
+      .select()
+      .single();
 
-    const faqObj = newFAQ.toObject();
+    if (error) {
+      console.error('❌ Supabase create FAQ error:', error);
+      return NextResponse.json(
+        {
+          success: false,
+          error: error.message || 'Failed to create FAQ',
+        },
+        { status: 500 }
+      );
+    }
+
+    console.log('✅ FAQ created successfully:', data.id);
     return NextResponse.json({
       success: true,
-      id: faqObj._id.toString(),
+      id: data.id,
     });
   } catch (error: any) {
-    console.error('MongoDB create FAQ error:', error);
+    console.error('❌ Create FAQ error:', error);
     
     return NextResponse.json(
       {

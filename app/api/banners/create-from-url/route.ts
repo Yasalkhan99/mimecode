@@ -2,6 +2,7 @@
 // Uses Firebase Firestore
 
 import { getAdminFirestore } from '@/lib/firebase-admin';
+import { clearBannersCache } from '../get/route';
 
 // Collection name for banners
 const BANNERS_COLLECTION = process.env.NEXT_PUBLIC_BANNERS_COLLECTION || 'banners-mimecode';
@@ -39,6 +40,9 @@ export async function POST(req: Request) {
       title: bannerData.title, 
       layoutPosition: bannerData.layoutPosition,
     });
+
+    // Clear cache to show new banner immediately
+    clearBannersCache();
 
     return new Response(
       JSON.stringify({ 

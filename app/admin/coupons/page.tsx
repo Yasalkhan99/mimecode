@@ -1217,37 +1217,22 @@ export default function CouponsPage() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="px-3 py-3 text-left text-xs font-semibold">
+                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-900">
                     Coupon ID
                   </th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold text-gray-900">
                     Store Name
                   </th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold text-gray-900">
                     Code
                   </th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold text-gray-900">
                     Description
                   </th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold">
-                    Uses
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold text-gray-900">
                     Status
                   </th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold">
-                    Latest
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold">
-                    Latest Layout
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold">
-                    Popular
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold">
-                    Popular Layout
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold text-gray-900">
                     Actions
                   </th>
                 </tr>
@@ -1263,21 +1248,18 @@ export default function CouponsPage() {
                   return paginatedCoupons.map((coupon) => (
                   <tr key={coupon.id} className="border-b hover:bg-gray-50">
                     <td className="px-3 py-4">
-                      <div className="font-mono text-xs text-gray-600 max-w-[120px] truncate" title={coupon.id}>
+                      <div className="font-mono text-xs text-gray-800 font-medium max-w-[120px] truncate" title={coupon.id}>
                         {coupon.id}
                       </div>
                     </td>
                     <td className="px-4 sm:px-6 py-4 text-sm font-semibold text-gray-900">
                       {coupon.storeName || 'N/A'}
                     </td>
-                    <td className="px-4 sm:px-6 py-4 font-mono font-semibold text-xs sm:text-sm">
+                    <td className="px-4 sm:px-6 py-4 font-mono font-semibold text-xs sm:text-sm text-gray-900">
                       {coupon.code || 'N/A'}
                     </td>
-                    <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-600 max-w-xs truncate" title={coupon.description}>
+                    <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-800 max-w-xs truncate" title={coupon.description}>
                       {coupon.description || 'No description'}
-                    </td>
-                    <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm">
-                      {coupon.currentUses} / {coupon.maxUses}
                     </td>
                     <td className="px-4 sm:px-6 py-4">
                       <button
@@ -1290,72 +1272,6 @@ export default function CouponsPage() {
                       >
                         {coupon.isActive ? 'Active' : 'Inactive'}
                       </button>
-                    </td>
-                    <td className="px-4 sm:px-6 py-4">
-                      <button
-                        onClick={() => handleToggleLatest(coupon)}
-                        className={`px-2 py-1 rounded text-xs font-semibold cursor-pointer whitespace-nowrap ${
-                          coupon.isLatest
-                            ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        {coupon.isLatest ? 'Latest' : 'Not Latest'}
-                      </button>
-                    </td>
-                    <td className="px-4 sm:px-6 py-4">
-                      <select
-                        value={coupon.latestLayoutPosition || ''}
-                        onChange={(e) => {
-                          const position = e.target.value ? parseInt(e.target.value) : null;
-                          handleAssignLatestLayoutPosition(coupon, position);
-                        }}
-                        className="px-2 sm:px-3 py-1.5 border border-gray-300 rounded text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        disabled={!coupon.isLatest}
-                      >
-                        <option value="">Not Assigned</option>
-                        {[1, 2, 3, 4, 5, 6, 7, 8].map((pos) => (
-                          <option key={pos} value={pos}>
-                            Layout {pos}
-                          </option>
-                        ))}
-                      </select>
-                      {!coupon.isLatest && (
-                        <p className="text-xs text-gray-400 mt-1">Enable Latest first</p>
-                      )}
-                    </td>
-                    <td className="px-4 sm:px-6 py-4">
-                      <button
-                        onClick={() => handleTogglePopular(coupon)}
-                        className={`px-2 py-1 rounded text-xs font-semibold cursor-pointer whitespace-nowrap ${
-                          coupon.isPopular
-                            ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        {coupon.isPopular ? 'Popular' : 'Not Popular'}
-                      </button>
-                    </td>
-                    <td className="px-4 sm:px-6 py-4">
-                      <select
-                        value={coupon.layoutPosition || ''}
-                        onChange={(e) => {
-                          const position = e.target.value ? parseInt(e.target.value) : null;
-                          handleAssignLayoutPosition(coupon, position);
-                        }}
-                        className="px-2 sm:px-3 py-1.5 border border-gray-300 rounded text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        disabled={!coupon.isPopular}
-                      >
-                        <option value="">Not Assigned</option>
-                        {[1, 2, 3, 4, 5, 6, 7, 8].map((pos) => (
-                          <option key={pos} value={pos}>
-                            Layout {pos}
-                          </option>
-                        ))}
-                      </select>
-                      {!coupon.isPopular && (
-                        <p className="text-xs text-gray-400 mt-1">Enable Popular first</p>
-                      )}
                     </td>
                     <td className="px-4 sm:px-6 py-4">
                       <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Barlow, Pacifico } from "next/font/google";
+import { Geist, Geist_Mono, Barlow, Pacifico, Dancing_Script } from "next/font/google";
 import "./globals.css";
 import ClientLayout from "./components/ClientLayout";
 
@@ -23,6 +23,12 @@ const pacifico = Pacifico({
   weight: '400',
   subsets: ["latin"],
   variable: "--font-pacifico",
+});
+
+const dancingScript = Dancing_Script({
+  weight: ['400', '700'],
+  subsets: ["latin"],
+  variable: "--font-dancing-script",
 }); 
 
 export const metadata: Metadata = {
@@ -65,7 +71,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://storage.googleapis.com" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${barlow.variable} ${pacifico.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${barlow.variable} ${pacifico.variable} ${dancingScript.variable} antialiased`}
       >
         <ClientLayout>
           {children}

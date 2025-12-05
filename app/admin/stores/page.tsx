@@ -30,6 +30,7 @@ export default function StoresPage() {
     logoUrl: '',
     voucherText: '',
     networkId: '',
+    affiliateFallbackUrl: '',
     isTrending: false,
     layoutPosition: null,
     categoryId: null,
@@ -155,6 +156,7 @@ export default function StoresPage() {
       logoUrl: logoUrlToSave,
       voucherText: formData.voucherText || undefined,
       networkId: formData.networkId || undefined,
+      affiliateFallbackUrl: formData.affiliateFallbackUrl || undefined,
       isTrending: formData.isTrending || false,
       layoutPosition: layoutPositionToSave,
       categoryId: formData.categoryId || null,
@@ -172,6 +174,7 @@ export default function StoresPage() {
         logoUrl: '',
         voucherText: '',
         networkId: '',
+        affiliateFallbackUrl: '',
         isTrending: false,
         layoutPosition: null,
         categoryId: null,
@@ -200,8 +203,15 @@ export default function StoresPage() {
       try {
         const result = await deleteStore(id);
         if (result.success) {
+          // Update local state immediately for instant UI update
+          setStores(prevStores => prevStores.filter(store => store.id !== id));
+          setFilteredStores(prevFiltered => prevFiltered.filter(store => store.id !== id));
+          setTotalItems(prev => prev - 1);
+          
           alert('Store deleted successfully!');
-          fetchStores();
+          
+          // Also fetch fresh data from server to ensure sync
+          await fetchStores();
         } else {
           alert(`Failed to delete store: ${result.error || 'Unknown error'}`);
         }
@@ -534,6 +544,26 @@ export default function StoresPage() {
             </div>
 
             <div>
+              <label htmlFor="affiliateFallbackUrl" className="block text-gray-700 text-sm font-semibold mb-2">
+                Affiliate Fallback URL
+              </label>
+              <input
+                id="affiliateFallbackUrl"
+                name="affiliateFallbackUrl"
+                type="url"
+                placeholder="https://example.com/affiliate-link"
+                value={formData.affiliateFallbackUrl || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, affiliateFallbackUrl: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                This URL will be used when a coupon has no code or deal URL. Used for affiliate redirections.
+              </p>
+            </div>
+
+            <div>
               <label htmlFor="categoryId" className="block text-gray-700 text-sm font-semibold mb-2">
                 Category
               </label>
@@ -775,34 +805,25 @@ export default function StoresPage() {
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full table-fixed">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold">
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-28">
                     Store ID
                   </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-32">
+                    Merchant ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-20">
                     Logo
                   </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
                     Store Name
                   </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">
-                    Description
-                  </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">
-                    Voucher Text
-                  </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-28">
                     Network ID
                   </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">
-                    Trending
-                  </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">
-                    Layout Position
-                  </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-40">
                     Actions
                   </th>
                 </tr>
@@ -817,9 +838,14 @@ export default function StoresPage() {
                   
                   return paginatedStores.map((store) => (
                   <tr key={store.id} className="border-b hover:bg-gray-50">
-                    <td className="px-4 py-4">
-                      <div className="font-mono text-xs text-gray-600 max-w-[120px] truncate" title={store.id}>
+                    <td className="px-6 py-4">
+                      <div className="font-mono text-sm text-gray-800 font-medium truncate" title={store.id}>
                         {store.id}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="font-mono text-sm text-gray-800 font-medium truncate" title={store.merchantId}>
+                        {store.merchantId || '-'}
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -838,50 +864,11 @@ export default function StoresPage() {
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4 font-semibold">
+                    <td className="px-6 py-4 font-semibold text-gray-900 truncate">
                       {store.name}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 max-w-md truncate">
-                      {store.description}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-blue-600 font-medium">
-                      {store.voucherText || '-'}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-700 font-mono">
+                    <td className="px-6 py-4 text-sm text-gray-800 font-mono text-center">
                       {store.networkId || '-'}
-                    </td>
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => handleToggleTrending(store)}
-                        className={`px-2 py-1 rounded text-xs font-semibold cursor-pointer ${
-                          store.isTrending
-                            ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        {store.isTrending ? 'Trending' : 'Not Trending'}
-                      </button>
-                    </td>
-                    <td className="px-6 py-4">
-                      <select
-                        value={store.layoutPosition || ''}
-                        onChange={(e) => {
-                          const position = e.target.value ? parseInt(e.target.value) : null;
-                          handleAssignLayoutPosition(store, position);
-                        }}
-                        className="px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        disabled={!store.isTrending}
-                      >
-                        <option value="">Not Assigned</option>
-                        {[1, 2, 3, 4, 5, 6, 7, 8].map((pos) => (
-                          <option key={pos} value={pos}>
-                            Layout {pos}
-                          </option>
-                        ))}
-                      </select>
-                      {!store.isTrending && (
-                        <p className="text-xs text-gray-400 mt-1">Enable Trending first</p>
-                      )}
                     </td>
                     <td className="px-6 py-4 space-x-2">
                       <Link

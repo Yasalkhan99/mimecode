@@ -17,10 +17,19 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (user && !authLoading) {
-      const timer = setTimeout(() => {
-        router.push('/admin/dashboard');
-      }, 500);
-      return () => clearTimeout(timer);
+      // Check if user has admin role
+      if (user.role === 'admin') {
+        const timer = setTimeout(() => {
+          router.push('/admin/dashboard');
+        }, 500);
+        return () => clearTimeout(timer);
+      } else {
+        // User is not an admin, redirect to home
+        setError('You do not have admin access. Please contact the administrator.');
+        setTimeout(() => {
+          router.push('/');
+        }, 2000);
+      }
     }
   }, [user, authLoading, router]);
 

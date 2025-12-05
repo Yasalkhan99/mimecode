@@ -204,7 +204,7 @@ export default function CategoryDetailPage() {
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-800 mb-2">Category Not Found</h1>
-            <Link href="/categories" className="text-[#ABC443] hover:underline">
+            <Link href="/categories" className="text-[#FFE019] hover:underline">
               Back to Categories
             </Link>
           </div>
@@ -288,11 +288,11 @@ export default function CategoryDetailPage() {
                         </span>
                       </div>
                     )}
-                    <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-gray-800 mb-1 sm:mb-2 group-hover:text-[#ABC443] transition-colors line-clamp-2">
+                    <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-gray-800 mb-1 sm:mb-2 group-hover:text-[#FFE019] transition-colors line-clamp-2">
                       {store.name}
                     </h3>
                     {store.voucherText && (
-                      <p className="text-xs sm:text-sm text-[#ABC443] font-medium line-clamp-1">{store.voucherText}</p>
+                      <p className="text-xs sm:text-sm text-[#FFE019] font-medium line-clamp-1">{store.voucherText}</p>
                     )}
                     {store.description && (
                       <p className="text-xs sm:text-sm text-gray-600 mt-1 sm:mt-2 line-clamp-2 hidden sm:block">{store.description}</p>
@@ -382,7 +382,7 @@ export default function CategoryDetailPage() {
                       {!isExpired && (
                         <button
                           onClick={(e) => handleGetDeal(coupon, e)}
-                          className="w-full bg-[#ABC443] hover:bg-[#9BB03A] text-white font-semibold rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between transition-all duration-300 shadow-md hover:shadow-lg text-xs sm:text-sm md:text-base group relative overflow-hidden"
+                          className="w-full bg-[#FFE019] hover:bg-black hover:text-white text-white font-semibold rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between transition-all duration-300 shadow-md hover:shadow-lg text-xs sm:text-sm md:text-base group relative overflow-hidden"
                         >
                           <span className="flex-1 flex items-center justify-center">
                             {isRevealed ? (

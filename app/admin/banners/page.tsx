@@ -36,6 +36,9 @@ export default function BannersPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('🚀 Starting banner creation...');
+    console.log('📝 Form data:', { title, uploadMethod, layoutPosition, hasImageFile: !!imageFile, imageUrl, uploadedCloudinaryUrl });
+    
     // Check if layout position is already taken
     if (layoutPosition !== null) {
       const bannersAtPosition = banners.filter(
@@ -52,7 +55,10 @@ export default function BannersPage() {
     }
     
     if (uploadMethod === 'file') {
-      if (!imageFile) return;
+      if (!imageFile) {
+        alert('Please select an image file first.');
+        return;
+      }
       
       // Check if file is already uploaded to Cloudinary
       if (!uploadedCloudinaryUrl) {
@@ -60,11 +66,17 @@ export default function BannersPage() {
         return;
       }
 
+      console.log('📤 Creating banner with Cloudinary URL:', uploadedCloudinaryUrl);
+      
       // Create banner using the already uploaded Cloudinary URL
       // Use the URL directly - it's already correct from Cloudinary
       const result = await createBannerFromUrl(title, uploadedCloudinaryUrl, layoutPosition);
+      
+      console.log('✅ Create result:', result);
+      
       if (result.success) {
-        fetchBanners();
+        alert('✅ Banner created successfully!');
+        await fetchBanners();
         setShowForm(false);
         setTitle('');
         setImageFile(null);
@@ -73,19 +85,39 @@ export default function BannersPage() {
         setLayoutPosition(null);
         setFileInputKey(prev => prev + 1);
       } else {
-        alert(`Banner creation failed: ${result.error || 'Unknown error'}`);
+        console.error('❌ Banner creation failed:', result.error);
+        const errorMsg = typeof result.error === 'string' 
+          ? result.error 
+          : result.error?.message || JSON.stringify(result.error) || 'Unknown error';
+        alert(`❌ Banner creation failed: ${errorMsg}`);
       }
     } else {
-      if (!imageUrl.trim()) return;
+      if (!imageUrl.trim()) {
+        alert('Please enter an image URL.');
+        return;
+      }
+      
+      console.log('📤 Creating banner with URL:', imageUrl);
+      
       const result = await createBannerFromUrl(title, imageUrl, layoutPosition);
+      
+      console.log('✅ Create result:', result);
+      
       if (result.success) {
-        fetchBanners();
+        alert('✅ Banner created successfully!');
+        await fetchBanners();
         setShowForm(false);
         setTitle('');
         setImageUrl('');
         setExtractedUrl(null);
         setLayoutPosition(null);
         setFileInputKey(prev => prev + 1);
+      } else {
+        console.error('❌ Banner creation failed:', result.error);
+        const errorMsg = typeof result.error === 'string' 
+          ? result.error 
+          : result.error?.message || JSON.stringify(result.error) || 'Unknown error';
+        alert(`❌ Banner creation failed: ${errorMsg}`);
       }
     }
   };
@@ -137,7 +169,14 @@ export default function BannersPage() {
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingBanner?.id) return;
+    if (!editingBanner?.id) {
+      alert('❌ No banner selected for editing.');
+      return;
+    }
+
+    console.log('🔄 Starting banner update...');
+    console.log('📝 Editing banner ID:', editingBanner.id);
+    console.log('📝 Form data:', { title, layoutPosition, imageUrl });
 
     // Check if layout position is already taken
     if (layoutPosition !== null) {
@@ -149,7 +188,11 @@ export default function BannersPage() {
           return;
         }
         // Clear position from other banner
-        await updateBanner(bannersAtPosition[0].id!, { layoutPosition: null });
+        const clearResult = await updateBanner(bannersAtPosition[0].id!, { layoutPosition: null });
+        if (!clearResult.success) {
+          alert('❌ Failed to clear layout position from other banner.');
+          return;
+        }
       }
     }
 
@@ -163,12 +206,25 @@ export default function BannersPage() {
     if (imageUrl && imageUrl !== editingBanner.imageUrl) {
       const finalUrl = isCloudinaryUrl(imageUrl) ? extractOriginalCloudinaryUrl(imageUrl) : imageUrl;
       updates.imageUrl = finalUrl;
+      console.log('🖼️ Image URL updated:', finalUrl);
     }
 
+    console.log('📤 Sending updates:', updates);
+
     const result = await updateBanner(editingBanner.id, updates);
+    
+    console.log('✅ Update result:', result);
+    
     if (result.success) {
-      fetchBanners();
+      alert('✅ Banner updated successfully!');
+      await fetchBanners();
       handleCancelEdit();
+    } else {
+      console.error('❌ Banner update failed:', result.error);
+      const errorMsg = typeof result.error === 'string' 
+        ? result.error 
+        : result.error?.message || JSON.stringify(result.error) || 'Unknown error';
+      alert(`❌ Banner update failed: ${errorMsg}`);
     }
   };
 

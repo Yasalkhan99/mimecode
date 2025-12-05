@@ -38,6 +38,7 @@ export interface Coupon {
   categoryId?: string | null; // Category ID for this coupon
   buttonText?: string; // Custom button text (e.g., "Get Code", "Get Deal", "Claim Now", etc.)
   dealScope?: 'sitewide' | 'online-only'; // Scope of the deal: 'sitewide' or 'online-only'
+  userId?: string; // User ID of the coupon creator (for user-created coupons)
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -268,6 +269,8 @@ export async function getCouponById(id: string): Promise<Coupon | null> {
 // Update a coupon
 export async function updateCoupon(id: string, updates: Partial<Coupon>) {
   try {
+    console.log('🔄 Updating coupon:', { id, updates });
+    
     // Use server-side API route to update coupon (bypasses security rules)
     const res = await fetch('/api/coupons/update', {
       method: 'POST',
@@ -279,29 +282,40 @@ export async function updateCoupon(id: string, updates: Partial<Coupon>) {
       }),
     });
 
+    console.log('📡 Server response status:', res.status, res.statusText);
+
     let json: any = {};
     let resText = '';
     try {
       resText = await res.text();
+      console.log('📄 Raw response text:', resText);
       try {
         json = JSON.parse(resText || '{}');
+        console.log('📦 Parsed JSON:', json);
       } catch (e) {
+        console.error('❌ Failed to parse JSON:', e);
         json = { text: resText };
       }
     } catch (e) {
-      console.error('Failed to read server response body', e);
+      console.error('❌ Failed to read server response body:', e);
     }
 
     if (!res.ok) {
-      console.error('Server update failed', { status: res.status, body: json });
+      console.error('❌ Server update failed', { 
+        status: res.status, 
+        statusText: res.statusText,
+        body: json,
+        rawText: resText 
+      });
       // Don't fallback to client-side to avoid permission errors
-      return { success: false, error: json.error || json.text || 'Failed to update coupon' };
+      return { success: false, error: json.error || json.text || `Server error: ${res.status} ${res.statusText}` };
     }
 
+    console.log('✅ Coupon updated successfully');
     return { success: true };
   } catch (error) {
-    console.error('Error updating coupon:', error);
-    return { success: false, error };
+    console.error('❌ Error updating coupon:', error);
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
