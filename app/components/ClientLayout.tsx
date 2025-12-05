@@ -65,8 +65,14 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           )) {
             // Add error handler to suppress console errors (request already made)
             img.onerror = function(e) {
-              e.preventDefault?.();
-              e.stopPropagation?.();
+              if (typeof e !== 'string' && e && typeof e === 'object') {
+                if ('preventDefault' in e && typeof e.preventDefault === 'function') {
+                  e.preventDefault();
+                }
+                if ('stopPropagation' in e && typeof e.stopPropagation === 'function') {
+                  e.stopPropagation();
+                }
+              }
               return false;
             };
           }
