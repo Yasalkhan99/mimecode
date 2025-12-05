@@ -1381,8 +1381,8 @@ export default function Home() {
 
       {/* Hero Banner Section - Retail Store Style */}
       {/* Always reserve space to prevent layout shift */}
-      <Exclusive01 className="w-[180px] max-md:w-[50px] max-xl:w-[100px] absolute top-[10%] left-0 h-full" />
-      <Exclusive02 className="w-[180px] absolute top-[10%] right-0 h-full" />
+      <Exclusive01 className="w-[180px] max-md:w-[50px] max-xl:w-[100px] absolute top-[35%] left-0" />
+      <Exclusive02 className="w-[180px] absolute top-[35%] right-0 " />
       <section className="relative w-full bg-white py-2 sm:py-4 md:py-6" style={{ minHeight: loading ? '180px' : 'auto' }}>
         {/* Container with padding and max-width */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8">
@@ -2141,7 +2141,7 @@ export default function Home() {
                 >
                   {/* SVG Logo - Left Aligned */}
                   <img
-                    src="/Grou  p 1171275113.svg"
+                    src="/Group 1171275113.svg"
                     alt="Stores Of The Season"
                     className="h-14 sm:h-16 md:h-20 lg:h-24 w-auto"
                   />
