@@ -2141,7 +2141,7 @@ export default function Home() {
                 >
                   {/* SVG Logo - Left Aligned */}
                   <img
-                    src="/Group 1171275113.svg"
+                    src="/Grou  p 1171275113.svg"
                     alt="Stores Of The Season"
                     className="h-14 sm:h-16 md:h-20 lg:h-24 w-auto"
                   />

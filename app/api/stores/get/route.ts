@@ -93,6 +93,31 @@ const getLogoUrl = (logo: string | null | undefined, websiteUrl?: string | null)
   return '';
 };
 
+// Helper to normalize category id from various legacy columns
+const normalizeCategoryId = (row: any): string | null => {
+  const raw =
+    row.category_id ??
+    row['category_id'] ??
+    row['Parent Category Id'] ??
+    row['Cate Ids'] ??
+    row.categoryId ??
+    null;
+
+  if (!raw) return null;
+
+  if (Array.isArray(raw)) {
+    const first = raw.find(Boolean);
+    return first ? String(first).trim() : null;
+  }
+
+  const str = String(raw).trim();
+  if (!str) return null;
+
+  // Handle comma/pipe/semicolon separated lists, prefer the first entry
+  const firstToken = str.split(/[|,;]/)[0].trim();
+  return firstToken || null;
+};
+
 // Helper function to convert Supabase row to API format
 const convertToAPIFormat = (row: any) => {
   // Use Store Id as primary id if UUID id doesn't exist
@@ -128,7 +153,10 @@ const convertToAPIFormat = (row: any) => {
     // No logo at all - use website favicon
     logoUrl = getLogoFromWebsite(rawWebsiteUrl) || '';
   }
-  
+
+  // Normalize category id (handles legacy formats and lists)
+  const mainCategoryId = normalizeCategoryId(row);
+
   return {
     id: uuidId || storeIdValue, // Use UUID if exists, otherwise use Store Id
     name: row['Store Name'] || row.name || '',
@@ -137,7 +165,9 @@ const convertToAPIFormat = (row: any) => {
     logoUrl: logoUrl, // Logo URL with smart fallback to website favicon
     description: row.description || row['Store Description'] || row['Store Summary'] || '',
     websiteUrl: rawWebsiteUrl,
-    categoryId: row['Parent Category Id'] || row.category_id || row['Cate Ids'] || '',
+    // Expose both normalized mainCategoryId and backward-compatible categoryId
+    mainCategoryId,
+    categoryId: mainCategoryId,
     storeId: storeIdValue,
     merchantId: row['Merchant Id'] || row.merchant_id || '',
     whyTrustUs: row.why_trust_us || null, // Dynamic "Why Trust Us" content
@@ -149,6 +179,69 @@ const convertToAPIFormat = (row: any) => {
     createdAt: row['Created Date'] || row.created_at || null,
     updatedAt: row['Modify Date'] || row.updated_at || null,
   };
+};
+
+// Helper to enrich stores with mainCategoryId and categoryName
+const enrichStoresWithCategory = async (stores: any[]) => {
+  if (!stores || stores.length === 0) return stores;
+
+  // Collect unique, truthy categoryIds from the already converted stores
+  const categoryIds = Array.from(
+    new Set(
+      stores
+        .map((s) => s.mainCategoryId || s.categoryId)
+        .filter((id: any): id is string => !!id && typeof id === 'string')
+    )
+  );
+
+  if (categoryIds.length === 0) {
+    // No category information available; still add the fields with nulls
+    return stores.map((store) => ({
+      ...store,
+      mainCategoryId: store.mainCategoryId || store.categoryId || null,
+      categoryName: null,
+    }));
+  }
+
+  try {
+    const { data: categories, error } = await supabaseAdmin
+      .from('categories')
+      .select('id, name')
+      .in('id', categoryIds);
+
+    if (error) {
+      console.error('Error fetching categories for stores:', error);
+      return stores.map((store) => ({
+        ...store,
+        mainCategoryId: store.categoryId || null,
+        categoryName: null,
+      }));
+    }
+
+    const categoryMap: Record<string, string> = {};
+    (categories || []).forEach((cat: any) => {
+      if (cat.id) {
+        categoryMap[cat.id] = cat.name || '';
+      }
+    });
+
+    return stores.map((store) => {
+      const catId = store.mainCategoryId || store.categoryId || null;
+      const name = catId ? categoryMap[catId] || null : null;
+      return {
+        ...store,
+        mainCategoryId: catId,
+        categoryName: name,
+      };
+    });
+  } catch (err) {
+    console.error('Unexpected error enriching stores with category info:', err);
+    return stores.map((store) => ({
+      ...store,
+      mainCategoryId: store.mainCategoryId || store.categoryId || null,
+      categoryName: null,
+    }));
+  }
 };
 
 export async function GET(req: NextRequest) {
@@ -177,10 +270,13 @@ export async function GET(req: NextRequest) {
       if (error && error.code !== 'PGRST116') {
         throw error;
       }
+
+      const converted = data ? convertToAPIFormat(data) : null;
+      const [enriched] = await enrichStoresWithCategory(converted ? [converted] : []);
       
       return NextResponse.json({
         success: true,
-        store: data ? convertToAPIFormat(data) : null,
+        store: enriched || null,
       });
     }
 
@@ -190,9 +286,13 @@ export async function GET(req: NextRequest) {
       if (error && error.code !== 'PGRST116') {
         throw error;
       }
+
+      const converted = data ? convertToAPIFormat(data) : null;
+      const [enriched] = await enrichStoresWithCategory(converted ? [converted] : []);
+
       return NextResponse.json({
         success: true,
-        store: data ? convertToAPIFormat(data) : null,
+        store: enriched || null,
       });
     }
 
@@ -201,7 +301,8 @@ export async function GET(req: NextRequest) {
       const { data, error } = await query.eq('Network Id', networkId);
       if (error) throw error;
       
-      const convertedStores = (data || []).map(convertToAPIFormat);
+      let convertedStores = (data || []).map(convertToAPIFormat);
+      convertedStores = await enrichStoresWithCategory(convertedStores);
       
       if (convertedStores.length === 1) {
         return NextResponse.json({
@@ -234,7 +335,8 @@ export async function GET(req: NextRequest) {
     const { data, error } = await query;
     if (error) throw error;
 
-    const convertedStores = (data || []).map(convertToAPIFormat);
+    let convertedStores = (data || []).map(convertToAPIFormat);
+    convertedStores = await enrichStoresWithCategory(convertedStores);
     
     // Sort by Store Id numerically
     convertedStores.sort((a, b) => {
