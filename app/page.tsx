@@ -52,9 +52,9 @@ export default function Home() {
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [openFAQIndex, setOpenFAQIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  const [bannersLoading, setBannersLoading] = useState(true); // Separate state for banners
-  const [couponsLoading, setCouponsLoading] = useState(true); // Separate state for coupons
-  const [featuredDealsLoading, setFeaturedDealsLoading] = useState(true); // Separate state for featured deals
+  const [bannersLoading, setBannersLoading] = useState(false); // Separate state for banners
+  const [couponsLoading, setCouponsLoading] = useState(false); // Separate state for coupons
+  const [featuredDealsLoading, setFeaturedDealsLoading] = useState(false); // Separate state for featured deals
   const [revealedCoupons, setRevealedCoupons] = useState<Set<string>>(new Set());
   const [showPopup, setShowPopup] = useState(false);
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
@@ -1063,15 +1063,15 @@ export default function Home() {
       const storeName = store?.name || coupon.storeName || '';
 
       // DEBUG: Log store and URL info
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Coupon:', coupon.storeName, {
-          storeFound: !!store,
-          storeName: store?.name,
-          storeUrl,
-          couponUrl: coupon.url,
-          couponLogoUrl: coupon.logoUrl
-        });
-      }
+      // if (process.env.NODE_ENV === 'development') {
+      //   console.log('Coupon:', coupon.storeName, {
+      //     storeFound: !!store,
+      //     storeName: store?.name,
+      //     storeUrl,
+      //     couponUrl: coupon.url,
+      //     couponLogoUrl: coupon.logoUrl
+      //   });
+      // }
 
       // Get logo URL - PRIORITY: Store URL favicon > Store logo > Coupon URL favicon > Coupon logo
       // CRITICAL: Always try to fetch favicon from store URL first (most reliable)
@@ -1636,7 +1636,6 @@ export default function Home() {
                     const isDuplicate = index >= displayLatestCoupons.length;
 
                     if (!coupon) {
-                      // Empty Slot
                       return (
                         <div
                           key={`latest-coupon-empty-${index}-${isDuplicate ? 'dup' : ''}`}
