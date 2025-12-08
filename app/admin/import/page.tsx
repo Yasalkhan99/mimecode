@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { createStore } from '@/lib/services/storeService';
-import { createCouponFromUrl } from '@/lib/services/couponService';
+import { createStore, updateStore } from '@/lib/services/storeService';
+import { createCouponFromUrl, updateCoupon } from '@/lib/services/couponService';
 import { Timestamp } from 'firebase/firestore';
 import Link from 'next/link';
 
@@ -104,21 +104,63 @@ export default function ImportPage() {
               throw new Error('Store Name is required');
             }
 
-            await createStore({
+            const storeId = row['Store ID'] ? String(row['Store ID']).trim() : '';
+
+            // Read fields from multiple possible column names so exports can be reused directly
+            const description =
+              row['Description'] ?? row['description'] ?? row.description ?? '';
+
+            const logoUrl =
+              row['Logo URL'] ?? row['logoUrl'] ?? row['Logo'] ?? row.logoUrl ?? row.logo ?? '';
+
+            const websiteUrl =
+              row['Website URL'] ?? row['Website Url'] ?? row['websiteUrl'] ?? row.websiteUrl ?? '';
+
+            const voucherText =
+              row['Voucher Text'] ?? row['voucherText'] ?? row.voucherText ?? '';
+
+            const categoryId =
+              row['Category ID'] ?? row['Category Id'] ?? row.categoryId ?? null;
+
+            const slug =
+              row['Slug'] ?? row.slug ?? storeName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+            const merchantId =
+              row['Merchant ID'] ?? row['Merchant Id'] ?? row.merchantId ?? '';
+
+            const networkId =
+              row['Network ID'] ?? row['Network Id'] ?? row.networkId ?? '';
+
+            // Common store payload from Excel row
+            const storePayload = {
               name: storeName.trim(),
-              description: row['Description'] || '',
-              logoUrl: row['Logo URL'] || '',
-              websiteUrl: row['Website URL'] || '',
-              voucherText: row['Voucher Text'] || '',
-              categoryId: row['Category ID'] || null,
-              slug: row['Slug'] || storeName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+              description,
+              logoUrl,
+              websiteUrl,
+              voucherText,
+              categoryId,
+              slug,
               aboutText: row['About Text'] || '',
               establishedYear: row['Established Year'] ? Number(row['Established Year']) : undefined,
               headquarters: row['Headquarters'] || '',
               trustScore: row['Trust Score'] ? Number(row['Trust Score']) : undefined,
               isTrending: false,
               layoutPosition: null,
-            });
+              merchantId,
+              networkId,
+            };
+
+            if (storeId) {
+              // Update existing store by Store ID
+              const result = await updateStore(storeId, storePayload);
+              if (!result.success) {
+                throw new Error(result.error || 'Failed to update store');
+              }
+            } else {
+              // Create new store when no Store ID is provided
+              await createStore(storePayload);
+            }
+
             successCount++;
             imported.push(storeName);
           } catch (error: any) {
@@ -127,7 +169,7 @@ export default function ImportPage() {
           }
         }
       } else {
-        // Coupons import
+        // Coupons import (supports both create and update by Coupon ID)
         for (const row of excelData as ExcelCoupon[]) {
           try {
             const title = row['Title'];
@@ -135,6 +177,7 @@ export default function ImportPage() {
               throw new Error('Title is required');
             }
 
+            const couponId = row['Coupon ID'] ? String(row['Coupon ID']).trim() : '';
             const couponType = (row['Type'] || 'code').toLowerCase() as 'code' | 'deal';
             const finalUrl = row['Tracking URL'] || row['Coupon URL'] || '';
             
@@ -169,27 +212,62 @@ export default function ImportPage() {
                             row['Is Popular'] === true || 
                             Number(row['Is Popular']) === 1;
 
-            await createCouponFromUrl({
-              code: row['Code'] || '',
-              storeName: title.trim(),
-              storeIds: storeIds.length > 0 ? storeIds : undefined,
-              discount: Number(row['Discount']) || 0,
-              discountType: (row['Discount Type'] || 'percentage') as 'percentage' | 'fixed',
-              description: row['Description'] || title,
-              isActive: isActive,
-              maxUses: 1000,
-              currentUses: 0,
-              expiryDate: expiryDate,
-              couponType: couponType,
-              url: finalUrl,
-              buttonText: row['Button Text'] || '',
-              dealScope: row['Deal Scope'] as 'sitewide' | 'online-only' | undefined,
-              categoryId: row['Category ID'] || null,
-              isPopular: isPopular,
-              layoutPosition: null,
-              isLatest: false,
-              latestLayoutPosition: null,
-            }, row['Logo URL'] || '');
+            if (couponId) {
+              // Bulk update existing coupon by Coupon ID
+              const updates: any = {
+                code: row['Code'] || '',
+                storeName: title.trim(),
+                discount: Number(row['Discount']) || 0,
+                discountType: (row['Discount Type'] || 'percentage') as 'percentage' | 'fixed',
+                description: row['Description'] || title,
+                isActive: isActive,
+                couponType: couponType,
+                categoryId: row['Category ID'] || null,
+              };
+
+              if (finalUrl) {
+                // API route expects dealUrl for updating URL-like field
+                updates.dealUrl = finalUrl;
+              }
+
+              if (expiryDate) {
+                try {
+                  updates.expiryDate = (expiryDate as any).toDate
+                    ? (expiryDate as any).toDate().toISOString()
+                    : new Date(row['Expiry Date'] as any).toISOString();
+                } catch {
+                  // Ignore invalid expiry conversions
+                }
+              }
+
+              const result = await updateCoupon(couponId, updates);
+              if (!result.success) {
+                throw new Error(result.error || 'Failed to update coupon');
+              }
+            } else {
+              // Create new coupon when no Coupon ID is provided
+              await createCouponFromUrl({
+                code: row['Code'] || '',
+                storeName: title.trim(),
+                storeIds: storeIds.length > 0 ? storeIds : undefined,
+                discount: Number(row['Discount']) || 0,
+                discountType: (row['Discount Type'] || 'percentage') as 'percentage' | 'fixed',
+                description: row['Description'] || title,
+                isActive: isActive,
+                maxUses: 1000,
+                currentUses: 0,
+                expiryDate: expiryDate,
+                couponType: couponType,
+                url: finalUrl,
+                buttonText: row['Button Text'] || '',
+                dealScope: row['Deal Scope'] as 'sitewide' | 'online-only' | undefined,
+                categoryId: row['Category ID'] || null,
+                isPopular: isPopular,
+                layoutPosition: null,
+                isLatest: false,
+                latestLayoutPosition: null,
+              }, row['Logo URL'] || '');
+            }
             
             successCount++;
             imported.push(title);

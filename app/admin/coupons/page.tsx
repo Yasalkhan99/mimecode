@@ -57,6 +57,48 @@ export default function CouponsPage() {
   const [isCreating, setIsCreating] = useState(false);
   const storeDropdownRef = useRef<HTMLDivElement>(null);
 
+  const handleExportCoupons = () => {
+    if (!coupons || coupons.length === 0) {
+      alert('No coupons available to export.');
+      return;
+    }
+
+    // Columns should match the coupons table: Coupon ID, Store Name, Code, Description, Status
+    const headers = ['Coupon ID', 'Store Name', 'Code', 'Description', 'Status'];
+
+    const escapeCsv = (value: unknown): string => {
+      if (value === null || value === undefined) return '';
+      const str = String(value);
+      if (str.includes('"') || str.includes(',') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const rows = coupons.map((coupon) =>
+      [
+        escapeCsv(coupon.id),
+        escapeCsv(coupon.storeName),
+        escapeCsv(coupon.code),
+        escapeCsv(coupon.description),
+        escapeCsv(coupon.isActive ? 'Active' : 'Inactive'),
+      ].join(',')
+    );
+
+    const csvContent = [headers.join(','), ...rows].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    const timestamp = new Date().toISOString().slice(0, 10);
+    link.download = `coupons-export-${timestamp}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -401,12 +443,21 @@ export default function CouponsPage() {
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Manage Coupons</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition whitespace-nowrap"
-        >
-          {showForm ? 'Cancel' : 'Create New Coupon'}
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={handleExportCoupons}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm font-semibold whitespace-nowrap"
+          >
+            Export Coupons (CSV)
+          </button>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition whitespace-nowrap"
+          >
+            {showForm ? 'Cancel' : 'Create New Coupon'}
+          </button>
+        </div>
       </div>
 
       {/* Search Bar - Always Visible */}

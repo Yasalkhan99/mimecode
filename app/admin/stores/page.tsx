@@ -80,6 +80,48 @@ export default function StoresPage() {
   const [storeUrl, setStoreUrl] = useState('');
   const [extracting, setExtracting] = useState(false);
 
+  const handleExportStores = () => {
+    if (!stores || stores.length === 0) {
+      alert('No stores available to export.');
+      return;
+    }
+
+    // Columns should match the store table: Store ID, Merchant ID, Logo, Store Name, Network ID
+    const headers = ['Store ID', 'Merchant ID', 'Logo', 'Store Name', 'Network ID'];
+
+    const escapeCsv = (value: unknown): string => {
+      if (value === null || value === undefined) return '';
+      const str = String(value);
+      if (str.includes('"') || str.includes(',') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const rows = stores.map((store) =>
+      [
+        escapeCsv(store.id),
+        escapeCsv(store.merchantId),
+        escapeCsv(store.logoUrl),
+        escapeCsv(store.name),
+        escapeCsv(store.networkId),
+      ].join(',')
+    );
+
+    const csvContent = [headers.join(','), ...rows].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    const timestamp = new Date().toISOString().slice(0, 10);
+    link.download = `stores-records-${timestamp}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const fetchStores = async () => {
     setLoading(true);
     const data = await getStores();
@@ -301,14 +343,23 @@ export default function StoresPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-8">
         <h1 className="text-3xl font-bold text-gray-800">Manage Stores</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-        >
-          {showForm ? 'Cancel' : 'Create New Store'}
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={handleExportStores}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm font-semibold"
+          >
+            Export Stores (CSV)
+          </button>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+          >
+            {showForm ? 'Cancel' : 'Create New Store'}
+          </button>
+        </div>
       </div>
 
       {showForm && (

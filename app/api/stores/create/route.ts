@@ -46,6 +46,7 @@ export async function POST(req: NextRequest) {
     if (store.voucherText) supabaseStore['voucher_text'] = store.voucherText;
     if (store.networkId) supabaseStore['Network Id'] = store.networkId;
     if (store.categoryId) supabaseStore['Parent Category Id'] = store.categoryId;
+    if (store.merchantId) supabaseStore['Merchant Id'] = store.merchantId;
     if (store.websiteUrl) {
       supabaseStore['website_url'] = store.websiteUrl;
       supabaseStore['Tracking Url'] = store.websiteUrl;

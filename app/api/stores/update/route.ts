@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
     // Add SEO fields
     if (updates.seoTitle !== undefined) supabaseUpdates['seo_title'] = updates.seoTitle;
     if (updates.seoDescription !== undefined) supabaseUpdates['seo_description'] = updates.seoDescription;
+    if (updates.merchantId !== undefined) supabaseUpdates['Merchant Id'] = updates.merchantId;
 
     console.log('Supabase updates:', supabaseUpdates);
 

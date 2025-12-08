@@ -17,6 +17,18 @@ const normalizeUrl = (url: string | null | undefined): string | null => {
   return trimmed;
 };
 
+// Minimal HTML entity decoder (handles common cases like &pound;)
+const decodeHtmlEntities = (value: any): any => {
+  if (typeof value !== 'string') return value;
+  return value
+    .replace(/&pound;/gi, '£')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/g, "'");
+};
+
 // Helper function to convert to API format
 const convertToAPIFormat = (doc: any, docId: string, storeData?: any) => {
   const data = doc.data();
@@ -31,6 +43,9 @@ const convertToAPIFormat = (doc: any, docId: string, storeData?: any) => {
   if (data['Store  Id']) storeIdsArray = [data['Store  Id']];
   else if (data.store_ids && Array.isArray(data.store_ids)) storeIdsArray = data.store_ids;
   else if (data.storeIds && Array.isArray(data.storeIds)) storeIdsArray = data.storeIds;
+
+  const rawDescription = data['Coupon Desc'] || data.description || '';
+  const rawTitle = data['Coupon Title'] || data['Coupon Desc'] || data.description || data.title || null;
   
   return {
     id: docId || data['Coupon Id'] || data.id || '',
@@ -39,8 +54,8 @@ const convertToAPIFormat = (doc: any, docId: string, storeData?: any) => {
     storeIds: storeIdsArray,
     discount: data.discount ? parseFloat(String(data.discount)) : 0,
     discountType: data.discount_type || data.discountType || 'percentage',
-    description: data['Coupon Desc'] || data.description || '',
-    title: data['Coupon Title'] || data['Coupon Desc'] || data.description || data.title || null,
+    description: decodeHtmlEntities(rawDescription) || '',
+    title: decodeHtmlEntities(rawTitle) || null,
     isActive: data.is_active !== false && data.isActive !== false,
     maxUses: data.max_uses || data.maxUses || 1000,
     currentUses: data.current_uses || data.currentUses || 0,
