@@ -195,9 +195,9 @@ export async function getBannerByLayoutPosition(position: number): Promise<Banne
     if (banner) {
       // console.log(`✅ Found banner for layout position ${position}:`, banner.title);
     } else {
-      console.log(`❌ No banner found for layout position ${position}`);
-      console.log(`🔍 Available layout positions:`, allBanners.map(b => b.layoutPosition).filter(Boolean));
-    }
+      // console.log(`❌ No banner found for layout position ${position}`);
+      // console.log(`🔍 Available layout positions:`, allBanners.map(b => b.layoutPosition).filter(Boolean));
+    } 
     
     return banner || null;
   } catch (error) {

@@ -19,7 +19,7 @@ export default function Footer() {
           getStores()
         ]);
         setCategories(categoriesData.slice(0, 8));
-        
+
         // Sort stores by createdAt (latest first) and take only 3
         const sortedStores = [...storesData].sort((a, b) => {
           // Handle different timestamp formats: number (milliseconds), Timestamp object, or undefined
@@ -90,60 +90,68 @@ export default function Footer() {
         {/* Footer Grid */}
         <div className="pb-8 md:pb-12">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12">
-          {/* Logo and Disclaimer */}
-          <div>
-            <div className="flex items-center gap-3 mb-4">
-              <img 
-                src="/Group 1171275050 (2).svg" 
-                alt="HB Mime Code Logo" 
-                className="h-10 md:h-12 w-auto"
-              />
+            {/* Logo and Disclaimer */}
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <img
+                  src="/Group 1171275050 (2).svg"
+                  alt="HB Mime Code Logo"
+                  className="h-10 md:h-12 w-auto"
+                />
+              </div>
+              <p className="text-sm text-gray-400 leading-relaxed">
+                The use of third-party trademarks and trade names on this website does not imply that mimecode.com is affiliated with or endorsed by the owners of those marks or names.
+              </p>
             </div>
-            <p className="text-sm text-gray-400 leading-relaxed">
-              The use of third-party trademarks and trade names on this website does not imply that mimecode.com is affiliated with or endorsed by the owners of those marks or names.
-            </p>
-          </div>
 
-          {/* Top Categories */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 text-white">Top Categories</h3>
-            <ul className="space-y-2.5">
-              <li><Link href="/categories/office-stationery" className="text-sm text-gray-300 hover:text-white transition-colors">Office & Stationery</Link></li>
-              <li><Link href="/categories/pet-supplies" className="text-sm text-gray-300 hover:text-white transition-colors">Pet Supplies</Link></li>
-              <li><Link href="/categories/jewelry-watches" className="text-sm text-gray-300 hover:text-white transition-colors">Jewelry & Watches</Link></li>
-              <li><Link href="/categories/travel-hotels" className="text-sm text-gray-300 hover:text-white transition-colors">Travel & Hotels</Link></li>
-              <li><Link href="/categories/automotive" className="text-sm text-gray-300 hover:text-white transition-colors">Automotive</Link></li>
-              <li><Link href="/categories/toys-kids" className="text-sm text-gray-300 hover:text-white transition-colors">Toys & Kids</Link></li>
-              <li><Link href="/categories/books-media" className="text-sm text-gray-300 hover:text-white transition-colors">Books & Media</Link></li>
-              <li><Link href="/categories/food-grocery" className="text-sm text-gray-300 hover:text-white transition-colors">Food & Grocery</Link></li>
-            </ul>
-          </div>
+            {/* Top Categories */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4 text-white">Top Categories</h3>
+              <ul className="space-y-2.5">
+                <li><Link href="/categories/office-stationery" className="text-sm text-gray-300 hover:text-white transition-colors">Office & Stationery</Link></li>
+                <li><Link href="/categories/pet-supplies" className="text-sm text-gray-300 hover:text-white transition-colors">Pet Supplies</Link></li>
+                <li><Link href="/categories/jewelry-watches" className="text-sm text-gray-300 hover:text-white transition-colors">Jewelry & Watches</Link></li>
+                <li><Link href="/categories/travel-hotels" className="text-sm text-gray-300 hover:text-white transition-colors">Travel & Hotels</Link></li>
+                <li><Link href="/categories/automotive" className="text-sm text-gray-300 hover:text-white transition-colors">Automotive</Link></li>
+                <li><Link href="/categories/toys-kids" className="text-sm text-gray-300 hover:text-white transition-colors">Toys & Kids</Link></li>
+                <li><Link href="/categories/books-media" className="text-sm text-gray-300 hover:text-white transition-colors">Books & Media</Link></li>
+                <li><Link href="/categories/food-grocery" className="text-sm text-gray-300 hover:text-white transition-colors">Food & Grocery</Link></li>
+              </ul>
+            </div>
 
-          {/* Top Stores */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 text-white">Top Stores</h3>
-            <ul className="space-y-2.5">
-              <li><Link href="/stores/cettire-us" className="text-sm text-gray-300 hover:text-white transition-colors">Cettire US</Link></li>
-              <li><Link href="/stores/oakley-us" className="text-sm text-gray-300 hover:text-white transition-colors">Oakley US</Link></li>
-              <li><Link href="/stores/pacsun-us" className="text-sm text-gray-300 hover:text-white transition-colors">Pacsun US</Link></li>
-            </ul>
-          </div>
+            {/* Top Stores */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4 text-white">Top Stores</h3>
+              <ul className="space-y-2.5">
+                <li><Link href="/stores/cettire-us" className="text-sm text-gray-300 hover:text-white transition-colors">Cettire US</Link></li>
+                <li><Link href="/stores/oakley-us" className="text-sm text-gray-300 hover:text-white transition-colors">Oakley US</Link></li>
+                <li><Link href="/stores/pacsun-us" className="text-sm text-gray-300 hover:text-white transition-colors">Pacsun US</Link></li>
+                <li><Link href="/stores/maven-trading-usa" className="text-sm text-gray-300 hover:text-white transition-colors">Maven Trading Usa</Link></li>
+                <li><Link href="/stores/saksoff5th-us" className="text-sm text-gray-300 hover:text-white transition-colors">Saks Off 5th Us</Link></li>
+                <li><Link href="/stores/wolfand-badger-uk" className="text-sm text-gray-300 hover:text-white transition-colors">Wolf And Badger Uk</Link></li>
+                <li><Link href="/stores/overstock-us" className="text-sm text-gray-300 hover:text-white transition-colors">Overstock Us</Link></li>
+                <li><Link href="/stores/garnethill-us" className="text-sm text-gray-300 hover:text-white transition-colors">Garnet Hill US</Link></li>
+                {/* <li><Link href="/stores/dazzle-dry-us" className="text-sm text-gray-300 hover:text-white transition-colors">Dazzle Dry US</Link></li> */}
+                {/* <li><Link href="/stores/under-outfit-us" className="text-sm text-gray-300 hover:text-white transition-colors">Under Outfit Us</Link></li> */}
+              </ul>
+            </div>
 
-          {/* Useful Links */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 text-white">Useful Links</h3>
-            <ul className="space-y-2.5">
-              <li><Link href="/" className="text-sm text-gray-300 hover:text-white transition-colors">Home</Link></li>
-              <li><Link href="/stores" className="text-sm text-gray-300 hover:text-white transition-colors">Stores</Link></li>
-              <li><Link href="/categories" className="text-sm text-gray-300 hover:text-white transition-colors">Categories</Link></li>
-              <li><Link href="/contact-us" className="text-sm text-gray-300 hover:text-white transition-colors">Contact Us</Link></li>
-              <li><Link href="/about-us" className="text-sm text-gray-300 hover:text-white transition-colors">About Us</Link></li>
-              <li><Link href="/faqs" className="text-sm text-gray-300 hover:text-white transition-colors">FAQs</Link></li>
-              <li><Link href="/cookie-policy" className="text-sm text-gray-300 hover:text-white transition-colors">Cookie Policy</Link></li>
-              <li><Link href="/imprint" className="text-sm text-gray-300 hover:text-white transition-colors">Imprint</Link></li>
-            </ul>
+            {/* Useful Links */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4 text-white">Useful Links</h3>
+              <ul className="space-y-2.5">
+                <li><Link href="/" className="text-sm text-gray-300 hover:text-white transition-colors">Home</Link></li>
+                <li><Link href="/stores" className="text-sm text-gray-300 hover:text-white transition-colors">Stores</Link></li>
+                <li><Link href="/categories" className="text-sm text-gray-300 hover:text-white transition-colors">Categories</Link></li>
+                <li><Link href="/contact-us" className="text-sm text-gray-300 hover:text-white transition-colors">Contact Us</Link></li>
+                <li><Link href="/about-us" className="text-sm text-gray-300 hover:text-white transition-colors">About Us</Link></li>
+                <li><Link href="/faqs" className="text-sm text-gray-300 hover:text-white transition-colors">FAQs</Link></li>
+                <li><Link href="/cookie-policy" className="text-sm text-gray-300 hover:text-white transition-colors">Cookie Policy</Link></li>
+                <li><Link href="/imprint" className="text-sm text-gray-300 hover:text-white transition-colors">Imprint</Link></li>
+                <li><Link href="/gdpr-policy" className="text-sm text-gray-300 hover:text-white transition-colors">GDPR Policy</Link></li>
+              </ul>
+            </div>
           </div>
-        </div>
         </div>
       </div>
 

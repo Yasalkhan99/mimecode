@@ -84,7 +84,7 @@ export default function Home() {
 
   // Debug: Monitor FAQs state
   useEffect(() => {
-    console.log('FAQs state updated:', { count: faqs.length, faqs });
+    // console.log('FAQs state updated:', { count: faqs.length, faqs });
   }, [faqs]);
 
   // CRITICAL: Handle popup from query parameters (for code type coupons opened in new tab)
@@ -276,14 +276,14 @@ export default function Home() {
         setAllStores(allStoresData);
 
         // Debug: Check if stores have categoryId
-        console.log('📦 STORES LOADED:', {
-          totalStores: allStoresData.length,
-          sampleWithCategoryId: allStoresData.slice(0, 10).map(s => ({
-            name: s.name,
-            categoryId: s.categoryId,
-            hasCategoryId: !!s.categoryId
-          }))
-        });
+        // console.log('📦 STORES LOADED:', {
+        //   totalStores: allStoresData.length,
+        //   sampleWithCategoryId: allStoresData.slice(0, 10).map(s => ({
+        //     name: s.name,
+        //     categoryId: s.categoryId,
+        //     hasCategoryId: !!s.categoryId
+        //   }))
+        // });
 
         // Process coupons with stores (if coupons already loaded) - NON-BLOCKING
         if (allCoupons.length > 0) {
@@ -1253,15 +1253,15 @@ export default function Home() {
 
     // DEBUG: Log filtered featured deals source (without store/dup checks)
     if (process.env.NODE_ENV === 'development') {
-      console.log('🟢 Featured deal candidates from allCoupons:', allFeaturedCoupons.map(c => ({
-        id: c.id,
-        code: c.code,
-        couponType: c.couponType,
-        storeName: c.storeName,
-        storeIds: c.storeIds,
-        url: c.url,
-        isActive: c.isActive,
-      })));
+      // console.log('🟢 Featured deal candidates from allCoupons:', allFeaturedCoupons.map(c => ({
+      //   id: c.id,
+      //   code: c.code,
+      //   couponType: c.couponType,
+      //   storeName: c.storeName,
+      //   storeIds: c.storeIds,
+      //   url: c.url,
+      //   isActive: c.isActive,
+      // })));
     }
 
     // Add deals:

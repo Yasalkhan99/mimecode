@@ -469,7 +469,7 @@ export default function StoreDetailPage() {
 
       {/* Main Layout with Sidebar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 sm:pb-12">
-        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 max-lg:flex-col-reverse">
           {/* Left Sidebar */}
           <aside className="w-full lg:w-80 flex-shrink-0">
             <div className="sticky top-6 space-y-6">
@@ -586,7 +586,6 @@ export default function StoreDetailPage() {
                 <h3 className="text-lg font-bold text-gray-900 mb-3">Why Trust Us?</h3>
                 <div className="space-y-2 text-sm text-gray-700 leading-relaxed">
                   {store.whyTrustUs ? (
-                    // Use custom content from admin if available
                     <div dangerouslySetInnerHTML={{ __html: store.whyTrustUs.replace(/\n/g, '<br />') }} />
                   ) : (
                     // Default content if not set

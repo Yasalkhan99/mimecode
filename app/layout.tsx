@@ -34,21 +34,21 @@ const dancingScript = Dancing_Script({
 export const metadata: Metadata = {
   title: "MimeCode",
   description: "Manage coupons and discounts with Firebase backend",
-  icons: {
-    icon: [
-      {
-        url: '/Group 1171275295.svg',
-        type: 'image/svg+xml',
-      },
-      {
-        url: '/Group 1171275295.svg',
-        sizes: 'any',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/Group 1171275295.svg',
-    shortcut: '/Group 1171275295.svg',
-  },
+  // icons: {
+  //   icon: [
+  //     {
+  //       url: '/Group 1171275295.svg',
+  //       type: 'image/svg+xml',
+  //     },
+  //     {
+  //       url: '/Group 1171275295.svg',
+  //       sizes: 'any',
+  //       type: 'image/svg+xml',
+  //     },
+  //   ],
+  //   apple: '/Group 1171275295.svg',
+  //   shortcut: '/Group 1171275295.svg',
+  // },
   viewport: {
     width: 'device-width',
     initialScale: 1,
