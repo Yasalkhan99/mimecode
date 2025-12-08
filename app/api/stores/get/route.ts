@@ -220,7 +220,7 @@ const enrichStoresWithCategory = async (stores: any[]) => {
       .in('id', categoryIds);
 
     if (error) {
-      console.error('Error fetching categories for stores:', error);
+      // console.error('Error fetching categories for stores:', error);
       return stores.map((store) => ({
         ...store,
         mainCategoryId: store.categoryId || null,

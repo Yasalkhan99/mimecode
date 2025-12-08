@@ -29,7 +29,7 @@ const dancingScript = Dancing_Script({
   weight: ['400', '700'],
   subsets: ["latin"],
   variable: "--font-dancing-script",
-}); 
+});
 
 export const metadata: Metadata = {
   title: "MimeCode",
@@ -64,6 +64,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <meta name="verify-admitad" content="ed8e6fa9c3" />
         {/* Resource hints for faster connections */}
         <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://storage.googleapis.com" crossOrigin="anonymous" />

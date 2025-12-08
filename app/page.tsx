@@ -41,7 +41,7 @@ const Footer = dynamic(() => import('./components/Footer'), {
 });
 
 export default function Home() {
-  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  // const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [banners, setBanners] = useState<Banner[]>([]);
   const [latestCoupons, setLatestCoupons] = useState<Coupon[]>([]);
   const [allCoupons, setAllCoupons] = useState<Coupon[]>([]); // All coupons for Featured Deals
@@ -71,16 +71,16 @@ export default function Home() {
   const storesOfSeasonSliderRef = useRef<HTMLDivElement>(null);
   const [isStoresOfSeasonPaused, setIsStoresOfSeasonPaused] = useState(false);
 
-  useEffect(() => {
-    const hasSeenModal = localStorage.getItem('contactModalShown');
-    if (!hasSeenModal) {
-      const timer = setTimeout(() => {
-        setIsContactModalOpen(true);
-        localStorage.setItem('contactModalShown', 'true');
-      }, 4000);
-      return () => clearTimeout(timer);
-    }
-  }, []);
+  // useEffect(() => {
+  //   const hasSeenModal = localStorage.getItem('contactModalShown');
+  //   if (!hasSeenModal) {
+  //     const timer = setTimeout(() => {
+  //       setIsContactModalOpen(true);
+  //       localStorage.setItem('contactModalShown', 'true');
+  //     }, 4000);
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, []);
 
   // Debug: Monitor FAQs state
   useEffect(() => {
@@ -341,9 +341,9 @@ export default function Home() {
     };
   }, []);
 
-  const handleCloseModal = () => {
-    setIsContactModalOpen(false);
-  };
+  // const handleCloseModal = () => {
+  //   setIsContactModalOpen(false);
+  // };
 
   // Memoized store map for O(1) lookups - defined before filterCouponsWithFavicons
   const storeMap = useMemo(() => {
@@ -2530,10 +2530,10 @@ export default function Home() {
 
       <Footer />
 
-      <ContactSupportModal
+      {/* <ContactSupportModal
         isOpen={isContactModalOpen}
         onClose={handleCloseModal}
-      />
+      /> */}
 
       {/* Coupon Popup */}
       <CouponPopup
