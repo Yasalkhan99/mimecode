@@ -125,12 +125,20 @@ export default function EventsPageContent() {
         startDate = event.startDate;
       } else if (typeof event.startDate === 'string') {
         startDate = new Date(event.startDate);
-      } else if ((event.startDate as any).toDate) {
+      } else if ((event.startDate as any).toDate && typeof (event.startDate as any).toDate === 'function') {
         startDate = (event.startDate as any).toDate();
       } else if ((event.startDate as any).seconds) {
         startDate = new Date((event.startDate as any).seconds * 1000);
+      } else if (typeof event.startDate === 'object' && event.startDate !== null) {
+        // Handle Timestamp or other object types
+        const ts = event.startDate as any;
+        if (ts.seconds) {
+          startDate = new Date(ts.seconds * 1000);
+        } else {
+          startDate = new Date();
+        }
       } else {
-        startDate = new Date(event.startDate);
+        startDate = new Date();
       }
 
       return !isPast(startDate);
@@ -147,12 +155,20 @@ export default function EventsPageContent() {
         startDate = event.startDate;
       } else if (typeof event.startDate === 'string') {
         startDate = new Date(event.startDate);
-      } else if ((event.startDate as any).toDate) {
+      } else if ((event.startDate as any).toDate && typeof (event.startDate as any).toDate === 'function') {
         startDate = (event.startDate as any).toDate();
       } else if ((event.startDate as any).seconds) {
         startDate = new Date((event.startDate as any).seconds * 1000);
+      } else if (typeof event.startDate === 'object' && event.startDate !== null) {
+        // Handle Timestamp or other object types
+        const ts = event.startDate as any;
+        if (ts.seconds) {
+          startDate = new Date(ts.seconds * 1000);
+        } else {
+          return null;
+        }
       } else {
-        startDate = new Date(event.startDate);
+        return null;
       }
 
       if (isNaN(startDate.getTime())) return null;
