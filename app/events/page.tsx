@@ -66,14 +66,14 @@ export default function Events() {
   }, []);
 
   // Play a sound when the user reaches the Events page
-  useEffect(() => {
-    const audio = new Audio('/festive-christmas-bells-439607.mp3'); // Place event-enter.mp3 in the public folder
-    audio.volume = 1.0;
-    audio.play().catch((err) => {
-      // Autoplay may be blocked by the browser; fail silently
-      console.warn('Event page sound playback blocked or failed:', err);
-    });
-  }, []);
+  // useEffect(() => {
+  //   const audio = new Audio('/festive-christmas-bells-439607.mp3'); // Place event-enter.mp3 in the public folder
+  //   audio.volume = 1.0;
+  //   audio.play().catch((err) => {
+  //     // Autoplay may be blocked by the browser; fail silently
+  //     console.warn('Event page sound playback blocked or failed:', err);
+  //   });
+  // }, []);
 
   const formatDate = (date: Date | string | any): string => {
     if (!date) return 'N/A';
