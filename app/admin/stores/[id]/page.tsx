@@ -34,6 +34,10 @@ export default function EditStorePage() {
   const [extractedLogoUrl, setExtractedLogoUrl] = useState<string | null>(null);
   const [slugError, setSlugError] = useState<string>('');
   const [autoGenerateSlug, setAutoGenerateSlug] = useState<boolean>(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [extractingLogo, setExtractingLogo] = useState(false);
+  const [logoUploadMethod, setLogoUploadMethod] = useState<'url' | 'file'>('url');
   const [storeFaqs, setStoreFaqs] = useState<StoreFAQ[]>([]);
   const [showFaqForm, setShowFaqForm] = useState(false);
   const [editingFaqId, setEditingFaqId] = useState<string | null>(null);
@@ -60,19 +64,19 @@ export default function EditStorePage() {
       setSlugError('Slug is required');
       return false;
     }
-    
+
     // Check slug format (only lowercase letters, numbers, and hyphens)
     if (!/^[a-z0-9-]+$/.test(slug)) {
       setSlugError('Slug can only contain lowercase letters, numbers, and hyphens');
       return false;
     }
-    
+
     const isUnique = await isSlugUnique(slug, storeId);
     if (!isUnique) {
       setSlugError('This slug is already taken. Please use a different one.');
       return false;
     }
-    
+
     setSlugError('');
     return true;
   };
@@ -99,13 +103,13 @@ export default function EditStorePage() {
       }
       setCategories(categoriesData);
       setRegions(regionsData);
-      
+
       // Fetch store FAQs
       if (storeData) {
         const faqsData = await getStoreFAQs(storeId);
         setStoreFaqs(faqsData);
       }
-      
+
       setLoading(false);
     };
     fetchData();
@@ -114,27 +118,27 @@ export default function EditStorePage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    
+
     // Validate slug
     if (!formData.slug || formData.slug.trim() === '') {
       alert('Please enter a slug for the store');
       setSaving(false);
       return;
     }
-    
+
     const slugValid = await validateSlug(formData.slug);
     if (!slugValid) {
       setSaving(false);
       return;
     }
-    
+
     // Extract original URL if it's a Cloudinary URL
     const logoUrlToSave = logoUrl ? extractOriginalCloudinaryUrl(logoUrl) : undefined;
     const updates = {
       ...formData,
       ...(logoUrlToSave ? { logoUrl: logoUrlToSave } : {}),
     };
-    
+
     const result = await updateStore(storeId, updates);
     if (result.success) {
       router.push('/admin/stores');
@@ -149,6 +153,120 @@ export default function EditStorePage() {
       setExtractedLogoUrl(extracted);
     } else {
       setExtractedLogoUrl(null);
+    }
+  };
+
+  const handleExtractLogoFromUrl = async () => {
+    if (!logoUrl.trim()) {
+      alert('Please enter a URL in the Logo URL field');
+      return;
+    }
+
+    // Check if it's already a direct image URL
+    const imageExtensions = ['.png', '.jpg', '.jpeg', '.svg', '.gif', '.webp'];
+    const isDirectImageUrl = imageExtensions.some(ext => 
+      logoUrl.toLowerCase().includes(ext)
+    );
+
+    if (isDirectImageUrl) {
+      // If it's already an image URL, just use it
+      handleLogoUrlChange(logoUrl);
+      return;
+    }
+
+    setExtractingLogo(true);
+    try {
+      // Extract all metadata from the URL (same as store extraction)
+      const response = await fetch('/api/stores/extract-metadata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: logoUrl }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Only populate the logo field, even though we extracted all info
+        if (data.logoUrl) {
+          setLogoUrl(data.logoUrl);
+          handleLogoUrlChange(data.logoUrl);
+          alert('Logo extracted successfully!');
+        } else {
+          alert('Logo extracted but no logo URL found on this page. You may need to enter a direct image URL.');
+        }
+      } else {
+        alert(`Failed to extract logo: ${data.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error extracting logo:', error);
+      alert('Failed to extract logo. Please check the URL and try again.');
+    } finally {
+      setExtractingLogo(false);
+    }
+  };
+
+  const handleLogoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (1 MB = 1048576 bytes)
+    const maxSize = 1048576; // 1 MB
+    if (file.size > maxSize) {
+      alert(`File size exceeds 1 MB limit. Your file is ${(file.size / 1048576).toFixed(2)} MB. Please choose a smaller file.`);
+      e.target.value = ''; // Clear the input
+      return;
+    }
+
+    // Check if it's an image file
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file (PNG, JPG, SVG, etc.)');
+      e.target.value = ''; // Clear the input
+      return;
+    }
+
+    setLogoFile(file);
+    setUploadingLogo(true);
+
+    try {
+      // Convert file to base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          const base64Data = result.split(',')[1]; // Remove data URL prefix
+          resolve(base64Data);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      // Upload to Cloudinary
+      const uploadResponse = await fetch('/api/stores/upload-cloudinary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: file.name,
+          contentType: file.type || 'image/png',
+          base64: base64,
+        }),
+      });
+
+      const uploadData = await uploadResponse.json();
+
+      if (uploadData.success && uploadData.logoUrl) {
+        // Set the Cloudinary URL
+        setLogoUrl(uploadData.logoUrl);
+        handleLogoUrlChange(uploadData.logoUrl);
+        alert('✅ Logo uploaded to Cloudinary successfully!');
+      } else {
+        alert(`Upload failed: ${uploadData.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      alert(`Error uploading: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setUploadingLogo(false);
+      e.target.value = ''; // Clear the input after upload
     }
   };
 
@@ -195,8 +313,8 @@ export default function EditStorePage() {
                 value={formData.name || ''}
                 onChange={(e) => {
                   const name = e.target.value;
-                  setFormData({ 
-                    ...formData, 
+                  setFormData({
+                    ...formData,
                     name,
                     // Auto-generate slug from name only if auto-generate is enabled
                     slug: autoGenerateSlug ? generateSlug(name) : formData.slug
@@ -259,7 +377,7 @@ export default function EditStorePage() {
                 onChange={async (e) => {
                   // If auto-generate is enabled, don't allow manual editing
                   if (autoGenerateSlug) return;
-                  
+
                   const slug = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
                   setFormData({ ...formData, slug });
                   if (slug) {
@@ -269,9 +387,8 @@ export default function EditStorePage() {
                   }
                 }}
                 disabled={autoGenerateSlug}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                  slugError ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-                } ${autoGenerateSlug ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${slugError ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                  } ${autoGenerateSlug ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                 required
               />
               {slugError && (
@@ -325,7 +442,7 @@ export default function EditStorePage() {
           {/* Detailed Store Info Fields */}
           <div className="border-t border-gray-300 pt-6 mt-6">
             <h3 className="text-lg font-bold text-gray-800 mb-4">Detailed Store Information</h3>
-            
+
             <div>
               <label htmlFor="websiteUrl" className="block text-sm font-semibold text-gray-700 mb-1">
                 Website URL
@@ -690,18 +807,94 @@ export default function EditStorePage() {
           </div>
 
           <div>
-            <label htmlFor="logoUrl" className="block text-sm font-semibold text-gray-700 mb-1">
-              Logo URL (Cloudinary URL or direct URL)
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Logo Upload Method
             </label>
-            <input
-              id="logoUrl"
-              name="logoUrl"
-              type="url"
-              value={logoUrl}
-              onChange={(e) => handleLogoUrlChange(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-              placeholder="https://res.cloudinary.com/... or https://example.com/logo.png"
-            />
+            <div className="flex gap-4 mb-3">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="logoUploadMethod"
+                  value="url"
+                  checked={logoUploadMethod === 'url'}
+                  onChange={(e) => {
+                    setLogoUploadMethod('url');
+                    setLogoFile(null);
+                  }}
+                  className="mr-2"
+                />
+                URL / Extract from Website
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="logoUploadMethod"
+                  value="file"
+                  checked={logoUploadMethod === 'file'}
+                  onChange={(e) => {
+                    setLogoUploadMethod('file');
+                    setLogoUrl('');
+                  }}
+                  className="mr-2"
+                />
+                Upload File (Max 1 MB)
+              </label>
+            </div>
+
+            {logoUploadMethod === 'url' ? (
+              <>
+                <label htmlFor="logoUrl" className="block text-sm font-semibold text-gray-700 mb-1">
+                  Logo URL (Cloudinary URL, direct image URL, or website URL to extract logo)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="logoUrl"
+                    name="logoUrl"
+                    type="url"
+                    value={logoUrl}
+                    onChange={(e) => handleLogoUrlChange(e.target.value)}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    placeholder="https://res.cloudinary.com/... or https://example.com/logo.png or https://example.com"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleExtractLogoFromUrl}
+                    disabled={extractingLogo || !logoUrl.trim()}
+                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                  >
+                    {extractingLogo ? 'Extracting...' : 'Extract Logo'}
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Enter a direct image URL, Cloudinary URL, or a website URL to automatically extract the logo
+                </p>
+              </>
+            ) : (
+              <>
+                <label htmlFor="logoFile" className="block text-sm font-semibold text-gray-700 mb-1">
+                  Upload Logo File
+                </label>
+                <input
+                  id="logoFile"
+                  name="logoFile"
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp,image/gif"
+                  onChange={handleLogoFileChange}
+                  disabled={uploadingLogo}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                {uploadingLogo && (
+                  <div className="mt-2 flex items-center gap-2 text-sm text-blue-600">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    <span>Uploading to Cloudinary...</span>
+                  </div>
+                )}
+                <p className="mt-1 text-xs text-gray-500">
+                  Select an image file (PNG, JPG, SVG, WebP, or GIF). Maximum file size: 1 MB. The file will be uploaded to Cloudinary and the URL will be automatically filled.
+                </p>
+              </>
+            )}
+
             {extractedLogoUrl && extractedLogoUrl !== logoUrl && (
               <div className="mt-2 p-2 bg-blue-50 rounded text-sm text-blue-700">
                 <strong>Extracted Original URL:</strong>
@@ -709,8 +902,15 @@ export default function EditStorePage() {
               </div>
             )}
             {logoUrl && (
-              <div className="mt-2">
-                <img src={extractedLogoUrl || logoUrl} alt="Logo preview" className="h-16 object-contain" />
+              <div className="mt-3">
+                <p className="text-xs font-semibold text-gray-700 mb-2">Logo Preview:</p>
+                <div className="flex items-center justify-start py-2">
+                  <img 
+                    src={extractedLogoUrl || logoUrl} 
+                    alt="Logo preview" 
+                    className="max-h-24 max-w-full object-contain"
+                  />
+                </div>
               </div>
             )}
           </div>
@@ -724,8 +924,8 @@ export default function EditStorePage() {
                 checked={formData.isTrending || false}
                 onChange={(e) => {
                   const isTrending = e.target.checked;
-                  setFormData({ 
-                    ...formData, 
+                  setFormData({
+                    ...formData,
                     isTrending,
                     // Clear layout position if trending is disabled
                     layoutPosition: isTrending ? formData.layoutPosition : null
@@ -748,8 +948,8 @@ export default function EditStorePage() {
                 value={formData.layoutPosition || ''}
                 onChange={(e) => {
                   const position = e.target.value ? parseInt(e.target.value) : null;
-                  setFormData({ 
-                    ...formData, 
+                  setFormData({
+                    ...formData,
                     layoutPosition: position,
                     // Auto-enable trending if layout position is assigned
                     isTrending: position !== null ? true : formData.isTrending

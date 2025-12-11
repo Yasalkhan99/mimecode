@@ -4,14 +4,12 @@ import { useEffect, useState } from 'react';
 import type { Store } from '@/lib/services/storeService';
 import { getStores } from '@/lib/services/storeService';
 import type { Region } from '@/lib/services/regionService';
-import { getRegions } from '@/lib/services/regionService';
+import { getRegions, createRegion } from '@/lib/services/regionService';
 
 interface NetworkRow {
   networkId: string;
   networkName: string;
-  storeId: string;
-  storeName: string;
-  merchantId: string;
+  networkUrl: string;
 }
 
 export default function NetworkPage() {
@@ -19,6 +17,10 @@ export default function NetworkPage() {
   const [regions, setRegions] = useState<Region[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showNewNetworkForm, setShowNewNetworkForm] = useState(false);
+  const [newNetworkName, setNewNetworkName] = useState('');
+  const [newNetworkUrl, setNewNetworkUrl] = useState('');
+  const [creating, setCreating] = useState(false);
 
   const pageSize = 22;
 
@@ -42,35 +44,156 @@ export default function NetworkPage() {
     fetchData();
   }, []);
 
-  const networkRows: NetworkRow[] = stores
-    .filter((store) => !!store.networkId)
-    .map((store) => {
-      const region = regions.find((r) => r.networkId === store.networkId);
-      return {
-        networkId: store.networkId || '-',
-        networkName: region?.name || 'Unknown',
-        storeId: store.id || '-',
-        storeName: store.name,
-        merchantId: store.merchantId || '-',
-      };
-    })
-    .sort((a, b) => {
-      if (a.networkId === b.networkId) {
-        return a.storeName.localeCompare(b.storeName);
+  // Build unique list of networks from regions and stores
+  const networkRows: NetworkRow[] = (() => {
+    const networkIdSet = new Set<string>();
+    const urlByNetworkId: Record<string, string> = {};
+
+    // Collect from stores (for URLs)
+    stores.forEach((store) => {
+      if (!store.networkId) return;
+      const id = store.networkId;
+      networkIdSet.add(id);
+      if (!urlByNetworkId[id] && store.websiteUrl) {
+        urlByNetworkId[id] = store.websiteUrl;
       }
-      return a.networkId.localeCompare(b.networkId);
     });
+
+    // Collect from regions (for IDs/names, and fallback URL via description)
+    regions.forEach((region) => {
+      if (!region.networkId) return;
+      networkIdSet.add(region.networkId);
+      if (!urlByNetworkId[region.networkId] && region.description) {
+        urlByNetworkId[region.networkId] = region.description;
+      }
+    });
+
+    const rows: NetworkRow[] = Array.from(networkIdSet).map((networkId) => {
+      const region = regions.find((r) => r.networkId === networkId);
+      return {
+        networkId,
+        networkName: region?.name || 'Unknown',
+        networkUrl: urlByNetworkId[networkId] || '',
+      };
+    });
+
+    return rows.sort((a, b) => a.networkId.localeCompare(b.networkId));
+  })();
 
   const totalPages = Math.max(1, Math.ceil(networkRows.length / pageSize));
   const safePage = Math.min(currentPage, totalPages);
   const startIndex = (safePage - 1) * pageSize;
   const paginatedRows = networkRows.slice(startIndex, startIndex + pageSize);
 
+  const handleCreateNetwork = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newNetworkName.trim() || !newNetworkUrl.trim()) {
+      alert('Please enter both Network Name and URL.');
+      return;
+    }
+
+    // Generate a slug-like Network ID from the name
+    const networkId = newNetworkName
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+    if (!networkId) {
+      alert('Network name is invalid. Please use letters and numbers.');
+      return;
+    }
+
+    // Prevent duplicates by Network ID
+    const existing = regions.find((r) => r.networkId === networkId);
+    if (existing) {
+      alert('A network with this name/ID already exists.');
+      return;
+    }
+
+    setCreating(true);
+    try {
+      const result = await createRegion({
+        name: newNetworkName.trim(),
+        networkId,
+        description: newNetworkUrl.trim() || undefined, // store URL in description as fallback
+        isActive: true,
+      });
+
+      if (!result.success) {
+        alert(result.error || 'Failed to create network.');
+        return;
+      }
+
+      const updatedRegions = await getRegions();
+      setRegions(updatedRegions || []);
+
+      setNewNetworkName('');
+      setNewNetworkUrl('');
+      setShowNewNetworkForm(false);
+    } catch (err: any) {
+      console.error('Error creating network:', err);
+      alert(err?.message || 'Error creating network.');
+    } finally {
+      setCreating(false);
+    }
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-800">Networks</h1>
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowNewNetworkForm((prev) => !prev)}
+            className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-lg transition text-sm font-semibold"
+          >
+            {showNewNetworkForm ? 'Cancel' : 'Create New Network'}
+          </button>
+        </div>
       </div>
+
+      {showNewNetworkForm && (
+        <div className="new-network bg-white rounded-lg border border-gray-200 p-4 mb-6">
+          <form
+            onSubmit={handleCreateNetwork}
+            className="flex flex-col sm:flex-row gap-3 items-start sm:items-end"
+          >
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                Network Name
+              </label>
+              <input
+                type="text"
+                value={newNetworkName}
+                onChange={(e) => setNewNetworkName(e.target.value)}
+                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g. Cettire USA"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                Network URL
+              </label>
+              <input
+                type="url"
+                value={newNetworkUrl}
+                onChange={(e) => setNewNetworkUrl(e.target.value)}
+                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[220px]"
+                placeholder="https://example.com"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={creating}
+              className="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {creating ? 'Creating...' : 'Save Network'}
+            </button>
+          </form>
+        </div>
+      )}
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
@@ -84,14 +207,14 @@ export default function NetworkPage() {
                   Network Name
                 </th> */}
                 <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                  Store ID
+                  Network Name
                 </th>
                 <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                  Store Name
+                  Store URL
                 </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
+                {/* <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
                   Merchant ID
-                </th>
+                </th> */}
               </tr>
             </thead>
             <tbody>
@@ -109,12 +232,23 @@ export default function NetworkPage() {
                 </tr>
               ) : (
                 paginatedRows.map((row) => (
-                  <tr key={`${row.networkId}-${row.storeId}`} className="border-b hover:bg-gray-50">
+                  <tr key={row.networkId} className="border-b hover:bg-gray-50">
                     <td className="px-6 py-4 font-mono text-sm text-gray-800">{row.networkId}</td>
-                    {/* <td className="px-6 py-4 text-sm text-gray-900">{row.networkName}</td> */}
-                    <td className="px-6 py-4 font-mono text-sm text-gray-800">{row.storeId}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{row.storeName}</td>
-                    <td className="px-6 py-4 font-mono text-sm text-gray-800">{row.merchantId}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{row.networkName}</td>
+                    <td className="px-6 py-4 text-sm text-blue-600">
+                      {row.networkUrl ? (
+                        <a
+                          href={row.networkUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline break-all"
+                        >
+                          {row.networkUrl}
+                        </a>
+                      ) : (
+                        <span className="text-gray-400">N/A</span>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}

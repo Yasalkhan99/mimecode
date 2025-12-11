@@ -63,8 +63,35 @@ export default function CouponsPage() {
       return;
     }
 
-    // Columns should match the coupons table: Coupon ID, Store Name, Code, Description, Status
-    const headers = ['Coupon ID', 'Store Name', 'Code', 'Description', 'Status'];
+    // Export all known coupon fields
+    const headers = [
+      'Coupon ID',
+      'Code',
+      'Store Name',
+      'Store IDs',
+      'Title',
+      'Description',
+      'Discount',
+      'Discount Type',
+      'Coupon URL',
+      'Affiliate Link',
+      'Logo URL',
+      'Coupon Type',
+      'Status',
+      'Is Popular',
+      'Popular Layout Position',
+      'Is Latest',
+      'Latest Layout Position',
+      'Category ID',
+      'Button Text',
+      'Deal Scope',
+      'Max Uses',
+      'Current Uses',
+      'Expiry Date',
+      'User ID',
+      'Created At',
+      'Updated At',
+    ];
 
     const escapeCsv = (value: unknown): string => {
       if (value === null || value === undefined) return '';
@@ -75,13 +102,49 @@ export default function CouponsPage() {
       return str;
     };
 
+    const formatDate = (value: any): string => {
+      if (!value) return '';
+      if (value instanceof Date) {
+        return value.toISOString();
+      }
+      if (value && typeof value.toDate === 'function') {
+        // Firestore Timestamp
+        return value.toDate().toISOString();
+      }
+      if (typeof value === 'string' || typeof value === 'number') {
+        return new Date(value).toISOString();
+      }
+      return '';
+    };
+
     const rows = coupons.map((coupon) =>
       [
         escapeCsv(coupon.id),
-        escapeCsv(coupon.storeName),
         escapeCsv(coupon.code),
+        escapeCsv(coupon.storeName),
+        escapeCsv(coupon.storeIds && Array.isArray(coupon.storeIds) ? coupon.storeIds.join('; ') : ''),
+        escapeCsv(coupon.title),
         escapeCsv(coupon.description),
+        escapeCsv(coupon.discount),
+        escapeCsv(coupon.discountType),
+        escapeCsv(coupon.url),
+        escapeCsv(coupon.affiliateLink),
+        escapeCsv(coupon.logoUrl),
+        escapeCsv(coupon.couponType),
         escapeCsv(coupon.isActive ? 'Active' : 'Inactive'),
+        escapeCsv(coupon.isPopular ? 'Yes' : 'No'),
+        escapeCsv(coupon.layoutPosition),
+        escapeCsv(coupon.isLatest ? 'Yes' : 'No'),
+        escapeCsv(coupon.latestLayoutPosition),
+        escapeCsv(coupon.categoryId),
+        escapeCsv(coupon.buttonText),
+        escapeCsv(coupon.dealScope),
+        escapeCsv(coupon.maxUses),
+        escapeCsv(coupon.currentUses),
+        escapeCsv(formatDate(coupon.expiryDate)),
+        escapeCsv(coupon.userId),
+        escapeCsv(formatDate((coupon as any).createdAt)),
+        escapeCsv(formatDate((coupon as any).updatedAt)),
       ].join(',')
     );
 
@@ -92,7 +155,7 @@ export default function CouponsPage() {
     const link = document.createElement('a');
     link.href = url;
     const timestamp = new Date().toISOString().slice(0, 10);
-    link.download = `coupons-export-${timestamp}.csv`;
+    link.download = `coupons-full-records-${timestamp}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

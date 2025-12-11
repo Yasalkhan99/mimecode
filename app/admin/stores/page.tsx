@@ -21,7 +21,7 @@ export default function StoresPage() {
   const [regions, setRegions] = useState<Region[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [searchNetworkId, setSearchNetworkId] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [formData, setFormData] = useState<Partial<Store>>({
     name: '',
     subStoreName: '',
@@ -38,6 +38,7 @@ export default function StoresPage() {
   const [slugError, setSlugError] = useState<string>('');
   const [autoGenerateSlug, setAutoGenerateSlug] = useState<boolean>(true);
   const [logoUrl, setLogoUrl] = useState('');
+  // console.log("stores: ", stores);
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -79,6 +80,10 @@ export default function StoresPage() {
   const [extractedLogoUrl, setExtractedLogoUrl] = useState<string | null>(null);
   const [storeUrl, setStoreUrl] = useState('');
   const [extracting, setExtracting] = useState(false);
+  const [extractingLogo, setExtractingLogo] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [logoUploadMethod, setLogoUploadMethod] = useState<'url' | 'file'>('url');
 
   const handleExportStores = () => {
     if (!stores || stores.length === 0) {
@@ -86,8 +91,32 @@ export default function StoresPage() {
       return;
     }
 
-    // Columns should match the store table: Store ID, Merchant ID, Logo, Store Name, Network ID
-    const headers = ['Store ID', 'Merchant ID', 'Logo', 'Store Name', 'Network ID'];
+    // Export all known store fields including Affiliate Fallback URL
+    const headers = [
+      // 'Store UUID',
+      'Store ID',
+      'Merchant ID',
+      'Store Name',
+      'Sub Store Name',
+      'Slug',
+      'Description',
+      'Logo URL',
+      'Website URL',
+      'Voucher Text',
+      'Network ID',
+      'Affiliate Fallback URL',
+      'Category ID',
+      'Layout Position',
+      'Is Trending',
+      'Rating',
+      'Review Count',
+      'Why Trust Us',
+      'More Information',
+      'SEO Title',
+      'SEO Description',
+      'Created At',
+      'Updated At',
+    ];
 
     const escapeCsv = (value: unknown): string => {
       if (value === null || value === undefined) return '';
@@ -100,11 +129,29 @@ export default function StoresPage() {
 
     const rows = stores.map((store) =>
       [
-        escapeCsv(store.id),
+        // escapeCsv(store.id), 
+        escapeCsv((store as any).storeId), // external Store Id from Supabase row
         escapeCsv(store.merchantId),
-        escapeCsv(store.logoUrl),
         escapeCsv(store.name),
+        escapeCsv((store as any).subStoreName),
+        escapeCsv(store.slug),
+        escapeCsv(store.description),
+        escapeCsv(store.logoUrl),
+        escapeCsv(store.websiteUrl),
+        escapeCsv(store.voucherText),
         escapeCsv(store.networkId),
+        escapeCsv((store as any).affiliateFallbackUrl || (store as any).affiliateFallbackURL),
+        escapeCsv(store.categoryId),
+        escapeCsv(store.layoutPosition),
+        escapeCsv(store.isTrending),
+        escapeCsv(store.rating),
+        escapeCsv(store.reviewCount),
+        escapeCsv(store.whyTrustUs),
+        escapeCsv(store.moreInformation),
+        escapeCsv(store.seoTitle),
+        escapeCsv(store.seoDescription),
+        escapeCsv((store as any).createdAt),
+        escapeCsv((store as any).updatedAt),
       ].join(',')
     );
 
@@ -115,7 +162,7 @@ export default function StoresPage() {
     const link = document.createElement('a');
     link.href = url;
     const timestamp = new Date().toISOString().slice(0, 10);
-    link.download = `stores-records-${timestamp}.csv`;
+    link.download = `stores-full-records-${timestamp}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -126,19 +173,31 @@ export default function StoresPage() {
     setLoading(true);
     const data = await getStores();
     setStores(data);
-    // Apply current search filter if any
-    if (searchNetworkId) {
-      const filtered = data.filter(store => 
-        store.networkId?.toLowerCase().includes(searchNetworkId.toLowerCase())
-      );
-      setFilteredStores(filtered);
-    } else {
-      setFilteredStores(data);
-    }
-    setTotalItems(data.length);
     setCurrentPage(1); // Reset to first page when data changes
     setLoading(false);
+    // Filter will be applied automatically via useEffect when stores state updates
   };
+
+  // Filter stores based on search query
+  useEffect(() => {
+    if (stores.length === 0) return;
+    
+    if (searchQuery.trim() === '') {
+      setFilteredStores(stores);
+      setTotalItems(stores.length);
+    } else {
+      const query = searchQuery.toLowerCase();
+      const filtered = stores.filter(store => 
+        store.name?.toLowerCase().startsWith(query.toLowerCase()) ||
+        store.merchantId?.toLowerCase().includes(query) ||
+        store.networkId?.toLowerCase().includes(query) ||
+        (store as any).storeId?.toLowerCase().includes(query)
+      );
+      setFilteredStores(filtered);
+      setTotalItems(filtered.length);
+    }
+    setCurrentPage(1); // Reset to first page when search changes
+  }, [searchQuery, stores]);
 
   useEffect(() => {
     const load = async () => {
@@ -149,10 +208,10 @@ export default function StoresPage() {
         getActiveRegions()
       ]);
       setStores(storesData);
-      setFilteredStores(storesData);
       setCategories(categoriesData);
       setRegions(regionsData);
       setLoading(false);
+      // Filter will be applied automatically via useEffect when stores state updates
     };
     load();
   }, []);
@@ -226,6 +285,8 @@ export default function StoresPage() {
       setLogoUrl('');
       setExtractedLogoUrl(null);
       setStoreUrl('');
+      setLogoFile(null);
+      setLogoUploadMethod('url');
     }
   };
 
@@ -341,24 +402,186 @@ export default function StoresPage() {
     }
   };
 
+  const handleExtractLogoFromUrl = async () => {
+    if (!logoUrl.trim()) {
+      alert('Please enter a URL in the Logo URL field');
+      return;
+    }
+
+    // Check if it's already a direct image URL
+    const imageExtensions = ['.png', '.jpg', '.jpeg', '.svg', '.gif', '.webp'];
+    const isDirectImageUrl = imageExtensions.some(ext => 
+      logoUrl.toLowerCase().includes(ext)
+    );
+
+    if (isDirectImageUrl) {
+      // If it's already an image URL, just use it
+      handleLogoUrlChange(logoUrl);
+      return;
+    }
+
+    setExtractingLogo(true);
+    try {
+      // Extract all metadata from the URL (same as store extraction)
+      const response = await fetch('/api/stores/extract-metadata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: logoUrl }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Only populate the logo field, even though we extracted all info
+        if (data.logoUrl) {
+          setLogoUrl(data.logoUrl);
+          handleLogoUrlChange(data.logoUrl);
+          alert('Logo extracted successfully!');
+        } else {
+          alert('Logo extracted but no logo URL found on this page. You may need to enter a direct image URL.');
+        }
+      } else {
+        alert(`Failed to extract logo: ${data.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error extracting logo:', error);
+      alert('Failed to extract logo. Please check the URL and try again.');
+    } finally {
+      setExtractingLogo(false);
+    }
+  };
+
+  const handleLogoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (1 MB = 1048576 bytes)
+    const maxSize = 1048576; // 1 MB
+    if (file.size > maxSize) {
+      alert(`File size exceeds 1 MB limit. Your file is ${(file.size / 1048576).toFixed(2)} MB. Please choose a smaller file.`);
+      e.target.value = ''; // Clear the input
+      return;
+    }
+
+    // Check if it's an image file
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file (PNG, JPG, SVG, etc.)');
+      e.target.value = ''; // Clear the input
+      return;
+    }
+
+    setLogoFile(file);
+    setUploadingLogo(true);
+
+    try {
+      // Convert file to base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          const base64Data = result.split(',')[1]; // Remove data URL prefix
+          resolve(base64Data);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      // Upload to Cloudinary
+      const uploadResponse = await fetch('/api/stores/upload-cloudinary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: file.name,
+          contentType: file.type || 'image/png',
+          base64: base64,
+        }),
+      });
+
+      const uploadData = await uploadResponse.json();
+
+      if (uploadData.success && uploadData.logoUrl) {
+        // Set the Cloudinary URL
+        setLogoUrl(uploadData.logoUrl);
+        handleLogoUrlChange(uploadData.logoUrl);
+        alert('✅ Logo uploaded to Cloudinary successfully!');
+      } else {
+        alert(`Upload failed: ${uploadData.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      alert(`Error uploading: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setUploadingLogo(false);
+      e.target.value = ''; // Clear the input after upload
+    }
+  };
+
   return (
     <div>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Manage Stores</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Manage Stores</h1>
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
             onClick={handleExportStores}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm font-semibold"
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm font-semibold whitespace-nowrap"
           >
             Export Stores (CSV)
           </button>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition whitespace-nowrap"
           >
             {showForm ? 'Cancel' : 'Create New Store'}
           </button>
+        </div>
+      </div>
+
+      {/* Search Bar - Always Visible */}
+      <div className="mb-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          <label htmlFor="searchStore" className="block text-sm font-semibold text-gray-700 mb-2">
+            Search by Store Name
+          </label>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex-1 relative">
+              <input
+                id="searchStore"
+                type="text"
+                placeholder="Enter store name"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900"
+              />
+              <svg
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium whitespace-nowrap"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          {searchQuery && (
+            <p className="mt-2 text-sm text-gray-600">
+              Showing <span className="font-semibold">{filteredStores.length}</span> of{' '}
+              <span className="font-semibold">{stores.length}</span> stores
+            </p>
+          )}
         </div>
       </div>
 
@@ -501,18 +724,93 @@ export default function StoresPage() {
             </div>
 
             <div>
-              <label htmlFor="logoUrl" className="block text-gray-700 text-sm font-semibold mb-2">
-                Logo URL (Cloudinary URL or direct URL)
+              <label className="block text-gray-700 text-sm font-semibold mb-2">
+                Logo Upload Method
               </label>
-              <input
-                id="logoUrl"
-                name="logoUrl"
-                type="url"
-                value={logoUrl}
-                onChange={(e) => handleLogoUrlChange(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                placeholder="https://res.cloudinary.com/... or https://example.com/logo.png"
-              />
+              <div className="flex gap-4 mb-3">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="logoUploadMethod"
+                    value="url"
+                    checked={logoUploadMethod === 'url'}
+                    onChange={(e) => {
+                      setLogoUploadMethod('url');
+                      setLogoFile(null);
+                    }}
+                    className="mr-2"
+                  />
+                  URL / Extract from Website
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="logoUploadMethod"
+                    value="file"
+                    checked={logoUploadMethod === 'file'}
+                    onChange={(e) => {
+                      setLogoUploadMethod('file');
+                      setLogoUrl('');
+                    }}
+                    className="mr-2"
+                  />
+                  Upload File (Max 1 MB)
+                </label>
+              </div>
+
+              {logoUploadMethod === 'url' ? (
+                <>
+                  <label htmlFor="logoUrl" className="block text-gray-700 text-sm font-semibold mb-2">
+                    Logo URL (Cloudinary URL, direct image URL, or website URL to extract logo)
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      id="logoUrl"
+                      name="logoUrl"
+                      type="url"
+                      value={logoUrl}
+                      onChange={(e) => handleLogoUrlChange(e.target.value)}
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      placeholder="https://res.cloudinary.com/... or https://example.com/logo.png or https://example.com"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleExtractLogoFromUrl}
+                      disabled={extractingLogo || !logoUrl.trim()}
+                      className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                    >
+                      {extractingLogo ? 'Extracting...' : 'Extract Logo'}
+                    </button>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Enter a direct image URL, Cloudinary URL, or a website URL to automatically extract the logo
+                  </p>
+                </>
+              ) : (
+                <>
+                  <label htmlFor="logoFile" className="block text-gray-700 text-sm font-semibold mb-2">
+                    Upload Logo File
+                  </label>
+                  <input
+                    id="logoFile"
+                    name="logoFile"
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp,image/gif"
+                    onChange={handleLogoFileChange}
+                    disabled={uploadingLogo}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  {uploadingLogo && (
+                    <div className="mt-2 flex items-center gap-2 text-sm text-blue-600">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                      <span>Uploading to Cloudinary...</span>
+                    </div>
+                  )}
+                  <p className="mt-1 text-xs text-gray-500">
+                    Select an image file (PNG, JPG, SVG, WebP, or GIF). Maximum file size: 1 MB. The file will be uploaded to Cloudinary and the URL will be automatically filled.
+                  </p>
+                </>
+              )}
               {extractedLogoUrl && extractedLogoUrl !== logoUrl && (
                 <div className="mt-2 p-2 bg-blue-50 rounded text-sm text-blue-700">
                   <strong>Extracted Original URL:</strong>
@@ -520,15 +818,22 @@ export default function StoresPage() {
                 </div>
               )}
               {logoUrl && (
-                <div className="mt-2">
-                  <img 
-                    src={extractedLogoUrl || logoUrl} 
-                    alt="Logo preview" 
-                    className="h-16 object-contain"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
+                <div className="mt-3">
+                  <p className="text-xs font-semibold text-gray-700 mb-2">Logo Preview:</p>
+                  <div className="flex items-center justify-start py-2">
+                    <img 
+                      src={extractedLogoUrl || logoUrl} 
+                      alt="Logo preview" 
+                      className="max-h-24 max-w-full object-contain"
+                      // onError={(e) => {
+                      //   (e.target as HTMLImageElement).style.display = 'none';
+                      //   const parent = (e.target as HTMLImageElement).parentElement;
+                      //   if (parent) {
+                      //     parent.innerHTML = '<p class="text-sm text-gray-500">Failed to load image</p>';
+                      //   }
+                      // }}
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -549,7 +854,7 @@ export default function StoresPage() {
               />
             </div>
 
-            <div>
+            {/* <div>
               <label htmlFor="voucherText" className="block text-gray-700 text-sm font-semibold mb-2">
                 Voucher Text
               </label>
@@ -567,7 +872,7 @@ export default function StoresPage() {
               <p className="mt-1 text-xs text-gray-500">
                 Voucher text that will be displayed on the store card (e.g., "Upto 58% Voucher")
               </p>
-            </div>
+            </div> */}
 
             <div>
               <label htmlFor="networkId" className="block text-gray-700 text-sm font-semibold mb-2">
@@ -852,6 +1157,16 @@ export default function StoresPage() {
       ) : stores.length === 0 ? (
         <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
           <p className="text-gray-500">No stores created yet</p>
+        </div>
+      ) : filteredStores.length === 0 ? (
+        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+          <p className="text-gray-500">No stores found matching "{searchQuery}"</p>
+          <button
+            onClick={() => setSearchQuery('')}
+            className="mt-4 text-blue-600 hover:text-blue-800 underline"
+          >
+            Clear search
+          </button>
         </div>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">

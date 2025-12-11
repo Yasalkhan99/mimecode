@@ -393,13 +393,13 @@ export default function ImportPage() {
                   <div className="text-sm text-blue-800">• Code (for code type)</div>
                   <div className="text-sm text-blue-800">• Type (code/deal)</div>
                   <div className="text-sm text-blue-800">• Discount (number)</div>
-                  <div className="text-sm text-blue-800">• Discount Type (percentage/fixed)</div>
+                  {/* <div className="text-sm text-blue-800">• Discount Type (percentage/fixed)</div> */}
                   <div className="text-sm text-blue-800">• Coupon URL</div>
-                  <div className="text-sm text-blue-800">• Tracking URL (priority over Coupon URL)</div>
+                  {/* <div className="text-sm text-blue-800">• Tracking URL (priority over Coupon URL)</div> */}
                   <div className="text-sm text-blue-800">• Logo URL</div>
                   <div className="text-sm text-blue-800">• Expiry Date (YYYY-MM-DD)</div>
                   <div className="text-sm text-blue-800">• Button Text</div>
-                  <div className="text-sm text-blue-800">• Deal Scope (sitewide/online-only)</div>
+                  {/* <div className="text-sm text-blue-800">• Deal Scope (sitewide/online-only)</div> */}
                   <div className="text-sm text-blue-800">• Category ID</div>
                   <div className="text-sm text-blue-800">• Is Popular (true/false)</div>
                   <div className="text-sm text-blue-800">• Is Active (true/false)</div>
