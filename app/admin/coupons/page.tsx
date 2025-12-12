@@ -288,6 +288,9 @@ export default function CouponsPage() {
     try {
       let result;
       
+      // Default placeholder image
+      const defaultLogoUrl = 'https://www.iconpacks.net/icons/2/free-store-icon-2017-thumb.png';
+      
       // If logoUrl is set (from Cloudinary upload), use URL method
       // Otherwise, if file is selected, try to upload it
       if (logoUrl && logoUrl.trim() !== '') {
@@ -299,9 +302,10 @@ export default function CouponsPage() {
         console.log('Creating coupon with file upload, logoFile:', logoFile);
         result = await createCoupon(couponData as Omit<Coupon, 'id'>, logoFile || undefined);
       } else {
-        // URL method - logoUrl is optional
-        console.log('Creating coupon with URL, logoUrl:', logoUrl);
-        result = await createCouponFromUrl(couponData as Omit<Coupon, 'id'>, logoUrl || undefined);
+        // URL method - use default logo if no logoUrl is provided
+        const finalLogoUrl = logoUrl && logoUrl.trim() !== '' ? logoUrl : defaultLogoUrl;
+        console.log('Creating coupon with URL, logoUrl:', finalLogoUrl);
+        result = await createCouponFromUrl(couponData as Omit<Coupon, 'id'>, finalLogoUrl);
       }
       
       if (result.success) {

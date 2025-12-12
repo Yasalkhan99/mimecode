@@ -245,7 +245,13 @@ export default function StoresPage() {
     }
     
     // Extract original URL if it's a Cloudinary URL
-    const logoUrlToSave = logoUrl ? extractOriginalCloudinaryUrl(logoUrl) : undefined;
+    let logoUrlToSave = logoUrl ? extractOriginalCloudinaryUrl(logoUrl) : undefined;
+    
+    // If no logo URL is provided, use a default placeholder
+    if (!logoUrlToSave || logoUrlToSave.trim() === '') {
+      // Default placeholder image
+      logoUrlToSave = 'https://www.iconpacks.net/icons/2/free-store-icon-2017-thumb.png';
+    }
     
     // Only set layoutPosition if store is trending
     const layoutPositionToSave = formData.isTrending ? formData.layoutPosition : null;

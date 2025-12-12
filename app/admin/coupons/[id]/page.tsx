@@ -85,12 +85,19 @@ export default function EditCouponPage() {
     setSaving(true);
     
     // Extract original URL if it's a Cloudinary URL
-    const logoUrlToSave = logoUrl ? extractOriginalCloudinaryUrl(logoUrl) : undefined;
+    let logoUrlToSave = logoUrl ? extractOriginalCloudinaryUrl(logoUrl) : undefined;
+    
+    // If no logo URL is provided, use a default placeholder
+    if (!logoUrlToSave || logoUrlToSave.trim() === '') {
+      // Default placeholder image
+      logoUrlToSave = 'https://www.iconpacks.net/icons/2/free-store-icon-2017-thumb.png';
+    }
+    
     const updates: any = {
       ...formData,
       discountType: 'percentage', // Always use percentage
       couponType: formData.couponType || 'code',
-      ...(logoUrlToSave ? { logoUrl: logoUrlToSave } : {}),
+      logoUrl: logoUrlToSave,
     };
     
     // For deal type, don't include code field

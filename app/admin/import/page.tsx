@@ -110,11 +110,74 @@ export default function ImportPage() {
             const description =
               row['Description'] ?? row['description'] ?? row.description ?? '';
 
-            const logoUrl =
-              row['Logo URL'] ?? row['logoUrl'] ?? row['Logo'] ?? row.logoUrl ?? row.logo ?? '';
+            // Get Logo Url from various possible column names (handling CSV variations)
+            let logoUrl =
+              row['Logo URL'] ?? row['Logo Url'] ?? row['logoUrl'] ?? row['Logo'] ?? row.logoUrl ?? row.logo ?? '';
 
-            const websiteUrl =
+            // Get Store Url from various possible column names (handling CSV variations)
+            const storeUrl =
+              row['Store URL'] ?? row['Store Url'] ?? row['storeUrl'] ?? 
               row['Website URL'] ?? row['Website Url'] ?? row['websiteUrl'] ?? row.websiteUrl ?? '';
+
+            // Helper function to extract logo from a URL
+            const extractLogoFromUrl = async (url: string): Promise<string | null> => {
+              if (!url || url.trim() === '') return null;
+
+              // Check if it's already a direct image URL
+              const imageExtensions = ['.png', '.jpg', '.jpeg', '.svg', '.gif', '.webp'];
+              const isDirectImageUrl = imageExtensions.some(ext => 
+                url.toLowerCase().includes(ext)
+              );
+
+              // If it's a direct image URL, return it as-is
+              if (isDirectImageUrl) {
+                return url;
+              }
+
+              // If it's not a direct image URL, extract logo from the website
+              try {
+                const extractResponse = await fetch('/api/stores/extract-metadata', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ url: url }),
+                });
+
+                const extractData = await extractResponse.json();
+
+                if (extractData.success && extractData.logoUrl) {
+                  // Return the extracted logo URL
+                  return extractData.logoUrl;
+                }
+              } catch (extractError) {
+                console.warn(`Failed to extract logo from ${url}:`, extractError);
+              }
+
+              return null;
+            };
+
+            // Default logo URL
+            const defaultLogoUrl = 'https://www.iconpacks.net/icons/2/free-store-icon-2017-thumb.png';
+
+            // Try to extract logo from Logo Url first
+            let extractedLogoUrl: string | null = null;
+            if (logoUrl && logoUrl.trim() !== '') {
+              extractedLogoUrl = await extractLogoFromUrl(logoUrl);
+            }
+
+            // If Logo Url extraction failed or is empty, try extracting from Store Url
+            if (!extractedLogoUrl && storeUrl && storeUrl.trim() !== '') {
+              extractedLogoUrl = await extractLogoFromUrl(storeUrl);
+            }
+
+            // Use extracted logo if found, otherwise use default
+            if (extractedLogoUrl) {
+              logoUrl = extractedLogoUrl;
+            } else {
+              // If extraction failed or no logo URL was provided, use default logo
+              logoUrl = defaultLogoUrl;
+            }
+
+            const websiteUrl = storeUrl;
 
             const voucherText =
               row['Voucher Text'] ?? row['voucherText'] ?? row.voucherText ?? '';
@@ -499,7 +562,7 @@ export default function ImportPage() {
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                     </svg>
-                    Import {excelData.length} {importType} to Firestore
+                    Import {excelData.length} {importType}
                   </>
                 )}
               </button>
