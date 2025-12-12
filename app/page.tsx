@@ -1381,8 +1381,8 @@ export default function Home() {
 
       {/* Hero Banner Section - Retail Store Style */}
       {/* Always reserve space to prevent layout shift */}
-      <Exclusive01 className="w-[180px] max-md:w-[50px] max-xl:w-[100px] absolute top-[35%] left-0" />
-      <Exclusive02 className="w-[180px] absolute top-[35%] right-0 " />
+      <Exclusive01 className="w-[180px] max-md:w-[80px] max-xl:w-[100px] absolute top-[35%] left-0" />
+      <Exclusive02 className="w-[180px] max-md:w-[80px] max-xl:w-[100px] absolute top-[35%] right-0 " />
       <section className="relative w-full bg-white py-2 sm:py-4 md:py-6" style={{ minHeight: loading ? '180px' : 'auto' }}>
         {/* Container with padding and max-width */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8">
@@ -2272,7 +2272,7 @@ export default function Home() {
 
                 {/* FAQ Section */}
                 {faqs && faqs.length > 0 && (
-                  <div className="mt-12 md:mt-16">
+                  <div className="mt-12 md:mt-16 relative z-20">
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       whileInView={{ opacity: 1, y: 0 }}
@@ -2370,14 +2370,14 @@ export default function Home() {
 
                         <form
                           onSubmit={handleNewsletterSubmit}
-                          className="flex flex-col sm:flex-row gap-3 mb-4 border-1 border-[#D0D0D0] rounded-full p-1"
+                          className="flex mb-4 border-1 border-[#D0D0D0] rounded-full p-1"
                         >
                           <input
                             type="email"
                             placeholder="Email Address"
                             value={newsletterEmail}
                             onChange={(e) => setNewsletterEmail(e.target.value)}
-                            className="flex-1 px-4 py-3 focus:outline-none focus:none text-black placeholder-gray-500"
+                            className="px-4 py-3 max-sm:pr-0 focus:outline-none focus:none text-black placeholder-gray-500"
                             disabled={newsletterLoading}
                             required
                           />
