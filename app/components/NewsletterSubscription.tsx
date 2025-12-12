@@ -151,21 +151,21 @@ export default function NewsletterSubscription() {
 
             <form
               onSubmit={handleSubmit}
-              className="flex flex-col sm:flex-row gap-3 mb-4 border-1 border-[#D0D0D0] rounded-full p-1"
+              className="flex flex-col sm:flex-row gap-0 mb-4 border border-[#D0D0D0] rounded-full p-1 bg-white"
             >
               <input
                 type="email"
                 placeholder="Email Address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 px-4 py-3 focus:outline-none focus:none text-black placeholder-gray-500"
+                className="flex-1 px-4 py-3 focus:outline-none text-black placeholder-gray-500 bg-transparent border-0 rounded-full"
                 disabled={isSubmitting}
                 required
               />
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="cursor-pointer bg-[#FFE019] text-black font-bold text-[14px] px-6 py-0 rounded-3xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                className="cursor-pointer bg-[#FFE019] text-black font-bold text-sm px-6 py-3 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
               >
                 {isSubmitting ? 'Subscribing...' : 'Unlock Deals'}
               </button>
