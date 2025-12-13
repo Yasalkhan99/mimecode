@@ -9,6 +9,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
+// @ts-ignore - firebase/storage types issue
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export interface Category {

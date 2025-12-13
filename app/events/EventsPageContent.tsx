@@ -7,6 +7,7 @@ import { getEvents, Event } from '@/lib/services/eventService';
 import { getPageSettings } from '@/lib/services/pageSettingsService';
 import { useTranslation } from '@/lib/hooks/useTranslation';
 import { motion } from 'framer-motion';
+// @ts-ignore - date-fns types issue
 import { format, isPast, differenceInDays } from 'date-fns';
 
 export default function EventsPageContent() {

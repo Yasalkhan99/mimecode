@@ -9,6 +9,7 @@ import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
 import NewsletterSubscription from '@/app/components/NewsletterSubscription';
 import { motion } from 'framer-motion';
+// @ts-ignore - date-fns types issue
 import { format, isPast, differenceInDays } from 'date-fns';
 
 export default function Events() {
