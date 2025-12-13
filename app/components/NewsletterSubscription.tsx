@@ -4,8 +4,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 
 export default function NewsletterSubscription() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -146,7 +148,13 @@ export default function NewsletterSubscription() {
           {/* Content Area */}
           <div className="">
             <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-6 text-center">
-              Get Exclusive Coupons & <br /> Best Deals Delivered to Your Inbox
+              {t('getExclusiveCouponsAndDeals').includes(' & ') ? (
+                <>
+                  {t('getExclusiveCouponsAndDeals').split(' & ')[0]} & <br /> {t('getExclusiveCouponsAndDeals').split(' & ')[1]}
+                </>
+              ) : (
+                t('getExclusiveCouponsAndDeals')
+              )}
             </h2>
 
             <form
@@ -155,7 +163,7 @@ export default function NewsletterSubscription() {
             >
               <input
                 type="email"
-                placeholder="Email Address"
+                placeholder={t('emailAddress')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="flex-1 px-4 py-3 focus:outline-none text-black placeholder-gray-500 bg-transparent border-0 rounded-full"
@@ -167,7 +175,7 @@ export default function NewsletterSubscription() {
                 disabled={isSubmitting}
                 className="cursor-pointer bg-[#FFE019] text-black font-bold text-sm px-6 py-3 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
               >
-                {isSubmitting ? 'Subscribing...' : 'Unlock Deals'}
+                {isSubmitting ? t('subscribing') : t('unlockDeals')}
               </button>
             </form>
 

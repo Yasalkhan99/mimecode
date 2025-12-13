@@ -2,7 +2,10 @@
 
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
+import LocalizedLink from '@/app/components/LocalizedLink';
 import { useRouter } from 'next/navigation';
+import { useLanguage } from '@/lib/contexts/LanguageContext';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 // import { getBannerByLayoutPosition, getBannersWithLayout, Banner } from '@/lib/services/bannerService';
 import { getStores, Store } from '@/lib/services/storeService';
 import { getCategories, Category } from '@/lib/services/categoryService';
@@ -36,6 +39,7 @@ const getStoreRating = (storeId: string | undefined): { rating: number; reviews:
 };
 
 export default function StoresPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   // const [banner10, setBanner10] = useState<Banner | null>(null);
   // const [banners, setBanners] = useState<Banner[]>([]);
@@ -471,7 +475,7 @@ export default function StoresPage() {
                 <input
                   ref={searchInputRef}
                   type="text"
-                  placeholder="Search for stores..."
+                  placeholder={t('searchForStores')}
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -506,10 +510,10 @@ export default function StoresPage() {
               {showSearchResults && searchFilteredStores.length > 0 && (
                 <div ref={searchResultsRef} className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-[#FFE019]/30 rounded-lg shadow-lg z-50 max-h-[400px] overflow-y-auto">
                   <div className="px-4 py-2 text-xs font-semibold text-black border-b border-gray-200 bg-[#FFE019]/5 sticky top-0">
-                    Stores ({searchFilteredStores.length})
+                    {t('storesCount')} ({searchFilteredStores.length})
                   </div>
                   {searchFilteredStores.map((store) => (
-                    <Link
+                    <LocalizedLink
                       key={store.id}
                       href={`/stores/${store.slug || store.id}`}
                       onClick={() => {
@@ -533,7 +537,7 @@ export default function StoresPage() {
                       <svg className="w-4 h-4 text-gray-400 group-hover:text-black flex-shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
-                    </Link>
+                    </LocalizedLink>
                   ))}
                 </div>
               )}
@@ -542,14 +546,14 @@ export default function StoresPage() {
               {showSearchResults && searchQuery.trim().length > 0 && searchFilteredStores.length === 0 && (
                 <div ref={searchResultsRef} className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-[#FFE019]/30 rounded-lg shadow-lg z-50">
                   <div className="px-4 py-6 text-center text-sm text-gray-500">
-                    No stores found starting with "{searchQuery}"
+                    {t('noStoresFoundStartingWith')} "{searchQuery}"
                   </div>
                 </div>
               )}
             </form>
           </div>
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-4 sm:mb-6 md:mb-8">
-            All <span className="text-[#FFE019]">Stores</span>
+            {t('allStores')}
           </h2>
 
           {/* Main Content with Sidebar Layout */}
@@ -575,10 +579,10 @@ export default function StoresPage() {
               
               return totalPages > 1 ? (
                 <div className="text-xs sm:text-sm text-gray-500 text-center sm:text-left">
-                  Page <span className="font-semibold">{currentPage}</span> of <span className="font-semibold">{totalPages}</span>
+                  {t('page')} <span className="font-semibold">{currentPage}</span> {t('of')} <span className="font-semibold">{totalPages}</span>
                   {storesForPagination.length > 0 && (
                     <span className="ml-2">
-                      (Showing {showingStart}-{showingCount} of {storesForPagination.length} stores)
+                      ({t('showing')} {showingStart}-{showingCount} {t('of')} {storesForPagination.length} {t('storesCount').toLowerCase()})
                     </span>
                   )}
                 </div>
@@ -597,16 +601,16 @@ export default function StoresPage() {
               </button> */}
               
               <div className="flex items-center gap-2 w-full xs:w-auto">
-                <span className="text-xs sm:text-sm md:text-base text-gray-600 whitespace-nowrap">Sort By:</span>
+                <span className="text-xs sm:text-sm md:text-base text-gray-600 whitespace-nowrap">{t('sortBy')}</span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                   className="flex-1 xs:flex-none px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm md:text-base bg-white cursor-pointer"
                 >
-                  <option value="newest">Newest</option>
-                  <option value="oldest">Oldest</option>
-                  <option value="name-asc">Name (A-Z)</option>
-                  <option value="name-desc">Name (Z-A)</option>
+                  <option value="newest">{t('newest')}</option>
+                  <option value="oldest">{t('oldest')}</option>
+                  <option value="name-asc">{t('nameAsc')}</option>
+                  <option value="name-desc">{t('nameDesc')}</option>
                 </select>
               </div>
             </div>
@@ -620,7 +624,7 @@ export default function StoresPage() {
             </div>
           ) : stores.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">No stores available yet.</p>
+              <p className="text-gray-500 text-lg">{t('noStoresAvailable')}</p>
             </div>
           ) : (
             <div>
@@ -628,7 +632,7 @@ export default function StoresPage() {
               {filteredStores.length > 0 && (
                 <div className="mb-4 sm:mb-6 md:mb-12">
                   <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-3 sm:mb-4 md:mb-6 px-2 sm:px-0">
-                    Featured <span className="text-[#FFE019]">Stores</span>
+                    {t('featuredStores')}
                   </h3>
                   <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[#FFE019]/10 via-[#ABC443]/5 to-black/10 p-2 sm:p-3 md:p-4 lg:p-6">
                     <div 
@@ -638,7 +642,7 @@ export default function StoresPage() {
                     >
                       {/* Mobile: Show only first 6 stores, Desktop: Show duplicated for seamless loop */}
                       {[...filteredStores.slice(0, 6), ...filteredStores.slice(0, 6), ...filteredStores.slice(0, 6)].map((store, index) => (
-                        <Link
+                        <LocalizedLink
                           key={`${store.id}-${index}`}
                           href={`/stores/${store.slug || store.id}`}
                           className="group flex flex-col flex-shrink-0 w-[140px] xs:w-[160px] sm:w-[180px] md:w-[200px] lg:w-[220px] bg-white rounded-xl sm:rounded-2xl border border-gray-200 hover:border-[#FFE019] active:border-black transition-all duration-300 shadow-md hover:shadow-xl active:shadow-lg overflow-hidden cursor-pointer transform active:scale-95 sm:hover:-translate-y-1 sm:hover:scale-[1.02] relative snap-start"
@@ -687,7 +691,7 @@ export default function StoresPage() {
 
                           {/* Shine Effect */}
                           <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none z-30"></div>
-                        </Link>
+                        </LocalizedLink>
                       ))}
                     </div>
                   </div>
@@ -712,10 +716,10 @@ export default function StoresPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-700 mb-2">
-                          No stores found
+                          {t('noStoresFound')}
                         </h3>
                         <p className="text-sm sm:text-base text-gray-500 mb-4">
-                          No stores found starting with <span className="font-semibold text-gray-700">"{searchQuery}"</span>
+                          {t('noStoresFoundStartingWith')} <span className="font-semibold text-gray-700">"{searchQuery}"</span>
                         </p>
                         <button
                           onClick={() => setSearchQuery('')}
@@ -724,7 +728,7 @@ export default function StoresPage() {
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                           </svg>
-                          Clear Search
+                          {t('clearSearch')}
                         </button>
                       </div>
                     </div>
@@ -734,7 +738,7 @@ export default function StoresPage() {
                 return storesForPagination.length > 0 ? (
                 <div className="mb-4 sm:mb-0">
                 <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-3 sm:mb-4 md:mb-6 px-2 sm:px-0">
-                  All <span className="text-[#FFE019]">Stores</span>
+                  {t('allStores')}
                 </h3>
                 
                 {/* Mobile: Horizontal Scroll */}
@@ -745,7 +749,7 @@ export default function StoresPage() {
                     <div className="overflow-x-auto scrollbar-hide pb-4 px-3 sm:px-4 snap-x snap-mandatory w-full" style={{ WebkitOverflowScrolling: 'touch' }}>
                       <div className="flex gap-3 sm:gap-4" style={{ width: 'max-content' }}>
                       {paginatedStores.map((store, index) => (
-                        <Link
+                        <LocalizedLink
                           key={store.id}
                           href={`/stores/${store.slug || store.id}`}
                           className="group flex flex-col bg-white rounded-xl sm:rounded-2xl border border-gray-200 hover:border-[#FFE019] active:border-black transition-all duration-300 shadow-md hover:shadow-xl active:shadow-lg overflow-hidden cursor-pointer transform active:scale-95 relative flex-shrink-0 w-[140px] xs:w-[160px] snap-start"
@@ -833,7 +837,7 @@ export default function StoresPage() {
 
                           {/* Shine Effect */}
                           <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none z-30"></div>
-                        </Link>
+                        </LocalizedLink>
                       ))}
                       </div>
                     </div>
@@ -843,7 +847,7 @@ export default function StoresPage() {
                 {/* Desktop: Grid Layout */}
                 <div className="hidden sm:grid sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4 md:gap-5 lg:gap-6 max-w-full">
                   {paginatedStores.map((store, index) => (
-                    <Link
+                    <LocalizedLink
                       key={store.id}
                       href={`/stores/${store.slug || store.id}`}
                       className="group flex flex-col bg-white rounded-2xl border border-gray-200 hover:border-[#FFE019] transition-all duration-500 shadow-md hover:shadow-2xl overflow-hidden cursor-pointer transform hover:-translate-y-2 hover:scale-105 relative"
@@ -934,7 +938,7 @@ export default function StoresPage() {
 
                     {/* Shine Effect */}
                     <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none z-30"></div>
-                  </Link>
+                  </LocalizedLink>
                 ))}
               </div>
               
@@ -954,7 +958,7 @@ export default function StoresPage() {
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
-                    <span>Previous</span>
+                    <span>{t('previous')}</span>
                   </button>
                   
                   {/* Page Numbers */}
@@ -1015,7 +1019,7 @@ export default function StoresPage() {
                         : 'bg-[#FFE019] text-white hover:bg-black hover:shadow-lg active:scale-95'
                     }`}
                   >
-                    <span>Next</span>
+                    <span>{t('next')}</span>
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
@@ -1034,36 +1038,36 @@ export default function StoresPage() {
               <div className="sticky top-6 space-y-6">
                 {/* Why Trust Us Section */}
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">Why Trust Us?</h3>
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">{t('whyTrustUs')}</h3>
                   <div className="space-y-3 text-sm text-gray-700 leading-relaxed">
                     <p>
-                      At MimeCode, we are committed to providing you with the best deals and savings opportunities. Our dedicated team works tirelessly to ensure that every coupon and deal we feature is verified, up-to-date, and reliable.
+                      {t('whyTrustUsDescription1')}
                     </p>
                     <p>
-                      We understand the importance of saving money, and that's why we make it our mission to help you find the best discounts from your favorite stores. Whether you're shopping for fashion, electronics, home goods, or anything else, MimeCode is here to help you save.
+                      {t('whyTrustUsDescription2')}
                     </p>
                     <p>
-                      All our coupons and deals are verified and updated regularly. We test each offer to ensure it works, so you can shop with confidence knowing you're getting the best possible savings.
+                      {t('whyTrustUsDescription3')}
                     </p>
                     <p className="text-xs text-gray-500 mt-4">
-                      Last updated: {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                      {t('lastUpdated')} {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                     </p>
                   </div>
                   <Link
                     href="/about-us"
                     className="mt-4 inline-block text-sm font-semibold text-black hover:text-[#15803d] transition-colors"
                   >
-                    Learn More About Us →
+                    {t('learnMoreAboutUs')}
                   </Link>
                 </div>
 
                 {/* Related Stores Section */}
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">Related Stores</h3>
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">{t('relatedStores')}</h3>
                   {stores.length > 0 ? (
                     <div className="grid grid-cols-4 gap-3">
                       {stores.slice(0, 8).map((store) => (
-                        <Link
+                        <LocalizedLink
                           key={store.id}
                           href={`/stores/${store.slug || store.id}`}
                           className="group flex flex-col items-center p-2 rounded-lg hover:bg-gray-50 transition-colors"
@@ -1095,24 +1099,24 @@ export default function StoresPage() {
                           <span className="text-xs text-gray-700 text-center line-clamp-2 group-hover:text-black transition-colors">
                             {store.name}
                           </span>
-                        </Link>
+                        </LocalizedLink>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500">No stores available</p>
+                    <p className="text-sm text-gray-500">{t('noStoresAvailable')}</p>
                   )}
-                  <Link
+                  <LocalizedLink
                     href="/stores"
                     className="mt-4 inline-block text-sm font-semibold text-black hover:text-[#15803d] transition-colors"
                   >
-                    View All Stores →
-                  </Link>
+                    {t('viewAll')} {t('storesCount')} →
+                  </LocalizedLink>
                 </div>
 
                 {/* Popular Categories Section */}
                 {categories.length > 0 && (
                   <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                    <h3 className="text-xl font-bold text-gray-900 mb-4">Popular Categories</h3>
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">{t('topCategories')}</h3>
                     <div className="space-y-2">
                       {categories.slice(0, 6).map((category) => (
                         <Link
@@ -1140,7 +1144,7 @@ export default function StoresPage() {
                       href="/categories"
                       className="mt-4 inline-block text-sm font-semibold text-black hover:text-[#15803d] transition-colors"
                     >
-                      View All Categories →
+                      {t('viewAll')} {t('categories')} →
                     </Link>
                   </div>
                 )}

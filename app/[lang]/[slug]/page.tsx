@@ -1,5 +1,8 @@
 'use client';
 
+// This route handles dynamic slugs with language prefixes (e.g., /du/christmas, /es/holiday-events)
+// It checks if the slug matches events or blogs slug from page settings
+
 import { useEffect, useState } from 'react';
 import { useParams, notFound } from 'next/navigation';
 import { getPageSettings } from '@/lib/services/pageSettingsService';
@@ -7,10 +10,12 @@ import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
 import NewsletterSubscription from '@/app/components/NewsletterSubscription';
 import EventsPageContent from '@/app/events/EventsPageContent';
+import EventsPage from '@/app/events/page';
 
-export default function DynamicPage() {
+export default function LangSlugPage() {
   const params = useParams();
-  const dynamicPage = params.dynamicPage as string;
+  const lang = params.lang as string;
+  const slug = params.slug as string;
   const [pageType, setPageType] = useState<'events' | 'blogs' | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -19,18 +24,18 @@ export default function DynamicPage() {
       const settings = await getPageSettings();
       
       if (settings) {
-        if (dynamicPage === settings.eventsSlug) {
+        if (slug === settings.eventsSlug) {
           setPageType('events');
           document.title = `${settings.eventsNavLabel || 'Events'} - MimeCode`;
-        } else if (dynamicPage === settings.blogsSlug) {
+        } else if (slug === settings.blogsSlug) {
           setPageType('blogs');
           document.title = `${settings.blogsNavLabel || 'Blogs'} - MimeCode`;
         } else {
           // Check if it matches default slugs
-          if (dynamicPage === 'events') {
+          if (slug === 'events') {
             setPageType('events');
             document.title = 'Events - MimeCode';
-          } else if (dynamicPage === 'blogs') {
+          } else if (slug === 'blogs') {
             setPageType('blogs');
             document.title = 'Blogs - MimeCode';
           } else {
@@ -38,13 +43,22 @@ export default function DynamicPage() {
             notFound();
           }
         }
+      } else {
+        // Default check
+        if (slug === 'events') {
+          setPageType('events');
+        } else if (slug === 'blogs') {
+          setPageType('blogs');
+        } else {
+          notFound();
+        }
       }
       
       setLoading(false);
     };
 
     checkPageType();
-  }, [dynamicPage]);
+  }, [slug]);
 
   if (loading) {
     return (
@@ -58,19 +72,11 @@ export default function DynamicPage() {
   }
 
   if (pageType === 'events') {
-    return (
-      <>
-        <Navbar />
-        <EventsPageContent />
-        <NewsletterSubscription />
-        <Footer />
-      </>
-    );
+    return <EventsPage />;
   }
 
   if (pageType === 'blogs') {
     // For now, redirect to the regular blogs page
-    // You can create a BlogsPageContent component similar to EventsPageContent
     if (typeof window !== 'undefined') {
       window.location.href = '/blogs';
     }

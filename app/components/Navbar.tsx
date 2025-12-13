@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import LocalizedLink from "./LocalizedLink";
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { getCategories, Category } from "@/lib/services/categoryService";
@@ -12,11 +13,15 @@ import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getEvents } from "@/lib/services/eventService";
 import { getPageSettings } from "@/lib/services/pageSettingsService";
+import { useLanguage } from "@/lib/contexts/LanguageContext";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
+  const { getLocalizedPath } = useLanguage();
+  const { t } = useTranslation();
   const [searchCategoryOpen, setSearchCategoryOpen] = useState(false);
   const [storesDropdownOpen, setStoresDropdownOpen] = useState(false);
   const [hoveredCategoryId, setHoveredCategoryId] = useState<string | null>(null);
@@ -141,7 +146,8 @@ export default function Navbar() {
     const query = searchQuery.trim();
     // If there's exactly one matching store, navigate to it
     if (filteredStores.length === 1) {
-      router.push(`/stores/${filteredStores[0].slug || filteredStores[0].id}`);
+      const storePath = `/stores/${filteredStores[0].slug || filteredStores[0].id}`;
+      router.push(getLocalizedPath(storePath));
       setShowSearchResults(false);
       setSearchQuery('');
       return;
@@ -151,7 +157,8 @@ export default function Navbar() {
       const params = new URLSearchParams();
       if (query) params.set('q', query);
       if (selectedCategory) params.set('category', selectedCategory);
-      router.push(`/search?${params.toString()}`);
+      const searchPath = `/search?${params.toString()}`;
+      router.push(getLocalizedPath(searchPath));
       setShowSearchResults(false);
     }
   };
@@ -200,7 +207,7 @@ export default function Navbar() {
                 {showSearchResults && searchQuery && filteredStores.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-96 overflow-y-auto z-50 search-results-container">
                     {filteredStores.map((store) => (
-                      <Link
+                      <LocalizedLink
                         key={store.id}
                         href={`/stores/${store.id}`}
                         onClick={() => {
@@ -222,7 +229,7 @@ export default function Navbar() {
                             <div className="text-xs text-gray-600 line-clamp-1">{store.description}</div>
                           )}
                         </div>
-                      </Link>
+                      </LocalizedLink>
                     ))}
                   </div>
                 )}
@@ -238,7 +245,7 @@ export default function Navbar() {
                       href="/dashboard"
                       className="px-4 py-2 border border-gray-300 rounded-full text-gray-700 font-semibold text-sm hover:bg-gray-50 transition whitespace-nowrap"
                     >
-                      My Dashboard
+                      {t('myDashboard')}
                     </Link>
                   )}
                   {user.role === 'admin' && (
@@ -246,14 +253,14 @@ export default function Navbar() {
                       href="/admin/dashboard"
                       className="px-4 py-2 border border-gray-300 rounded-full text-gray-700 font-semibold text-sm hover:bg-gray-50 transition whitespace-nowrap"
                     >
-                      Admin Panel
+                      {t('adminPanel')}
                     </Link>
                   )}
                   <button
                     onClick={handleSignOut}
                     className="px-4 py-2 border border-gray-300 rounded-full text-gray-700 font-semibold text-sm hover:bg-gray-50 transition whitespace-nowrap"
                   >
-                    Sign Out
+                    {t('signOut')}
                   </button>
                 </>
               ) : (
@@ -262,13 +269,13 @@ export default function Navbar() {
                     href="/login"
                     className="px-4 py-2 border border-gray-300 rounded-full text-gray-700 font-semibold text-sm hover:bg-gray-50 transition whitespace-nowrap"
                   >
-                    Sign In
+                    {t('signIn')}
                   </Link>
                   <Link
                     href="/login"
                     className="px-4 py-2 bg-[#FFE019] rounded-full text-gray-900 font-semibold text-sm hover:bg-yellow-400 transition whitespace-nowrap"
                   >
-                    Sign Up
+                    {t('signUp')}
                   </Link>
                 </>
               )}
@@ -298,7 +305,7 @@ export default function Navbar() {
                 onMouseEnter={() => setStoresDropdownOpen(true)}
                 onMouseLeave={() => setStoresDropdownOpen(false)}
               >
-                <Link 
+                <LocalizedLink 
                   href="/stores" 
                   className={`px-4 py-2 font-semibold text-sm transition-colors flex items-center gap-1 ${
                     isActive('/stores') 
@@ -310,7 +317,7 @@ export default function Navbar() {
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                   </svg>
-                </Link>
+                </LocalizedLink>
                 
                 {/* Stores Dropdown Menu - Categories First, then Stores on Hover */}
                 {storesDropdownOpen && (
@@ -381,7 +388,7 @@ export default function Navbar() {
                               {/* ({stores.length}) */}
                             </div>
                             {stores.slice(0, 30).map((store) => (
-                              <Link
+                              <LocalizedLink
                                 key={store.id}
                                 href={`/stores/${store.slug || store.id}`}
                                 className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 text-sm"
@@ -395,16 +402,16 @@ export default function Navbar() {
                                   />
                                 )}
                                 <span className="truncate">{store.name}</span>
-                              </Link>
+                              </LocalizedLink>
                             ))}
                             {stores.length > 30 && (
-                              <Link
+                              <LocalizedLink
                                 href="/stores"
                                 className="block px-4 py-2 text-gray-700 hover:bg-gray-100 text-sm font-semibold text-center border-t border-gray-200"
                                 onClick={() => setStoresDropdownOpen(false)}
                               >
                                 View All Stores →
-                              </Link>
+                              </LocalizedLink>
                             )}
                           </>
                         ) : hoveredCategoryId ? (
@@ -416,7 +423,7 @@ export default function Navbar() {
                               .filter(store => store.categoryId === hoveredCategoryId)
                               .slice(0, 30)
                               .map((store) => (
-                                <Link
+                                <LocalizedLink
                                   key={store.id}
                                   href={`/stores/${store.slug || store.id}`}
                                   className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 text-sm"
@@ -430,7 +437,7 @@ export default function Navbar() {
                                     />
                                   )}
                                   <span className="truncate">{store.name}</span>
-                                </Link>
+                                </LocalizedLink>
                               ))}
                             {stores.filter(store => store.categoryId === hoveredCategoryId).length === 0 && (
                               <div className="px-4 py-8 text-center text-gray-500 text-sm">
@@ -448,18 +455,18 @@ export default function Navbar() {
                   </div>
                 )}
               </div>
-              <Link 
-                href="/blogs" 
+              <LocalizedLink 
+                href="/blogs"
                 className={`px-4 py-2 font-semibold text-sm transition-colors ${
                   isActive('/blogs') 
                     ? 'bg-[#FFE019] text-gray-900 rounded-full' 
                     : 'text-gray-700 hover:text-gray-900'
                 }`}
               >
-                Blogs
-              </Link>
+                {t('blogs')}
+              </LocalizedLink>
               {hasEvents && (
-                <Link 
+                <LocalizedLink 
                   href={`/${eventsSlug}`}
                   className={`px-4 py-2 font-semibold text-sm transition-colors ${
                     isActive(`/${eventsSlug}`) 
@@ -468,7 +475,7 @@ export default function Navbar() {
                   }`}
                 >
                   {eventsNavLabel}
-                </Link>
+                </LocalizedLink>
               )}
             </div>
           </div>
@@ -499,7 +506,7 @@ export default function Navbar() {
           {showSearchResults && searchQuery && filteredStores.length > 0 && (
             <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-96 overflow-y-auto z-50 search-results-container">
               {filteredStores.map((store) => (
-                <Link
+                <LocalizedLink
                   key={store.id}
                   href={`/stores/${store.id}`}
                   onClick={() => {
@@ -521,7 +528,7 @@ export default function Navbar() {
                       <div className="text-xs text-gray-600 line-clamp-1">{store.description}</div>
                     )}
                   </div>
-                </Link>
+                </LocalizedLink>
               ))}
             </div>
           )}
@@ -555,7 +562,7 @@ export default function Navbar() {
                 >
                   Home
                 </Link>
-                <Link 
+                <LocalizedLink 
                   href="/categories" 
                   className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${
                     isActive('/categories') 
@@ -563,9 +570,9 @@ export default function Navbar() {
                       : 'text-gray-700 hover:text-[#16a34a] hover:bg-[#16a34a]/10'
                   }`}
                 >
-                  Categories
-                </Link>
-                <Link 
+                  {t('categories')}
+                </LocalizedLink>
+                <LocalizedLink 
                   href="/stores" 
                   className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${
                     isActive('/stores') 
@@ -573,9 +580,9 @@ export default function Navbar() {
                       : 'text-gray-700 hover:text-[#16a34a] hover:bg-[#16a34a]/10'
                   }`}
                 >
-                  Stores
-                </Link>
-                <Link 
+                  {t('stores')}
+                </LocalizedLink>
+                <LocalizedLink 
                   href="/faqs" 
                   className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${
                     isActive('/faqs') 
@@ -583,9 +590,9 @@ export default function Navbar() {
                       : 'text-gray-700 hover:text-[#16a34a] hover:bg-[#16a34a]/10'
                   }`}
                 >
-                  FAQs
-                </Link>
-                <Link 
+                  {t('faqs')}
+                </LocalizedLink>
+                <LocalizedLink 
                   href="/about-us" 
                   className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${
                     isActive('/about-us') 
@@ -593,9 +600,9 @@ export default function Navbar() {
                       : 'text-gray-700 hover:text-[#16a34a] hover:bg-[#16a34a]/10'
                   }`}
                 >
-                  About Us
-                </Link>
-                <Link 
+                  {t('aboutUs')}
+                </LocalizedLink>
+                <LocalizedLink 
                   href="/contact-us" 
                   className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${
                     isActive('/contact-us') 
@@ -603,10 +610,10 @@ export default function Navbar() {
                       : 'text-gray-700 hover:text-[#16a34a] hover:bg-[#16a34a]/10'
                   }`}
                 >
-                  Contact Us
-                </Link>
+                  {t('contactUs')}
+                </LocalizedLink>
                 {hasEvents && (
-                  <Link 
+                  <LocalizedLink 
                     href="/events" 
                     className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${
                       isActive('/events') 
@@ -615,7 +622,7 @@ export default function Navbar() {
                     }`}
                   >
                     Events
-                  </Link>
+                  </LocalizedLink>
                 )}
               </div>
             </div>

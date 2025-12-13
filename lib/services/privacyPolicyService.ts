@@ -12,9 +12,10 @@ export interface PrivacyPolicy {
 }
 
 // Get privacy policy
-export async function getPrivacyPolicy(): Promise<PrivacyPolicy | null> {
+export async function getPrivacyPolicy(languageCode?: string): Promise<PrivacyPolicy | null> {
   try {
-    const res = await fetch('/api/pages/privacy-policy/get');
+    const lang = languageCode || (typeof window !== 'undefined' ? localStorage.getItem('preferredLanguage') || 'en' : 'en');
+    const res = await fetch(`/api/pages/privacy-policy/get?lang=${lang}`);
     if (res.ok) {
       const data = await res.json();
       if (data.success && data.privacyPolicy) {

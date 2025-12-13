@@ -12,9 +12,10 @@ export interface TermsAndConditions {
 }
 
 // Get terms and conditions
-export async function getTermsAndConditions(): Promise<TermsAndConditions | null> {
+export async function getTermsAndConditions(languageCode?: string): Promise<TermsAndConditions | null> {
   try {
-    const res = await fetch('/api/pages/terms/get');
+    const lang = languageCode || (typeof window !== 'undefined' ? localStorage.getItem('preferredLanguage') || 'en' : 'en');
+    const res = await fetch(`/api/pages/terms/get?lang=${lang}`);
     if (res.ok) {
       const data = await res.json();
       if (data.success && data.terms) {

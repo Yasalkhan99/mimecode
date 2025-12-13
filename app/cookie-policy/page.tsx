@@ -1,20 +1,22 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 import Navbar from '@/app/components/Navbar';
 import NewsletterSubscription from '@/app/components/NewsletterSubscription';
 import Footer from '@/app/components/Footer';
 
 export default function CookiePolicyPage() {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(true);
     
     // Last Updated Date - Update this date whenever content changes
     const lastUpdatedDate = new Date('2025-12-03'); // Format: YYYY-MM-DD
 
     useEffect(() => {
-        document.title = 'Cookie Policy - MimeCode';
+        document.title = `${t('cookiePolicy')} - MimeCode`;
         setLoading(false);
-    }, []);
+    }, [t]);
 
     const formatDate = (date: Date) => {
         return date.toLocaleDateString('en-US', { 
@@ -33,17 +35,17 @@ export default function CookiePolicyPage() {
                 <div className="max-w-7xl mx-auto">
                     {/* Title */}
                     <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-4 sm:mb-6">
-                        Cookie <span className="text-[#ABC443]">Policy</span>
+                        {t('cookiePolicy')}
                     </h2>
                     {/* Last Updated Date */}
                     <p className="text-xs sm:text-sm text-gray-500 mb-8 sm:mb-12">
-                        Last Updated: {formatDate(lastUpdatedDate)}
+                        {t('lastUpdated')} {formatDate(lastUpdatedDate)}
                     </p>
                     <p className="text-xs pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
                         This Cookies Policy explains how <strong>MimeCode</strong>, operated by <strong>Techreforms Inc</strong>, uses cookies and similar tracking technologies on our website to enhance your experience, improve performance, and support our affiliate-based operations.
                     </p>
                     <p className="text-xs pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
-                        <strong>What Are Cookies?</strong>
+                        <strong>{t('whatAreCookies')}</strong>
                         <br />
                         Cookies are small text files stored on your device when you visit a website. They help websites remember your preferences, understand how you use the platform, and provide a smoother browsing experience.
                     </p>
@@ -57,12 +59,12 @@ export default function CookiePolicyPage() {
                         <li><strong>Third-Party Cookies</strong> (set by external services such as analytics or affiliate partners)</li>
                     </ul>
                     <p className="text-xs pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
-                        <strong>How We Use Cookies</strong>
+                        <strong>{t('howWeUseCookies')}</strong>
                         <br />
                         MimeCode uses cookies for the following purposes:
                     </p>
                     <p className="text-xs pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
-                        <strong>a. Essential Cookies</strong>
+                        <strong>a. {t('essentialCookies')}</strong>
                         <br />
                         These cookies are required for our website to function properly.
                     </p>
@@ -78,7 +80,7 @@ export default function CookiePolicyPage() {
                         You cannot disable essential cookies.
                     </p>
                     <p className="text-xs pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
-                        <strong>Analytics Cookies</strong>
+                        <strong>{t('analyticsCookies')}</strong>
                         <br />
                         These help us understand:
                     </p>
@@ -91,7 +93,7 @@ export default function CookiePolicyPage() {
                         We use tools like Google Analytics and similar services.
                     </p>
                     <p className="text-xs pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
-                        <strong>Affiliate & Marketing Cookies</strong>
+                        <strong>{t('affiliateMarketingCookies')}</strong>
                         <br />
                         Since MimeCode is a coupon and affiliate-based service, marketing and tracking cookies are essential.
                     </p>
@@ -107,7 +109,7 @@ export default function CookiePolicyPage() {
                         All outbound links on our website are affiliate links, meaning tracking cookies may be placed by partner networks.
                     </p>
                     <p className="text-xs pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
-                        <strong>Preference Cookies</strong>
+                        <strong>{t('preferenceCookies')}</strong>
                         <br />
                         These save your:
                     </p>
@@ -120,7 +122,7 @@ export default function CookiePolicyPage() {
                         They make your next visit smoother and more personalized.
                     </p>
                     <p className="text-xs pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
-                        <strong>Third-Party Cookies</strong>
+                        <strong>{t('thirdPartyCookies')}</strong>
                         <br />
                         We may use cookies from:
                     </p>
@@ -133,7 +135,7 @@ export default function CookiePolicyPage() {
                         These third parties may track your interaction with our site to monitor conversions and improve experiences.
                     </p>
                     <p className="text-xs pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
-                        <strong>Managing Your Cookie Preferences</strong>
+                        <strong>{t('managingYourCookiePreferences')}</strong>
                         <br />
                         You can manage or disable cookies anytime through:
                     </p>
@@ -143,12 +145,12 @@ export default function CookiePolicyPage() {
                         <li>Third-party opt-out pages (e.g., Google Analytics opt-out tool)</li>
                     </ul>
                     <p className="text-xs pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
-                        <strong>Please note:</strong>
+                        <strong>{t('pleaseNote')}</strong>
                         <br />
                         Disabling certain cookies may affect how the website works and limit some functionality.
                     </p>
                     <p className="text-xs pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
-                        <strong>Updates to This Policy</strong>
+                        <strong>{t('updatesToThisPolicy')}</strong>
                         <br />
                         We may update this Cookies Policy from time to time.
                     </p>

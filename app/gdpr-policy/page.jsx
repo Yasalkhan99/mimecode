@@ -1,20 +1,22 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 import Navbar from '@/app/components/Navbar';
 import NewsletterSubscription from '@/app/components/NewsletterSubscription';
 import Footer from '@/app/components/Footer';
 
 export default function GDPRPolicyPage() {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(true);
 
     // Last Updated Date - Update this date whenever content changes
     const lastUpdatedDate = new Date('2025-12-03'); // Format: YYYY-MM-DD
 
     useEffect(() => {
-        document.title = 'GDPR Privacy Policy - MimeCode';
+        document.title = `${t('gdprPrivacyPolicy')} - MimeCode`;
         setLoading(false);
-    }, []);
+    }, [t]);
 
     // const formatDate = (date: Date) => {
     //     return date.toLocaleDateString('en-US', { 
@@ -33,7 +35,7 @@ export default function GDPRPolicyPage() {
                 <div className="max-w-7xl mx-auto">
                     {/* Title */}
                     <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-4 sm:mb-6">
-                        GDPR Privacy Policy <span className="text-[#ABC443]"></span>
+                        {t('gdprPrivacyPolicy')} <span className="text-[#ABC443]"></span>
                     </h2>
 
                     <div className="text-xs sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed space-y-6 pb-10">
@@ -45,7 +47,7 @@ export default function GDPRPolicyPage() {
                         </p>
 
                         <div>
-                            <h3 className="font-semibold mb-2">1. Collection of Information</h3>
+                            <h3 className="font-semibold mb-2">1. {t('collectionOfInformation')}</h3>
                             <p className="mb-2">
                                 We collect, process, and use personal information about you when you:
                             </p>
@@ -67,7 +69,7 @@ export default function GDPRPolicyPage() {
                         </div>
 
                         <div>
-                            <h3 className="font-semibold mb-2">2. Types of Information We May Collect</h3>
+                            <h3 className="font-semibold mb-2">2. {t('typesOfInformationWeMayCollect')}</h3>
                             <p className="mb-2">The personal information we may collect includes, but is not limited to:</p>
                             <ul className="list-disc list-inside space-y-1">
                                 <li>
@@ -129,7 +131,7 @@ export default function GDPRPolicyPage() {
                         </div>
 
                         <div>
-                            <h3 className="font-semibold mb-2">3. Use of the Information We Collect</h3>
+                            <h3 className="font-semibold mb-2">3. {t('useOfTheInformationWeCollect')}</h3>
                             <p className="mb-2">We use the information we collect for the following purposes:</p>
                             <ul className="list-disc list-inside space-y-1">
                                 <li>
@@ -161,7 +163,7 @@ export default function GDPRPolicyPage() {
                         </div>
 
                         <div>
-                            <h3 className="font-semibold mb-2">4. Your Privacy Rights Under the GDPR</h3>
+                            <h3 className="font-semibold mb-2">4. {t('yourPrivacyRightsUnderGDPR')}</h3>
                             <p className="mb-2">
                                 As a user in the European Union, you have the following rights regarding your personal
                                 data:
@@ -200,7 +202,7 @@ export default function GDPRPolicyPage() {
                         </div>
 
                         <div>
-                            <h3 className="font-semibold mb-2">5. How to Exercise Your Rights</h3>
+                            <h3 className="font-semibold mb-2">5. {t('howToExerciseYourRights')}</h3>
                             <p>
                                 To exercise any of your privacy rights, you can contact us at{' '}
                                 <a
@@ -219,7 +221,7 @@ export default function GDPRPolicyPage() {
                         </div>
 
                         <div>
-                            <h3 className="font-semibold mb-2">6. Data Security</h3>
+                            <h3 className="font-semibold mb-2">6. {t('dataSecurity')}</h3>
                             <p>
                                 We take the security of your personal data seriously and have implemented appropriate
                                 technical and organizational measures to protect it from unauthorized access,
@@ -229,7 +231,7 @@ export default function GDPRPolicyPage() {
                         </div>
 
                         <div>
-                            <h3 className="font-semibold mb-2">7. Data Retention</h3>
+                            <h3 className="font-semibold mb-2">7. {t('dataRetention')}</h3>
                             <p>
                                 We retain your personal information for as long as necessary to fulfill the purposes for
                                 which it was collected, or as required by law. Once the data is no longer necessary, we
@@ -238,7 +240,7 @@ export default function GDPRPolicyPage() {
                         </div>
 
                         <div>
-                            <h3 className="font-semibold mb-2">8. Changes to This Privacy Policy</h3>
+                            <h3 className="font-semibold mb-2">8. {t('changesToThisPrivacyPolicy')}</h3>
                             <p>
                                 We may update this Privacy Policy from time to time. If we make significant changes, we
                                 will notify you by updating the &quot;Effective Date&quot; at the top of this policy, or
@@ -248,7 +250,7 @@ export default function GDPRPolicyPage() {
                         </div>
 
                         <div>
-                            <h3 className="font-semibold mb-2">9. Contact Us</h3>
+                            <h3 className="font-semibold mb-2">9. {t('contactUsSection')}</h3>
                             <p className="mb-2">
                                 If you have any questions or concerns about this Privacy Policy, or if you wish to
                                 exercise your data protection rights, please contact us at:

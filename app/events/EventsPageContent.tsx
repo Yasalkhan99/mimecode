@@ -5,10 +5,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { getEvents, Event } from '@/lib/services/eventService';
 import { getPageSettings } from '@/lib/services/pageSettingsService';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 import { motion } from 'framer-motion';
 import { format, isPast, differenceInDays } from 'date-fns';
 
 export default function EventsPageContent() {
+  const { t } = useTranslation();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [showGif, setShowGif] = useState(true);
@@ -238,7 +240,7 @@ export default function EventsPageContent() {
                       </svg>
                     </div>
                     <div>
-                      <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide">Start Date</p>
+                      <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide">{t('startDate')}</p>
                       <p className="text-[14px] font-bold text-gray-900">{formatDateFull(latestEvent.startDate)}</p>
                     </div>
                   </div>
@@ -249,7 +251,7 @@ export default function EventsPageContent() {
                       </svg>
                     </div>
                     <div>
-                      <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide">End Date</p>
+                      <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide">{t('endDate')}</p>
                       <p className="text-[14px] font-bold text-gray-900">{formatDateFull(latestEvent.endDate)}</p>
                     </div>
                   </div>
@@ -274,7 +276,7 @@ export default function EventsPageContent() {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    Upcoming Event
+                    {t('upcomingEvent')}
                   </motion.div>
                 )}
 
@@ -318,7 +320,7 @@ export default function EventsPageContent() {
                       whileTap={{ scale: 0.95 }}
                       className="bg-[#FFE019] hover:bg-[#FFD700] text-gray-900 font-bold px-10 py-4 rounded-2xl text-lg transition-all shadow-xl hover:shadow-2xl whitespace-nowrap"
                     >
-                      Explore Deals
+                      {t('exploreDeals')}
                     </motion.button>
                   </Link>
                 </motion.div>
@@ -331,7 +333,7 @@ export default function EventsPageContent() {
             <section className="py-16 px-4 sm:px-6 md:px-8 bg-white">
               <div className="max-w-7xl mx-auto">
                 <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12 text-gray-900">
-                  More Events
+                  {t('otherEvents')}
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                   {otherEvents.map((event, index) => {
@@ -388,7 +390,7 @@ export default function EventsPageContent() {
                               whileTap={{ scale: 0.98 }}
                               className="w-full bg-[#FFE019] hover:bg-[#FFD700] text-gray-900 font-semibold py-3 rounded-xl hover:shadow-lg transition-all"
                             >
-                              View Deals
+                              {t('viewAll')}
                             </motion.button>
                           </Link>
                         </div>
@@ -412,9 +414,9 @@ export default function EventsPageContent() {
                 className="mx-auto opacity-50"
               />
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">No Events Available</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">{t('noEventsAvailable')}</h2>
             <p className="text-gray-600 text-lg">
-              Check back later for exciting upcoming events and exclusive deals!
+              {t('checkBackSoonEvents')}
             </p>
           </div>
         </div>

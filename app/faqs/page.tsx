@@ -8,8 +8,12 @@ import Navbar from '@/app/components/Navbar';
 import NewsletterSubscription from '@/app/components/NewsletterSubscription';
 import Footer from '@/app/components/Footer';
 import ContactSupportModal from '@/app/components/ContactSupportModal';
+import { useTranslation } from '@/lib/hooks/useTranslation';
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 
 export default function FAQsPage() {
+  const { t } = useTranslation();
+  const { currentLanguage } = useLanguage();
   // const [banner11, setBanner11] = useState<Banner | null>(null);
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,12 +22,12 @@ export default function FAQsPage() {
 
   useEffect(() => {
     // Set page title
-    document.title = 'FAQs - MimeCode';
+    document.title = `${t('faqs')} - MimeCode`;
 
     const fetchData = async () => {
       setLoading(true);
       try {
-        const faqsData = await getActiveFAQs();
+        const faqsData = await getActiveFAQs(currentLanguage.code);
         // const [bannerData, faqsData] = await Promise.all([
         //   getBannerByLayoutPosition(11),
         //   getActiveFAQs()
@@ -37,7 +41,7 @@ export default function FAQsPage() {
       }
     };
     fetchData();
-  }, []);
+  }, [currentLanguage.code, t]);
 
   const toggleFAQ = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);
@@ -91,7 +95,7 @@ export default function FAQsPage() {
       <div className="w-full px-4 sm:px-6 md:px-8 py-8 sm:py-12 md:py-16 bg-white overflow-x-hidden">
         <div className="max-w-4xl mx-auto w-full">
           <h1 className="text-3xl text-center sm:text-4xl md:text-5xl font-bold text-gray-900 pb-10 sm:mb-6">
-            Frequently Asked Questions
+            {t('frequentlyAskedQuestions')}
           </h1>
           {loading ? (
             <div className="space-y-4">

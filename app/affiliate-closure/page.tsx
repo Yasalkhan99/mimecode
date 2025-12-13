@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 import Navbar from '@/app/components/Navbar';
 import NewsletterSubscription from '@/app/components/NewsletterSubscription';
 import Footer from '@/app/components/Footer';
 
 export default function AffiliateClosurePage() {
-
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(true);
 
     //   useEffect(() => {
@@ -65,22 +66,22 @@ export default function AffiliateClosurePage() {
                 <div className="max-w-7xl mx-auto">
                     {/* Title */}
                     <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-8 sm:mb-12">
-                        Affiliate <span className="text-[#ABC443]">Disclosure</span>
+                        {t('affiliateDisclosure')}
                     </h2>
                     <p className="text-xs  pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
-                        MimeCode, operated by Techreforms Inc, participates in affiliate marketing programs. This means all outbound links on our website are affiliate links. When you click on these links and make a purchase or complete a qualifying action we may earn a commission at no additional cost to you.
+                        {t('affiliateDisclosureContent1')}
                     </p>
                     <p className="text-xs  pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
-                        Our goal is to provide users with verified coupons, discount codes, and deals that help them save money. The commissions we earn support the operation of our website, content creation, and overall service quality.
+                        {t('affiliateDisclosureContent2')}
                     </p>
                     <p className="text-xs  pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
-                        We only promote brands, stores, and offers we believe provide real value to our users. However, we do not control the availability of coupons, pricing changes, or final purchase conditions on merchant websites.
+                        {t('affiliateDisclosureContent3')}
                     </p>
                     <p className="text-xs  pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
-                        By using MimeCode and clicking on our links, you acknowledge and agree to our use of affiliate links.
+                        {t('affiliateDisclosureContent4')}
                     </p>
                     <p className="text-xs  pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
-                        If you have any questions, feel free to contact us at:
+                        {t('ifYouHaveQuestions')}
                     </p>
                     <p className="text-xs  pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
                         <strong>Techreforms Inc – MimeCode</strong>

@@ -6,11 +6,13 @@ import { getNews, NewsArticle } from '@/lib/services/newsService';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
 import NewsletterSubscription from '@/app/components/NewsletterSubscription';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function BlogsPage() {
+  const { t } = useTranslation();
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   // const [banners, setBanners] = useState<Banner[]>([]);
   // const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
@@ -303,8 +305,7 @@ export default function BlogsPage() {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4"
             >
-              <span className="text-gray-900">Recent</span>{' '}
-              <span className="text-[#ABC443]">News & Articles</span>
+              {t('recentNewsAndArticles')}
             </motion.h1>
             <motion.p 
               initial={{ opacity: 0, y: 20 }}
@@ -312,7 +313,7 @@ export default function BlogsPage() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto"
             >
-              Stay updated with the latest trends, tips, and insights about coupons, deals, and savings
+              {t('stayUpdated')}
             </motion.p>
           </div>
         </div>
@@ -333,7 +334,7 @@ export default function BlogsPage() {
             >
               <input
                 type="text"
-                placeholder="Search articles..."
+                placeholder={t('searchArticles')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full px-4 py-3 pl-12 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ABC443] focus:border-[#ABC443] transition-all text-gray-900"
@@ -386,12 +387,12 @@ export default function BlogsPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </motion.svg>
               <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                {searchQuery ? 'No articles found' : 'No articles yet'}
+                {searchQuery ? t('noArticlesFound') : t('noArticlesYet')}
               </h3>
               <p className="text-gray-600 mb-6">
                 {searchQuery 
-                  ? 'Try searching with different keywords' 
-                  : 'Check back soon for new articles and updates'}
+                  ? t('trySearchingDifferent') 
+                  : t('checkBackSoonArticles')}
               </p>
               {searchQuery && (
                 <motion.button
@@ -400,7 +401,7 @@ export default function BlogsPage() {
                   onClick={() => setSearchQuery('')}
                   className="bg-gradient-to-r from-[#ABC443] to-[#41361A] hover:from-[#41361A] hover:to-[#ABC443] text-white font-semibold px-6 py-3 rounded-lg transition-all duration-300"
                 >
-                  Clear Search
+                  {t('clearSearch')}
                 </motion.button>
               )}
             </motion.div>
@@ -413,7 +414,7 @@ export default function BlogsPage() {
                 className="mb-6 sm:mb-8"
               >
                 <p className="text-gray-600">
-                  Showing <span className="font-semibold text-gray-900">{filteredArticles.length}</span> of <span className="font-semibold text-gray-900">{articles.length}</span> articles
+                  {t('showingArticles')} <span className="font-semibold text-gray-900">{filteredArticles.length}</span> {t('ofArticles')} <span className="font-semibold text-gray-900">{articles.length}</span> {t('articles')}
                 </p>
               </motion.div>
               
@@ -523,7 +524,7 @@ export default function BlogsPage() {
                                 href={`/blogs/${article.id}`}
                                 className="inline-flex items-center gap-2 bg-gradient-to-r from-[#ABC443] to-[#41361A] hover:from-[#41361A] hover:to-[#ABC443] text-white font-semibold px-5 py-2.5 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg w-full justify-center"
                               >
-                                Read More
+                                {t('readMore')}
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                 </svg>

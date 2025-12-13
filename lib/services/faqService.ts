@@ -60,9 +60,10 @@ export async function getFAQs(): Promise<FAQ[]> {
 }
 
 // Get active FAQs only
-export async function getActiveFAQs(): Promise<FAQ[]> {
+export async function getActiveFAQs(languageCode?: string): Promise<FAQ[]> {
   try {
-    const res = await fetch('/api/faqs/get?activeOnly=true');
+    const lang = languageCode || (typeof window !== 'undefined' ? localStorage.getItem('preferredLanguage') || 'en' : 'en');
+    const res = await fetch(`/api/faqs/get?activeOnly=true&lang=${lang}`);
     if (res.ok) {
       const data = await res.json();
       if (data.success && data.faqs) {

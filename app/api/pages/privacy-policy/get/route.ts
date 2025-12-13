@@ -10,8 +10,17 @@ export async function GET(req: NextRequest) {
   try {
     await connectDB();
 
-    // Get the privacy policy (there should only be one, but we'll get the latest)
-    const policy = await PrivacyPolicy.findOne({}).sort({ updatedAt: -1 });
+    // Get language from query parameter, default to 'en'
+    const { searchParams } = new URL(req.url);
+    const lang = searchParams.get('lang') || 'en';
+
+    // Try to get language-specific policy first, fallback to default
+    let policy = await PrivacyPolicy.findOne({ languageCode: lang }).sort({ updatedAt: -1 });
+    
+    // If no language-specific policy found, get default (English or any)
+    if (!policy) {
+      policy = await PrivacyPolicy.findOne({}).sort({ updatedAt: -1 });
+    }
 
     if (policy) {
       return NextResponse.json({

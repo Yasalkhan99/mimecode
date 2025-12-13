@@ -5,6 +5,8 @@ import Navbar from "./components/Navbar";
 import ContactSupportModal from "./components/ContactSupportModal";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
+import LanguageSelector from "./components/LanguageSelector";
+import { useTranslation } from '@/lib/hooks/useTranslation';
 import { getBannersWithLayout, Banner } from '@/lib/services/bannerService';
 import { getCoupons, Coupon } from '@/lib/services/couponService';
 import { getNews, NewsArticle } from '@/lib/services/newsService';
@@ -41,6 +43,7 @@ const Footer = dynamic(() => import('./components/Footer'), {
 });
 
 export default function Home() {
+  const { t } = useTranslation();
   // const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [banners, setBanners] = useState<Banner[]>([]);
   const [latestCoupons, setLatestCoupons] = useState<Coupon[]>([]);
@@ -1588,7 +1591,7 @@ export default function Home() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-3 sm:gap-4">
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 flex items-center gap-2">
-                Latest <Image src="/coupons_text.png" className="w-30" alt="Latest Coupons" width={100} height={100} />
+                {t('latest')} <Image src="/coupons_text.png" className="w-30" alt={t('latest')} width={100} height={100} />
               </h2>
               <Link
                 href="/coupons"
@@ -1791,13 +1794,13 @@ export default function Home() {
           <section>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-3 sm:gap-4">
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 flex items-center gap-2">
-                Featured <Image src="/deals_text.png" className="w-30" alt="Featured Deals" width={100} height={100} />
+                {t('featured')} <Image src="/deals_text.png" className="w-30" alt={t('featuredDeals')} width={100} height={100} />
               </h2>
               <Link
                 href="/coupons"
                 className="cursor-pointer bg-[#FFE019] text-black font-semibold rounded-3xl px-6 py-1.5 font-medium text-sm sm:text-base transition-colors"
               >
-                View All
+                {t('viewAll')}
               </Link>
             </div>
 
@@ -2156,7 +2159,7 @@ export default function Home() {
 
                   {/* Discover More Stores Button - Right Aligned */}
                   <button className="bg-[#FFE019] hover:bg-[#f5d600] text-black font-semibold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap shadow-md hover:shadow-lg -mt-1 sm:-mt-2">
-                    Discover More Stores
+                    {t('browseAllStores')}
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
@@ -2270,6 +2273,9 @@ export default function Home() {
                   </div>
                 )}
 
+                {/* Language Selector - Small Smart Style */}
+                <LanguageSelector />
+
                 {/* FAQ Section */}
                 {faqs && faqs.length > 0 && (
                   <div className="mt-12 md:mt-16 relative z-20">
@@ -2359,13 +2365,13 @@ export default function Home() {
                     >
                       {/* Header Bar */}
                       <div className="py-3 px-4 text-center">
-                        <h3 className="text-black font-bold sm:text-base flex items-center justify-center gap-2"><span className="text-[40px]">Daily</span> <Image src="/exclusion.png" className="w-30" alt="Featured Deals" width={100} height={100} /> <span className="text-[40px]">Deals</span></h3>
+                        <h3 className="text-black font-bold sm:text-base flex items-center justify-center gap-2"><span className="text-[40px]">{t('daily')}</span> <Image src="/exclusion.png" className="w-30" alt={t('featuredDeals')} width={100} height={100} /> <span className="text-[40px]">{t('deals')}</span></h3>
                       </div>
 
                       {/* Content Area */}
                       <div className="">
                         <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-6 text-center">
-                          Get Exclusive Coupons & <br /> Best Deals Delivered to Your Inbox
+                          {t('exclusiveCouponsAndDeals')}
                         </h2>
 
                         <form
@@ -2374,7 +2380,7 @@ export default function Home() {
                         >
                           <input
                             type="email"
-                            placeholder="Email Address"
+                            placeholder={t('emailAddress')}
                             value={newsletterEmail}
                             onChange={(e) => setNewsletterEmail(e.target.value)}
                             className="flex-1 px-4 py-3 focus:outline-none text-black placeholder-gray-500 bg-transparent border-0 rounded-full"
@@ -2392,13 +2398,13 @@ export default function Home() {
 
                         {/* Disclaimer Text */}
                         <p className="text-[12px] text-black leading-relaxed">
-                          By clicking unlock deals you confirm that you are 16 years of age or older and you agree to our{' '}
+                          {t('byClickingUnlock')}{' '}
                           <Link href="/terms-of-service" className="underline hover:text-gray-900">
-                            Terms of Service
+                            {t('termsOfService')}
                           </Link>
-                          {' '}and{' '}
+                          {' '}{t('and')}{' '}
                           <Link href="/privacy-policy" className="underline hover:text-gray-900">
-                            Privacy Policy
+                            {t('privacyPolicyText')}
                           </Link>
                           . You may unsubscribe at any time.
                         </p>
@@ -2455,7 +2461,7 @@ export default function Home() {
                   href="/blogs"
                   className="inline-flex items-center gap-2 px-4 py-2 bg-[#FFE019] text-gray-900 rounded-full font-semibold text-sm hover:bg-[#f5d600] transition-colors"
                 >
-                  View All
+                  {t('viewAll')}
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                   </svg>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Barlow, Pacifico, Dancing_Script } from "next/font/google";
 import "./globals.css";
 import ClientLayout from "./components/ClientLayout";
+import { LanguageProvider } from "@/lib/contexts/LanguageContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

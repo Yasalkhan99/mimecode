@@ -1,20 +1,22 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 import Navbar from '@/app/components/Navbar';
 import NewsletterSubscription from '@/app/components/NewsletterSubscription';
 import Footer from '@/app/components/Footer';
 
 export default function ImprintPage() {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(true);
 
     // Last Updated Date - Update this date whenever content changes
     const lastUpdatedDate = new Date('2025-12-03'); // Format: YYYY-MM-DD
 
     useEffect(() => {
-        document.title = 'Imprint - MimeCode';
+        document.title = `${t('imprint')} - MimeCode`;
         setLoading(false);
-    }, []);
+    }, [t]);
 
     // const formatDate = (date: Date) => {
     //     return date.toLocaleDateString('en-US', { 
@@ -33,7 +35,7 @@ export default function ImprintPage() {
                 <div className="max-w-7xl mx-auto">
                     {/* Title */}
                     <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-4 sm:mb-6">
-                        Imprint <span className="text-[#ABC443]"></span>
+                        {t('imprint')} <span className="text-[#ABC443]"></span>
                     </h2>
                     {/* Last Updated Date */}
                     {/* <p className="text-xs sm:text-sm text-gray-500 mb-8 sm:mb-12">
@@ -43,27 +45,27 @@ export default function ImprintPage() {
                         <strong>MimeCode</strong> is owned and operated by <strong>Techreforms Inc</strong>.
                     </p>
                     <p className="text-xs pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
-                        <strong>Company Information</strong>
+                        <strong>{t('companyInformation')}</strong>
                         <br />
-                        <strong>Business Name:</strong> Techreforms Inc<br />
-                        <strong>Brand:</strong> MimeCode<br />
-                        <strong>Business Type:</strong> Affiliate Marketing / Coupon & Discount Platform<br />
+                        <strong>{t('businessName')}:</strong> Techreforms Inc<br />
+                        <strong>{t('brand')}:</strong> MimeCode<br />
+                        <strong>{t('businessType')}:</strong> Affiliate Marketing / Coupon & Discount Platform<br />
                     </p>
                     <p className="text-xs pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
-                        <strong>Registered Address</strong>
+                        <strong>{t('registeredAddress')}</strong>
                     </p>
                     <p className="text-xs pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
                         811 Wilshire Blvd, Los Angeles, CA 90017, USA
                     </p>
                     <p className="text-xs pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
-                        <strong>Contact Information</strong>
+                        <strong>{t('contactInformation')}</strong>
                     </p>
                     <p className="text-xs pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
-                        <strong>Email:</strong> support@mimecode.com<br />
-                        <strong>Website:</strong> www.mimecode.com<br />
+                        <strong>{t('email')}:</strong> support@mimecode.com<br />
+                        <strong>{t('website')}:</strong> www.mimecode.com<br />
                     </p>
                     <p className="text-xs pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
-                        <strong>Responsible Party for Content</strong>
+                        <strong>{t('responsiblePartyForContent')}</strong>
                     </p>
                     <p className="text-xs pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
                         <strong>Techreforms Inc</strong>
@@ -72,7 +74,7 @@ export default function ImprintPage() {
                         811 Wilshire Blvd, Los Angeles, CA 90017
                     </p>
                     <p className="text-xs pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
-                        <strong>Legal Notice</strong>
+                        <strong>{t('legalNotice')}</strong>
                     </p>
                     <p className="text-xs pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
                         MimeCode provides promotional offers, coupons, and discount links through affiliate partnerships.<br />
@@ -80,13 +82,13 @@ export default function ImprintPage() {
                         All trademarks, logos, and brand names displayed on the website belong to their respective owners.
                     </p>
                     <p className="text-xs pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
-                        <strong>Liability for External Links</strong>
+                        <strong>{t('liabilityForExternalLinks')}</strong>
                     </p>
                     <p className="text-xs pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
                         Our website contains affiliate links that lead to external merchants. We are not responsible for the content, terms, or privacy practices of these external sites. Visitors access third-party websites at their own risk.
                     </p>
                     <p className="text-xs pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
-                        <strong>Copyright Notice</strong>
+                        <strong>{t('copyrightNotice')}</strong>
                     </p>
                     <p className="text-xs pb-10 sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
                         All website content, including text, graphics, logo design, and layout, is the intellectual property of Techreforms Inc unless otherwise stated. Unauthorized copying, distribution, or use is prohibited.

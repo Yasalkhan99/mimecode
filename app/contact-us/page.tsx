@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { getNews, NewsArticle } from '@/lib/services/newsService';
 // import { getBannersWithLayout, Banner } from '@/lib/services/bannerService';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
 import NewsletterSubscription from '@/app/components/NewsletterSubscription';
@@ -11,6 +12,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ContactUsPage() {
+  const { t } = useTranslation();
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   // const [banners, setBanners] = useState<Banner[]>([]);
   // const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
@@ -51,7 +53,7 @@ export default function ContactUsPage() {
   };
 
   useEffect(() => {
-    document.title = 'Contact Us - MimeCode';
+    document.title = `${t('contactUs')} - MimeCode`;
     
     const fetchData = async () => {
       setLoading(true);
@@ -164,7 +166,7 @@ export default function ContactUsPage() {
     if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) {
       setSubmitStatus({
         type: 'error',
-        message: 'Please fill in all required fields.'
+        message: t('pleaseFillAllFields')
       });
       return;
     }
@@ -173,7 +175,7 @@ export default function ContactUsPage() {
     if (!emailRegex.test(formData.email.trim())) {
       setSubmitStatus({
         type: 'error',
-        message: 'Please enter a valid email address.'
+        message: t('pleaseEnterValidEmail')
       });
       return;
     }
@@ -195,7 +197,7 @@ export default function ContactUsPage() {
       if (data.success) {
         setSubmitStatus({
           type: 'success',
-          message: 'Thank you for contacting us! We will get back to you soon.'
+          message: t('thankYouContacting')
         });
         setFormData({
           name: '',
@@ -206,14 +208,14 @@ export default function ContactUsPage() {
       } else {
         setSubmitStatus({
           type: 'error',
-          message: data.error || 'Failed to send message. Please try again.'
+          message: data.error || t('failedToSendMessage')
         });
       }
     } catch (error) {
       console.error('Error submitting contact form:', error);
       setSubmitStatus({
         type: 'error',
-        message: 'An error occurred. Please try again later.'
+        message: t('errorOccurred')
       });
     } finally {
       setIsSubmitting(false);
@@ -354,10 +356,10 @@ export default function ContactUsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
           <div className="text-center mb-12">
             <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 mb-4">
-              Contact <span className="text-[#ABC443]">Us</span>
+              {t('contactUs')}
             </h2>
             <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
-              Have a question or need help? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
+              {t('contactUsDescription')}
             </p>
           </div>
 
@@ -367,10 +369,10 @@ export default function ContactUsPage() {
               <div className="space-y-8">
                 <div>
                   <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">
-                    Get in Touch
+                    {t('getInTouch')}
                   </h3>
                   <p className="text-gray-600 mb-8 leading-relaxed">
-                    We're here to help! Whether you have a question about our coupons, need assistance with your account, or want to provide feedback, we're ready to assist you.
+                    {t('contactUsHelpText')}
                   </p>
                 </div>
 
@@ -383,8 +385,8 @@ export default function ContactUsPage() {
                         </svg>
                       </div>
                       <div>
-                        <h4 className="text-lg font-semibold text-gray-900 mb-1">Email Us</h4>
-                        <p className="text-gray-600 mb-2">Send us an email anytime</p>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-1">{t('emailUs')}</h4>
+                        <p className="text-gray-600 mb-2">{t('sendUsEmailAnytime')}</p>
                         <a href="mailto:contact@mimecode.com" className="text-[#ABC443] hover:text-[#41361A] font-medium">
                           contact@mimecode.com
                         </a>
@@ -400,8 +402,8 @@ export default function ContactUsPage() {
                         </svg>
                       </div>
                       <div>
-                        <h4 className="text-lg font-semibold text-gray-900 mb-1">Response Time</h4>
-                        <p className="text-gray-600 mb-2">We typically respond within</p>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-1">{t('responseTime')}</h4>
+                        <p className="text-gray-600 mb-2">{t('weTypicallyRespond')}</p>
                         <p className="text-[#ABC443] font-medium">24-48 hours</p>
                       </div>
                     </div>
@@ -416,8 +418,8 @@ export default function ContactUsPage() {
                         </svg>
                       </div>
                       <div>
-                        <h4 className="text-lg font-semibold text-gray-900 mb-1">Support Hours</h4>
-                        <p className="text-gray-600 mb-2">Monday - Friday</p>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-1">{t('supportHours')}</h4>
+                        <p className="text-gray-600 mb-2">{t('mondayFriday')}</p>
                         <p className="text-[#ABC443] font-medium">9:00 AM - 6:00 PM</p>
                       </div>
                     </div>
@@ -425,31 +427,31 @@ export default function ContactUsPage() {
                 </div>
 
                 <div className="bg-gradient-to-br from-[#ABC443]/10 to-[#41361A]/10 rounded-xl p-6 border border-[#ABC443]/20">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Why Contact Us?</h4>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">{t('whyContactUs')}</h4>
                   <ul className="space-y-2 text-gray-600">
                     <li className="flex items-start gap-2">
                       <svg className="w-5 h-5 text-[#ABC443] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      <span>Questions about coupon codes or deals</span>
+                      <span>{t('questionsAboutCoupons')}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <svg className="w-5 h-5 text-[#ABC443] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      <span>Technical support or account issues</span>
+                      <span>{t('technicalSupport')}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <svg className="w-5 h-5 text-[#ABC443] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      <span>Partnership or business inquiries</span>
+                      <span>{t('partnershipInquiries')}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <svg className="w-5 h-5 text-[#ABC443] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      <span>Feedback and suggestions</span>
+                      <span>{t('feedbackAndSuggestions')}</span>
                     </li>
                   </ul>
                 </div>
@@ -459,10 +461,10 @@ export default function ContactUsPage() {
               <div className="bg-white border border-gray-200 rounded-2xl shadow-lg p-6 sm:p-8">
                 <div className="mb-6">
                   <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-                    Send us a Message
+                    {t('sendUsMessage')}
                   </h3>
                   <p className="text-gray-600">
-                    Fill out the form below and we'll get back to you as soon as possible.
+                    {t('fillOutForm')}
                   </p>
                 </div>
 
@@ -475,7 +477,7 @@ export default function ContactUsPage() {
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
-                      Name <span className="text-red-500">*</span>
+                      {t('name')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -497,7 +499,7 @@ export default function ContactUsPage() {
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
-                      Email <span className="text-red-500">*</span>
+                      {t('emailAddress')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="email"
@@ -519,7 +521,7 @@ export default function ContactUsPage() {
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                       </svg>
-                      Subject
+                      {t('subject')}
                     </label>
                     <input
                       type="text"
@@ -528,7 +530,7 @@ export default function ContactUsPage() {
                       value={formData.subject}
                       onChange={handleChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ABC443] focus:border-transparent text-gray-900 placeholder-gray-400 transition-all bg-gray-50 focus:bg-white"
-                      placeholder="What is this regarding?"
+                      placeholder={t('whatIsThisRegarding')}
                     />
                   </div>
 
@@ -540,7 +542,7 @@ export default function ContactUsPage() {
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
-                      Message <span className="text-red-500">*</span>
+                      {t('message')} <span className="text-red-500">*</span>
                     </label>
                     <textarea
                       id="message"
@@ -550,7 +552,7 @@ export default function ContactUsPage() {
                       required
                       rows={6}
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ABC443] focus:border-transparent text-gray-900 placeholder-gray-400 resize-none transition-all bg-gray-50 focus:bg-white"
-                      placeholder="Tell us how we can help..."
+                      placeholder={t('tellUsHowWeCanHelp')}
                     />
                   </div>
 
@@ -592,7 +594,7 @@ export default function ContactUsPage() {
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                         </svg>
-                        Sending...
+                        {t('sending')}
                       </>
                     ) : (
                       <>
@@ -604,7 +606,7 @@ export default function ContactUsPage() {
                         >
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                         </svg>
-                        Send Message
+                        {t('sendMessage')}
                       </>
                     )}
                   </button>

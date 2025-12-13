@@ -1,11 +1,14 @@
 'use client';
 
 import Link from 'next/link';
+import LocalizedLink from './LocalizedLink';
 import { useEffect, useState } from 'react';
 import { getCategories, Category } from '@/lib/services/categoryService';
 import { getStores, Store } from '@/lib/services/storeService';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 
 export default function Footer() {
+  const { t } = useTranslation();
   const [categories, setCategories] = useState<Category[]>([]);
   const [stores, setStores] = useState<Store[]>([]);
   const [newsletterEmail, setNewsletterEmail] = useState('');
@@ -72,17 +75,17 @@ export default function Footer() {
         {/* About Us Content Section */}
         <div className="bg-[#7F700C] rounded-2xl p-6 sm:p-8 md:p-10 mb-8 md:mb-12">
           <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 text-gray-900 italic text-center">
-            #MimeCode is your place to save every day
+            {t('mimecodeIsYourPlace')}
           </h2>
           <p className="text-sm md:text-base text-gray-900 leading-relaxed">
-            We make it our mission to find you the best coupons, promo codes, deals and sales to ensure you walk away from every shopping experience with savings in tow — in money and time. Whether you're shopping for apparel online, booking a flight, ordering from a favorite restaurant or signing up for a streaming service, MimeCode is here to help you find the best ways to lower your cart total. Beyond our coupons and promo codes, you can receive the latest and greatest deals right in your inbox by signing up for our{' '}
-            <Link href="/newsletter" className="text-gray-900 hover:underline transition-all font-semibold underline">
-              email newsletters
-            </Link>
+            {t('footerDescription')}{' '}
+            <LocalizedLink href="/newsletter" className="text-gray-900 hover:underline transition-all font-semibold underline">
+              {t('emailNewsletters')}
+            </LocalizedLink>
             . And for expert insight into the best sales to shop, the hottest products on the market and the best hacks to help you save at your favorite retailers, be sure to{' '}
-            <Link href="/blogs" className="text-gray-900 hover:underline transition-all font-semibold underline">
-              give our blog a read
-            </Link>
+            <LocalizedLink href="/blogs" className="text-gray-900 hover:underline transition-all font-semibold underline">
+              {t('giveOurBlogARead')}
+            </LocalizedLink>
             .
           </p>
         </div>
@@ -100,37 +103,37 @@ export default function Footer() {
                 />
               </div>
               <p className="text-sm text-gray-400 leading-relaxed">
-                The use of third-party trademarks and trade names on this website does not imply that mimecode.com is affiliated with or endorsed by the owners of those marks or names.
+                {t('disclaimer')}
               </p>
             </div>
 
             {/* Top Categories */}
             <div>
-              <h3 className="text-lg font-semibold mb-4 text-white">Top Categories</h3>
+              <h3 className="text-lg font-semibold mb-4 text-white">{t('topCategories')}</h3>
               <ul className="space-y-2.5">
-                <li><Link href="/categories/office-stationery" className="text-sm text-gray-300 hover:text-white transition-colors">Office & Stationery</Link></li>
-                <li><Link href="/categories/pet-supplies" className="text-sm text-gray-300 hover:text-white transition-colors">Pet Supplies</Link></li>
-                <li><Link href="/categories/jewelry-watches" className="text-sm text-gray-300 hover:text-white transition-colors">Jewelry & Watches</Link></li>
-                <li><Link href="/categories/travel-hotels" className="text-sm text-gray-300 hover:text-white transition-colors">Travel & Hotels</Link></li>
-                <li><Link href="/categories/automotive" className="text-sm text-gray-300 hover:text-white transition-colors">Automotive</Link></li>
-                <li><Link href="/categories/toys-kids" className="text-sm text-gray-300 hover:text-white transition-colors">Toys & Kids</Link></li>
-                <li><Link href="/categories/books-media" className="text-sm text-gray-300 hover:text-white transition-colors">Books & Media</Link></li>
-                <li><Link href="/categories/food-grocery" className="text-sm text-gray-300 hover:text-white transition-colors">Food & Grocery</Link></li>
+                <li><LocalizedLink href="/categories/office-stationery" className="text-sm text-gray-300 hover:text-white transition-colors">Office & Stationery</LocalizedLink></li>
+                <li><LocalizedLink href="/categories/pet-supplies" className="text-sm text-gray-300 hover:text-white transition-colors">Pet Supplies</LocalizedLink></li>
+                <li><LocalizedLink href="/categories/jewelry-watches" className="text-sm text-gray-300 hover:text-white transition-colors">Jewelry & Watches</LocalizedLink></li>
+                <li><LocalizedLink href="/categories/travel-hotels" className="text-sm text-gray-300 hover:text-white transition-colors">Travel & Hotels</LocalizedLink></li>
+                <li><LocalizedLink href="/categories/automotive" className="text-sm text-gray-300 hover:text-white transition-colors">Automotive</LocalizedLink></li>
+                <li><LocalizedLink href="/categories/toys-kids" className="text-sm text-gray-300 hover:text-white transition-colors">Toys & Kids</LocalizedLink></li>
+                <li><LocalizedLink href="/categories/books-media" className="text-sm text-gray-300 hover:text-white transition-colors">Books & Media</LocalizedLink></li>
+                <li><LocalizedLink href="/categories/food-grocery" className="text-sm text-gray-300 hover:text-white transition-colors">Food & Grocery</LocalizedLink></li>
               </ul>
             </div>
 
             {/* Top Stores */}
             <div>
-              <h3 className="text-lg font-semibold mb-4 text-white">Top Stores</h3>
+              <h3 className="text-lg font-semibold mb-4 text-white">{t('topStores')}</h3>
               <ul className="space-y-2.5">
-                <li><Link href="/stores/cettire-us" className="text-sm text-gray-300 hover:text-white transition-colors">Cettire US</Link></li>
-                <li><Link href="/stores/oakley-us" className="text-sm text-gray-300 hover:text-white transition-colors">Oakley US</Link></li>
-                <li><Link href="/stores/pacsun-us" className="text-sm text-gray-300 hover:text-white transition-colors">Pacsun US</Link></li>
-                <li><Link href="/stores/maven-trading-usa" className="text-sm text-gray-300 hover:text-white transition-colors">Maven Trading Usa</Link></li>
-                <li><Link href="/stores/saksoff5th-us" className="text-sm text-gray-300 hover:text-white transition-colors">Saks Off 5th Us</Link></li>
-                <li><Link href="/stores/wolfand-badger-uk" className="text-sm text-gray-300 hover:text-white transition-colors">Wolf And Badger Uk</Link></li>
-                <li><Link href="/stores/overstock-us" className="text-sm text-gray-300 hover:text-white transition-colors">Overstock Us</Link></li>
-                <li><Link href="/stores/garnethill-us" className="text-sm text-gray-300 hover:text-white transition-colors">Garnet Hill US</Link></li>
+                <li><LocalizedLink href="/stores/cettire-us" className="text-sm text-gray-300 hover:text-white transition-colors">Cettire US</LocalizedLink></li>
+                <li><LocalizedLink href="/stores/oakley-us" className="text-sm text-gray-300 hover:text-white transition-colors">Oakley US</LocalizedLink></li>
+                <li><LocalizedLink href="/stores/pacsun-us" className="text-sm text-gray-300 hover:text-white transition-colors">Pacsun US</LocalizedLink></li>
+                <li><LocalizedLink href="/stores/maven-trading-usa" className="text-sm text-gray-300 hover:text-white transition-colors">Maven Trading Usa</LocalizedLink></li>
+                <li><LocalizedLink href="/stores/saksoff5th-us" className="text-sm text-gray-300 hover:text-white transition-colors">Saks Off 5th Us</LocalizedLink></li>
+                <li><LocalizedLink href="/stores/wolfand-badger-uk" className="text-sm text-gray-300 hover:text-white transition-colors">Wolf And Badger Uk</LocalizedLink></li>
+                <li><LocalizedLink href="/stores/overstock-us" className="text-sm text-gray-300 hover:text-white transition-colors">Overstock Us</LocalizedLink></li>
+                <li><LocalizedLink href="/stores/garnethill-us" className="text-sm text-gray-300 hover:text-white transition-colors">Garnet Hill US</LocalizedLink></li>
                 {/* <li><Link href="/stores/dazzle-dry-us" className="text-sm text-gray-300 hover:text-white transition-colors">Dazzle Dry US</Link></li> */}
                 {/* <li><Link href="/stores/under-outfit-us" className="text-sm text-gray-300 hover:text-white transition-colors">Under Outfit Us</Link></li> */}
               </ul>
@@ -138,17 +141,17 @@ export default function Footer() {
 
             {/* Useful Links */}
             <div>
-              <h3 className="text-lg font-semibold mb-4 text-white">Useful Links</h3>
+              <h3 className="text-lg font-semibold mb-4 text-white">{t('usefulLinks')}</h3>
               <ul className="space-y-2.5">
-                <li><Link href="/" className="text-sm text-gray-300 hover:text-white transition-colors">Home</Link></li>
-                <li><Link href="/stores" className="text-sm text-gray-300 hover:text-white transition-colors">Stores</Link></li>
-                <li><Link href="/categories" className="text-sm text-gray-300 hover:text-white transition-colors">Categories</Link></li>
-                <li><Link href="/contact-us" className="text-sm text-gray-300 hover:text-white transition-colors">Contact Us</Link></li>
-                <li><Link href="/about-us" className="text-sm text-gray-300 hover:text-white transition-colors">About Us</Link></li>
-                <li><Link href="/faqs" className="text-sm text-gray-300 hover:text-white transition-colors">FAQs</Link></li>
-                <li><Link href="/cookie-policy" className="text-sm text-gray-300 hover:text-white transition-colors">Cookie Policy</Link></li>
-                <li><Link href="/imprint" className="text-sm text-gray-300 hover:text-white transition-colors">Imprint</Link></li>
-                <li><Link href="/gdpr-policy" className="text-sm text-gray-300 hover:text-white transition-colors">GDPR Policy</Link></li>
+                <li><LocalizedLink href="/" className="text-sm text-gray-300 hover:text-white transition-colors">{t('home')}</LocalizedLink></li>
+                <li><LocalizedLink href="/stores" className="text-sm text-gray-300 hover:text-white transition-colors">{t('stores')}</LocalizedLink></li>
+                <li><LocalizedLink href="/categories" className="text-sm text-gray-300 hover:text-white transition-colors">{t('categories')}</LocalizedLink></li>
+                <li><LocalizedLink href="/contact-us" className="text-sm text-gray-300 hover:text-white transition-colors">{t('contactUs')}</LocalizedLink></li>
+                <li><LocalizedLink href="/about-us" className="text-sm text-gray-300 hover:text-white transition-colors">{t('aboutUs')}</LocalizedLink></li>
+                <li><LocalizedLink href="/faqs" className="text-sm text-gray-300 hover:text-white transition-colors">{t('faqs')}</LocalizedLink></li>
+                <li><LocalizedLink href="/cookie-policy" className="text-sm text-gray-300 hover:text-white transition-colors">Cookie Policy</LocalizedLink></li>
+                <li><LocalizedLink href="/imprint" className="text-sm text-gray-300 hover:text-white transition-colors">Imprint</LocalizedLink></li>
+                <li><LocalizedLink href="/gdpr-policy" className="text-sm text-gray-300 hover:text-white transition-colors">GDPR Policy</LocalizedLink></li>
               </ul>
             </div>
           </div>
@@ -160,20 +163,20 @@ export default function Footer() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-6">
             <p className="text-sm text-gray-900 font-medium">
-              © 2025 MimeCode. All Rights Reserved.
+              © 2025 MimeCode. {t('allRightsReserved')}.
             </p>
             <div className="flex items-center gap-4 text-sm">
-              <Link href="/privacy-policy" className="text-gray-900 hover:underline font-medium transition-colors">
-                Privacy Policy
-              </Link>
+              <LocalizedLink href="/privacy-policy" className="text-gray-900 hover:underline font-medium transition-colors">
+                {t('privacyPolicy')}
+              </LocalizedLink>
               <span className="text-gray-900">|</span>
-              <Link href="/terms-and-conditions" className="text-gray-900 hover:underline font-medium transition-colors">
-                Terms & Conditions
-              </Link>
+              <LocalizedLink href="/terms-and-conditions" className="text-gray-900 hover:underline font-medium transition-colors">
+                {t('termsAndConditions')}
+              </LocalizedLink>
               <span className="text-gray-900">|</span>
-              <Link href="/affiliate-closure" className="text-gray-900 hover:underline font-medium transition-colors">
-                Affiliate Disclosure
-              </Link>
+              <LocalizedLink href="/affiliate-closure" className="text-gray-900 hover:underline font-medium transition-colors">
+                {t('affiliateDisclosure')}
+              </LocalizedLink>
             </div>
           </div>
         </div>

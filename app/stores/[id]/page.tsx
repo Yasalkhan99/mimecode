@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import LocalizedLink from '@/app/components/LocalizedLink';
+import { useLanguage } from '@/lib/contexts/LanguageContext';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 import { getStoreById, getStoreBySlug, getStores, Store } from '@/lib/services/storeService';
 import { getCouponsByStoreId, Coupon } from '@/lib/services/couponService';
 import { getActiveStoreFAQs, StoreFAQ } from '@/lib/services/storeFaqService';
@@ -35,8 +38,10 @@ const getStoreRating = (storeId: string | undefined): { rating: number; reviews:
 import CouponPopup from '@/app/components/CouponPopup';
 
 export default function StoreDetailPage() {
+  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
+  const { getLocalizedPath } = useLanguage();
   const idOrSlug = params.id as string;
 
   const [store, setStore] = useState<Store | null>(null);
@@ -346,12 +351,12 @@ export default function StoreDetailPage() {
           <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-900 mb-4">Store Not Found</h1>
             <p className="text-gray-600 mb-6">The store you're looking for doesn't exist.</p>
-            <Link
+            <LocalizedLink
               href="/stores"
               className="inline-block px-6 py-3 bg-black hover:bg-[#FFE019] text-[#FFE019] hover:text-black border-2 border-[#FFE019] rounded-lg transition-all duration-300 font-semibold"
             >
               Browse All Stores
-            </Link>
+            </LocalizedLink>
           </div>
         </div>
         <Footer />
@@ -583,7 +588,7 @@ export default function StoreDetailPage() {
 
               {/* Why Trust Us Section - Dynamic Content */}
               <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <h3 className="text-lg font-bold text-gray-900 mb-3">Why Trust Us?</h3>
+                <h3 className="text-lg font-bold text-gray-900 mb-3">{t('whyTrustUs')}</h3>
                 <div className="space-y-2 text-sm text-gray-700 leading-relaxed">
                   {store.whyTrustUs ? (
                     <div dangerouslySetInnerHTML={{ __html: store.whyTrustUs.replace(/\n/g, '<br />') }} />
@@ -591,15 +596,15 @@ export default function StoreDetailPage() {
                     // Default content if not set
                     <>
                       <p>
-                        At MimeCode, we are committed to providing you with the best deals and savings opportunities. Our dedicated team works tirelessly to ensure that every coupon and deal we feature is verified, up-to-date, and reliable.
+                        {t('whyTrustUsDescription1')}
                       </p>
                       <p>
-                        We understand the importance of saving money, and that's why we make it our mission to help you find the best discounts from your favorite stores.
+                        {t('whyTrustUsDescription2')}
                       </p>
                     </>
                   )}
                   <p className="text-xs text-gray-500 mt-3">
-                    Last updated: {getCurrentDate()}
+                    {t('lastUpdated')} {getCurrentDate()}
                   </p>
                 </div>
               </div>
@@ -610,7 +615,7 @@ export default function StoreDetailPage() {
                   <h3 className="text-lg font-bold text-gray-900 mb-3">Related Stores</h3>
                   <div className="grid grid-cols-3 gap-3">
                     {relatedStores.map((relatedStore) => (
-                      <Link
+                      <LocalizedLink
                         key={relatedStore.id}
                         href={`/stores/${relatedStore.slug || relatedStore.id}`}
                         className="group flex flex-col items-center p-2 rounded-lg hover:bg-gray-50 transition-colors"
@@ -642,7 +647,7 @@ export default function StoreDetailPage() {
                         <span className="text-xs text-gray-700 text-center line-clamp-2 group-hover:text-[#16a34a] transition-colors">
                           {relatedStore.name}
                         </span>
-                      </Link>
+                      </LocalizedLink>
                     ))}
                   </div>
                 </div>
@@ -693,12 +698,12 @@ export default function StoreDetailPage() {
             {filteredCoupons.length === 0 ? (
               <div className="text-center py-12 bg-gray-50 rounded-xl">
                 <p className="text-gray-500 text-lg">No {filterTab === 'all' ? 'coupons' : filterTab} available for this store right now.</p>
-                <Link
+                <LocalizedLink
                   href="/stores"
                   className="inline-block mt-4 px-6 py-3 bg-black hover:bg-[#FFE019] text-[#FFE019] hover:text-black border-2 border-[#FFE019] rounded-lg transition-all duration-300 font-semibold"
                 >
                   Browse Other Stores
-                </Link>
+                </LocalizedLink>
               </div>
             ) : (
               <div className="space-y-4">
@@ -735,7 +740,7 @@ export default function StoreDetailPage() {
                 if ((coupon.couponType || 'deal') === 'code' && coupon.code) {
                   return 'Get Code';
                 }
-                return 'Get Deal';
+                return t('getDeal');
               };
 
               const getLastTwoDigits = (coupon: Coupon): string | null => {

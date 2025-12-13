@@ -7,6 +7,7 @@ import { getCategories, Category } from '@/lib/services/categoryService';
 import { getStores, Store } from '@/lib/services/storeService';
 // import { getBannersWithLayout, Banner } from '@/lib/services/bannerService';
 import { addNotification } from '@/lib/services/notificationsService';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
 import NewsletterSubscription from '@/app/components/NewsletterSubscription';
@@ -16,6 +17,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 
 function CouponsContent() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get('category');
   const storeParam = searchParams.get('store');
@@ -137,9 +139,9 @@ function CouponsContent() {
     }
     // Default to type-based text
     if ((coupon.couponType || 'deal') === 'code' && coupon.code) {
-      return 'Get Code';
+      return t('getCode');
     }
-    return 'Get Deal';
+    return t('getDeal');
   };
 
   // Get last 2 digits for hover display
@@ -280,8 +282,8 @@ function CouponsContent() {
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(text).then(() => {
         addNotification({
-          title: 'Code Copied!',
-          message: `Coupon code "${text}" has been copied to clipboard.`,
+          title: t('codeCopied'),
+          message: t('couponCodeCopied').replace('{code}', text),
           type: 'success'
         });
       }).catch((err) => {
@@ -316,8 +318,8 @@ function CouponsContent() {
       
       if (successful) {
         addNotification({
-          title: 'Code Copied!',
-          message: `Coupon code "${text}" has been copied to clipboard.`,
+          title: t('codeCopied'),
+          message: t('couponCodeCopied').replace('{code}', text),
           type: 'success'
         });
       } else {
@@ -521,10 +523,10 @@ function CouponsContent() {
           {/* Header */}
           <div className="mb-6 sm:mb-8">
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-4">
-              All <span className="text-[#ABC443]">Coupons</span>
+              {t('allCoupons')}
             </h1>
             <p className="text-center text-gray-600 text-sm sm:text-base">
-              Discover amazing deals and discounts from your favorite stores
+              {t('browseAllCoupons')}
             </p>
           </div>
 
@@ -533,7 +535,7 @@ function CouponsContent() {
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <label htmlFor="category" className="block text-sm font-semibold text-gray-700 mb-2">
-                  Filter by Category
+                  {t('filterByCategory')}
                 </label>
                 <select
                   id="category"
@@ -541,7 +543,7 @@ function CouponsContent() {
                   onChange={(e) => setSelectedCategory(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">All Categories</option>
+                  <option value="">{t('allCategories')}</option>
                   {categories.map((category) => (
                     <option key={category.id} value={category.id}>
                       {category.name}
@@ -552,7 +554,7 @@ function CouponsContent() {
               
               <div className="flex-1">
                 <label htmlFor="store" className="block text-sm font-semibold text-gray-700 mb-2">
-                  Filter by Store
+                  {t('filterByStore')}
                 </label>
                 <select
                   id="store"
@@ -560,7 +562,7 @@ function CouponsContent() {
                   onChange={(e) => setSelectedStore(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">All Stores</option>
+                  <option value="">{t('allStoresFilter')}</option>
                   {stores.map((store) => (
                     <option key={store.id} value={store.id}>
                       {store.name}
@@ -575,14 +577,14 @@ function CouponsContent() {
                     onClick={clearFilters}
                     className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
                   >
-                    Clear Filters
+                    {t('clearSearch')}
                   </button>
                 </div>
               )}
             </div>
             
             <div className="mt-4 text-sm text-gray-600">
-              Showing <span className="font-semibold text-gray-900">{filteredCoupons.length}</span> of <span className="font-semibold text-gray-900">{coupons.length}</span> coupons
+              {t('showingArticles')} <span className="font-semibold text-gray-900">{filteredCoupons.length}</span> {t('ofArticles')} <span className="font-semibold text-gray-900">{coupons.length}</span> {t('coupons')}
             </div>
           </div>
 
@@ -600,13 +602,13 @@ function CouponsContent() {
             </div>
           ) : filteredCoupons.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500 text-lg mb-4">No coupons found.</p>
+              <p className="text-gray-500 text-lg mb-4">{t('noCouponsFound')}</p>
               {(selectedCategory || selectedStore) && (
                 <button
                   onClick={clearFilters}
                     className="text-[#ABC443] hover:text-[#41361A] font-semibold"
                 >
-                  Clear filters to see all coupons
+                  {t('noCouponsFoundMessage')}
                 </button>
               )}
             </div>

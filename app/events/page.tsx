@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getEvents, Event } from '@/lib/services/eventService';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
 import NewsletterSubscription from '@/app/components/NewsletterSubscription';
@@ -11,6 +12,7 @@ import { motion } from 'framer-motion';
 import { format, isPast, differenceInDays } from 'date-fns';
 
 export default function Events() {
+  const { t } = useTranslation();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [showGif, setShowGif] = useState(true);
@@ -231,7 +233,7 @@ export default function Events() {
                       </svg>
                     </div>
                     <div>
-                      <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide">Start Date</p>
+                      <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide">{t('startDate')}</p>
                       <p className="text-[14px] font-bold text-gray-900">{formatDateFull(latestEvent.startDate)}</p>
                     </div>
                   </div>
@@ -242,7 +244,7 @@ export default function Events() {
                       </svg>
                     </div>
                     <div>
-                      <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide">End Date</p>
+                      <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide">{t('endDate')}</p>
                       <p className="text-[14px] font-bold text-gray-900">{formatDateFull(latestEvent.endDate)}</p>
                     </div>
                   </div>
@@ -274,7 +276,7 @@ export default function Events() {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
-                    Upcoming Event
+                    {t('upcomingEvent')}
                     {(() => {
                       const days = getDaysUntil(latestEvent.startDate);
                       if (days !== null && days >= 0) {
@@ -550,12 +552,12 @@ export default function Events() {
                 Explore More
               </span>
               <h2 className="text-4xl font-bold text-gray-900 flex items-center justify-center gap-2 mb-4">
-                Other
+                {t('otherEvents')}
                 <Image src="/eventstxt.png" alt="Events" width={120} height={100} />
                 {/* <span className="text-[#ABC443]">Events</span> */}
               </h2>
               <p className="text-black text-lg mx-auto">
-                Discover more exciting events and opportunities waiting for you
+                {t('exploreMore')}
               </p>
             </motion.div>
 
@@ -640,16 +642,16 @@ export default function Events() {
                 </svg>
               </div>
               <h3 className="text-4xl font-black text-gray-900 mb-4">
-                No Events Available
+                {t('noEventsAvailable')}
               </h3>
               <p className="text-gray-600 text-xl mb-8">
-                Check back soon for exciting upcoming events and promotions
+                {t('checkBackSoonEvents')}
               </p>
               <Link
                 href="/"
                 className="inline-block bg-gradient-to-r from-[#ABC443] to-[#9BB03A] hover:from-[#9BB03A] hover:to-[#ABC443] text-white font-bold px-8 py-4 rounded-xl transition-all shadow-xl hover:shadow-2xl"
               >
-                Go to Homepage
+                {t('goToHomepage')}
               </Link>
             </motion.div>
           </div>

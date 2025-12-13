@@ -1,20 +1,24 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from '@/lib/hooks/useTranslation';
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
 import { getTermsAndConditions, TermsAndConditions } from '@/lib/services/termsService';
 
 export default function TermsAndConditionsPage() {
+  const { t } = useTranslation();
+  const { currentLanguage } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<TermsAndConditions | null>(null);
 
   useEffect(() => {
-    document.title = 'Terms and Conditions - MimeCode';
+    document.title = `${t('termsAndConditions')} - MimeCode`;
 
     const fetchTerms = async () => {
       try {
-        const termsData = await getTermsAndConditions();
+        const termsData = await getTermsAndConditions(currentLanguage.code);
         if (termsData) {
           setData(termsData);
         } else {
@@ -41,7 +45,7 @@ export default function TermsAndConditionsPage() {
     };
 
     fetchTerms();
-  }, []);
+  }, [currentLanguage.code, t]);
 
   if (loading || !data) {
     return (
@@ -50,7 +54,7 @@ export default function TermsAndConditionsPage() {
         <div className="w-full px-4 sm:px-6 md:px-8 py-8 sm:py-12 md:py-16">
           <div className="max-w-4xl mx-auto">
             <div className="text-center py-12">
-              <div className="text-lg font-semibold">Loading...</div>
+              <div className="text-lg font-semibold">{t('loading')}</div>
             </div>
           </div>
         </div>
@@ -70,7 +74,7 @@ export default function TermsAndConditionsPage() {
           </h1>
           {data.lastUpdated && (
             <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8">
-              Last updated: {(() => {
+              {t('lastUpdated')} {(() => {
                 const date = data.lastUpdated;
                 let dateObj: Date;
                 if (date && typeof (date as any).toDate === 'function') {

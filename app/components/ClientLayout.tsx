@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import QuotaErrorBanner from './QuotaErrorBanner';
 import QuotaStatus from './QuotaStatus';
 import CookieConsent from './CookieConsent';
+import { LanguageProvider } from '@/lib/contexts/LanguageContext';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const [showQuotaError, setShowQuotaError] = useState(false);
@@ -406,7 +407,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   }, []);
 
   return (
-    <>
+    <LanguageProvider>
       <QuotaErrorBanner 
         show={showQuotaError} 
         onClose={() => setShowQuotaError(false)} 
@@ -414,7 +415,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       <QuotaStatus />
       {children}
       <CookieConsent />
-    </>
+    </LanguageProvider>
   );
 }
 

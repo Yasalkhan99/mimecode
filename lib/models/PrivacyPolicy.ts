@@ -5,6 +5,7 @@ export interface IPrivacyPolicy extends Document {
   content: string;
   contactEmail: string;
   contactWebsite: string;
+  languageCode?: string; // ISO 639-1 language code (e.g., 'en', 'es', 'fr')
   lastUpdated?: Date;
   createdAt?: Date;
   updatedAt?: Date;
@@ -16,6 +17,7 @@ const PrivacyPolicySchema = new Schema<IPrivacyPolicy>(
     content: { type: String, required: true },
     contactEmail: { type: String, required: true, default: 'privacy@mimecode.com' },
     contactWebsite: { type: String, required: true, default: 'www.mimecode.com' },
+    languageCode: { type: String, default: 'en' }, // ISO 639-1 language code
     lastUpdated: Date,
   },
   {
