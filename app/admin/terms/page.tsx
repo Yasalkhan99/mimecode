@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { getTermsAndConditions, createTermsAndConditions, updateTermsAndConditions, deleteTermsAndConditions, TermsAndConditions } from '@/lib/services/termsService';
+import { languages } from '@/lib/contexts/LanguageContext';
 
 export default function TermsPage() {
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [terms, setTerms] = useState<TermsAndConditions | null>(null);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -12,22 +14,28 @@ export default function TermsPage() {
   const [contactEmail, setContactEmail] = useState('legal@mimecode.com');
   const [contactWebsite, setContactWebsite] = useState('www.mimecode.com');
 
-  const fetchTerms = async () => {
+  const fetchTerms = async (langCode: string) => {
     setLoading(true);
-    const data = await getTermsAndConditions();
+    const data = await getTermsAndConditions(langCode);
     if (data) {
       setTerms(data);
       setTitle(data.title);
       setContent(data.content);
       setContactEmail(data.contactEmail);
       setContactWebsite(data.contactWebsite);
+    } else {
+      setTerms(null);
+      setTitle('Terms and Conditions');
+      setContent('');
+      setContactEmail('legal@mimecode.com');
+      setContactWebsite('www.mimecode.com');
     }
     setLoading(false);
   };
 
   useEffect(() => {
-    fetchTerms();
-  }, []);
+    fetchTerms(selectedLanguage);
+  }, [selectedLanguage]);
 
   const resetForm = () => {
     if (terms) {
@@ -44,6 +52,11 @@ export default function TermsPage() {
     setShowForm(false);
   };
 
+  const handleLanguageChange = (langCode: string) => {
+    setSelectedLanguage(langCode);
+    setShowForm(false);
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !content.trim()) {
@@ -56,6 +69,7 @@ export default function TermsPage() {
       content: content.trim(),
       contactEmail: contactEmail.trim(),
       contactWebsite: contactWebsite.trim(),
+      languageCode: selectedLanguage,
       lastUpdated: new Date(),
     };
 
@@ -65,7 +79,7 @@ export default function TermsPage() {
 
     if (result.success) {
       alert('Terms and Conditions saved successfully!');
-      fetchTerms();
+      fetchTerms(selectedLanguage);
       setShowForm(false);
     } else {
       alert('Failed to save terms and conditions. Please try again.');
@@ -97,24 +111,48 @@ export default function TermsPage() {
     }
   };
 
+  const selectedLang = languages.find(l => l.code === selectedLanguage) || languages[0];
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Terms & Conditions Management</h1>
-          <button
-            onClick={() => setShowForm(true)}
-            className="bg-[#ABC443] hover:bg-[#16a34a] text-white font-semibold px-6 py-2 rounded-lg transition-colors"
-          >
-            {terms ? 'Edit Terms & Conditions' : '+ Create Terms & Conditions'}
-          </button>
+          <div className="flex gap-4 items-center">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-semibold text-gray-700">Language:</label>
+              <select
+                value={selectedLanguage}
+                onChange={(e) => handleLanguageChange(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ABC443] bg-white"
+              >
+                {languages.map((lang) => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.flag} {lang.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              onClick={() => setShowForm(true)}
+              className="bg-[#ABC443] hover:bg-[#16a34a] text-white font-semibold px-6 py-2 rounded-lg transition-colors"
+            >
+              {terms ? 'Edit Terms & Conditions' : '+ Create Terms & Conditions'}
+            </button>
+          </div>
         </div>
 
         {showForm && (
           <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 className="text-2xl font-bold mb-4">
-              {terms ? 'Edit Terms & Conditions' : 'Create Terms & Conditions'}
-            </h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold">
+                {terms ? 'Edit Terms & Conditions' : 'Create Terms & Conditions'}
+              </h2>
+              <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg">
+                <span className="text-2xl">{selectedLang.flag}</span>
+                <span className="font-semibold text-gray-700">{selectedLang.name}</span>
+              </div>
+            </div>
             <form onSubmit={handleSave} className="space-y-4">
               <div>
                 <label className="block text-gray-700 text-sm font-semibold mb-2">
@@ -199,20 +237,30 @@ export default function TermsPage() {
           </div>
         ) : !terms ? (
           <div className="text-center py-12 bg-white rounded-lg shadow-md">
-            <p className="text-gray-600">No terms and conditions found. Create your first terms and conditions!</p>
+            <p className="text-gray-600 mb-4">No terms and conditions found for {selectedLang.flag} {selectedLang.name}.</p>
+            <p className="text-gray-500 text-sm">Create terms and conditions for this language!</p>
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             <div className="p-6 border-b border-gray-200">
               <div className="flex justify-between items-start">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">{terms.title}</h2>
+                  <div className="flex items-center gap-2 mb-2">
+                    <h2 className="text-2xl font-bold text-gray-900">{terms.title}</h2>
+                    <span className="text-xl">{selectedLang.flag}</span>
+                    <span className="text-sm text-gray-500">({selectedLang.name})</span>
+                  </div>
                   <p className="text-sm text-gray-500">
                     Last Updated: {terms.lastUpdated ? formatDate(terms.lastUpdated) : 'N/A'}
                   </p>
                   <p className="text-sm text-gray-500 mt-1">
                     Contact: {terms.contactEmail} | {terms.contactWebsite}
                   </p>
+                  {terms.languageCode && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      Language Code: {terms.languageCode}
+                    </p>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <button

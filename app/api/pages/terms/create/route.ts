@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
       content: terms.content,
       contactEmail: terms.contactEmail || 'legal@mimecode.com',
       contactWebsite: terms.contactWebsite || 'www.mimecode.com',
+      languageCode: terms.languageCode || 'en',
       lastUpdated: new Date(),
     });
     

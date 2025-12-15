@@ -910,7 +910,7 @@ export default function StoreDetailPage() {
             {/* More Information Section - Dynamic Content */}
             <div id="store-info-section" className="mt-12 bg-white rounded-lg shadow-md p-6 sm:p-8">
               <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">
-                More Information On {store.name} Coupons
+                {t('moreInformation')} On {store.name} {t('coupons')}
               </h2>
               <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed space-y-4">
                 {store.moreInformation ? (
@@ -920,13 +920,13 @@ export default function StoreDetailPage() {
                   // Default content if not set
                   <>
                     <p>
-                      At MimeCode, we are dedicated to helping you save money with incredible savings opportunities from {store.name}. Whether you're looking for your preferred item or exploring new products, our verified coupons and deals make it easy to shop more while spending less.
+                      {t('moreInformationParagraph1').replace('{storeName}', store.name)}
                     </p>
                     <p>
-                      The expanding e-commerce market offers numerous opportunities for savings, and we've developed simple strategies to help you maximize your discounts. Our team works around the clock to ensure all {store.name} coupons are verified, up-to-date, and ready to use.
+                      {t('moreInformationParagraph2').replace('{storeName}', store.name)}
                     </p>
                     <p>
-                      <strong>Seasonal Deals & Savings:</strong> Keep an eye out for special promotions during November deals, holiday deals, Black Friday, Cyber Monday, Christmas, New Year's, Easter, Thanksgiving, Winter Sale, Summer Sale, Halloween, Chinese Sale, Mother's Day, and Father's Day. These are the best times to find incredible discounts on {store.name} products.
+                      <strong>{t('seasonalDealsAndSavings')}</strong> {t('moreInformationParagraph3').replace('{storeName}', store.name)}
                     </p>
                     {store.description && (
                       <p>
@@ -935,7 +935,7 @@ export default function StoreDetailPage() {
                     )}
                     {store.aboutText && (
                       <div className="mt-4">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">About {store.name}</h3>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('aboutStore').replace('{storeName}', store.name)}</h3>
                         <p className="whitespace-pre-line">{store.aboutText}</p>
                       </div>
                     )}

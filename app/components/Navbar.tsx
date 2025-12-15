@@ -410,7 +410,7 @@ export default function Navbar() {
                                 className="block px-4 py-2 text-gray-700 hover:bg-gray-100 text-sm font-semibold text-center border-t border-gray-200"
                                 onClick={() => setStoresDropdownOpen(false)}
                               >
-                                View All Stores →
+                                {t('viewAll')} {t('stores')} →
                               </LocalizedLink>
                             )}
                           </>

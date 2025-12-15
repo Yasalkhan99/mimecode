@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { getPrivacyPolicy, createPrivacyPolicy, updatePrivacyPolicy, deletePrivacyPolicy, PrivacyPolicy } from '@/lib/services/privacyPolicyService';
+import { languages } from '@/lib/contexts/LanguageContext';
 
 export default function PrivacyPolicyPage() {
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [policy, setPolicy] = useState<PrivacyPolicy | null>(null);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -12,22 +14,28 @@ export default function PrivacyPolicyPage() {
   const [contactEmail, setContactEmail] = useState('privacy@mimecode.com');
   const [contactWebsite, setContactWebsite] = useState('www.mimecode.com');
 
-  const fetchPolicy = async () => {
+  const fetchPolicy = async (langCode: string) => {
     setLoading(true);
-    const data = await getPrivacyPolicy();
+    const data = await getPrivacyPolicy(langCode);
     if (data) {
       setPolicy(data);
       setTitle(data.title);
       setContent(data.content);
       setContactEmail(data.contactEmail);
       setContactWebsite(data.contactWebsite);
+    } else {
+      setPolicy(null);
+      setTitle('Privacy Policy');
+      setContent('');
+      setContactEmail('privacy@mimecode.com');
+      setContactWebsite('www.mimecode.com');
     }
     setLoading(false);
   };
 
   useEffect(() => {
-    fetchPolicy();
-  }, []);
+    fetchPolicy(selectedLanguage);
+  }, [selectedLanguage]);
 
   const resetForm = () => {
     if (policy) {
@@ -44,6 +52,11 @@ export default function PrivacyPolicyPage() {
     setShowForm(false);
   };
 
+  const handleLanguageChange = (langCode: string) => {
+    setSelectedLanguage(langCode);
+    setShowForm(false);
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !content.trim()) {
@@ -56,6 +69,7 @@ export default function PrivacyPolicyPage() {
       content: content.trim(),
       contactEmail: contactEmail.trim(),
       contactWebsite: contactWebsite.trim(),
+      languageCode: selectedLanguage,
       lastUpdated: new Date(),
     };
 
@@ -65,7 +79,7 @@ export default function PrivacyPolicyPage() {
 
     if (result.success) {
       alert('Privacy Policy saved successfully!');
-      fetchPolicy();
+      fetchPolicy(selectedLanguage);
       setShowForm(false);
     } else {
       alert('Failed to save privacy policy. Please try again.');
@@ -97,24 +111,48 @@ export default function PrivacyPolicyPage() {
     }
   };
 
+  const selectedLang = languages.find(l => l.code === selectedLanguage) || languages[0];
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Privacy Policy Management</h1>
-          <button
-            onClick={() => setShowForm(true)}
-            className="bg-[#ABC443] hover:bg-[#16a34a] text-white font-semibold px-6 py-2 rounded-lg transition-colors"
-          >
-            {policy ? 'Edit Privacy Policy' : '+ Create Privacy Policy'}
-          </button>
+          <div className="flex gap-4 items-center">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-semibold text-gray-700">Language:</label>
+              <select
+                value={selectedLanguage}
+                onChange={(e) => handleLanguageChange(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ABC443] bg-white"
+              >
+                {languages.map((lang) => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.flag} {lang.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              onClick={() => setShowForm(true)}
+              className="bg-[#ABC443] hover:bg-[#16a34a] text-white font-semibold px-6 py-2 rounded-lg transition-colors"
+            >
+              {policy ? 'Edit Privacy Policy' : '+ Create Privacy Policy'}
+            </button>
+          </div>
         </div>
 
         {showForm && (
           <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 className="text-2xl font-bold mb-4">
-              {policy ? 'Edit Privacy Policy' : 'Create Privacy Policy'}
-            </h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold">
+                {policy ? 'Edit Privacy Policy' : 'Create Privacy Policy'}
+              </h2>
+              <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg">
+                <span className="text-2xl">{selectedLang.flag}</span>
+                <span className="font-semibold text-gray-700">{selectedLang.name}</span>
+              </div>
+            </div>
             <form onSubmit={handleSave} className="space-y-4">
               <div>
                 <label className="block text-gray-700 text-sm font-semibold mb-2">
@@ -199,20 +237,30 @@ export default function PrivacyPolicyPage() {
           </div>
         ) : !policy ? (
           <div className="text-center py-12 bg-white rounded-lg shadow-md">
-            <p className="text-gray-600">No privacy policy found. Create your first privacy policy!</p>
+            <p className="text-gray-600 mb-4">No privacy policy found for {selectedLang.flag} {selectedLang.name}.</p>
+            <p className="text-gray-500 text-sm">Create privacy policy for this language!</p>
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             <div className="p-6 border-b border-gray-200">
               <div className="flex justify-between items-start">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">{policy.title}</h2>
+                  <div className="flex items-center gap-2 mb-2">
+                    <h2 className="text-2xl font-bold text-gray-900">{policy.title}</h2>
+                    <span className="text-xl">{selectedLang.flag}</span>
+                    <span className="text-sm text-gray-500">({selectedLang.name})</span>
+                  </div>
                   <p className="text-sm text-gray-500">
                     Last Updated: {policy.lastUpdated ? formatDate(policy.lastUpdated) : 'N/A'}
                   </p>
                   <p className="text-sm text-gray-500 mt-1">
                     Contact: {policy.contactEmail} | {policy.contactWebsite}
                   </p>
+                  {policy.languageCode && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      Language Code: {policy.languageCode}
+                    </p>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <button

@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
     if (updates.content !== undefined) updateData.content = updates.content;
     if (updates.contactEmail !== undefined) updateData.contactEmail = updates.contactEmail;
     if (updates.contactWebsite !== undefined) updateData.contactWebsite = updates.contactWebsite;
+    if (updates.languageCode !== undefined) updateData.languageCode = updates.languageCode;
     if (updates.lastUpdated !== undefined) {
       updateData.lastUpdated = updates.lastUpdated instanceof Date 
         ? updates.lastUpdated 

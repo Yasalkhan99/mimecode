@@ -1597,7 +1597,7 @@ export default function Home() {
                 href="/coupons"
                 className="cursor-pointer bg-[#FFE019] text-black font-semibold rounded-3xl px-6 py-1.5 font-medium text-[10px] sm:text-base transition-colors"
               >
-                View All
+                {t('viewAll')}
               </Link>
             </div>
 

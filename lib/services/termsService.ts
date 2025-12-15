@@ -6,6 +6,7 @@ export interface TermsAndConditions {
   content: string;
   contactEmail: string;
   contactWebsite: string;
+  languageCode?: string; // ISO 639-1 language code (e.g., 'en', 'es', 'fr')
   lastUpdated?: Date | string | Timestamp;
   createdAt?: Date | Timestamp;
   updatedAt?: Date | Timestamp;
