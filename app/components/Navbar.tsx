@@ -298,7 +298,7 @@ export default function Navbar() {
                     : 'text-gray-700 hover:text-gray-900'
                 }`}
               >
-                Home
+                {t('home')}
               </Link>
               <div 
                 className="relative stores-dropdown-container"
@@ -313,7 +313,7 @@ export default function Navbar() {
                       : 'text-gray-700 hover:text-gray-900'
                   }`}
                 >
-                  Stores
+                  {t('stores')}
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                   </svg>
@@ -474,7 +474,7 @@ export default function Navbar() {
                       : 'text-gray-700 hover:text-gray-900'
                   }`}
                 >
-                  {eventsNavLabel}
+                  {eventsNavLabel === 'Events' ? t('events') : eventsNavLabel === 'Christmas' ? t('christmas') : eventsNavLabel}
                 </LocalizedLink>
               )}
             </div>
@@ -560,7 +560,7 @@ export default function Navbar() {
                       : 'text-gray-700 hover:text-[#16a34a] hover:bg-[#16a34a]/10'
                   }`}
                 >
-                  Home
+                  {t('home')}
                 </Link>
                 <LocalizedLink 
                   href="/categories" 
@@ -621,7 +621,7 @@ export default function Navbar() {
                         : 'text-gray-700 hover:text-[#16a34a] hover:bg-[#16a34a]/10'
                     }`}
                   >
-                    Events
+                    {eventsNavLabel === 'Events' ? t('events') : eventsNavLabel === 'Christmas' ? t('christmas') : eventsNavLabel || t('events')}
                   </LocalizedLink>
                 )}
               </div>
