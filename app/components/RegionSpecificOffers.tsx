@@ -328,12 +328,7 @@ const getCountryCode = (regionName: string): string => {
   const upperName = trimmedName.toUpperCase();
   const lowerName = trimmedName.toLowerCase();
   
-  // First check if it's already a 2-letter country code
-  if (trimmedName.length === 2 && countryCodeToFlag[upperName]) {
-    return upperName;
-  }
-  
-  // Map region names to country codes
+  // Map region names to country codes (check this first for special cases like UK)
   const nameToCode: { [key: string]: string } = {
     'uk': 'GB',
     'united kingdom': 'GB',
@@ -376,8 +371,18 @@ const getCountryCode = (regionName: string): string => {
     'argentina': 'AR',
   };
   
+  // Check name mapping first (handles UK -> GB, etc.)
   if (nameToCode[lowerName]) {
     return nameToCode[lowerName];
+  }
+  
+  // Then check if it's already a 2-letter country code that exists in our mapping
+  if (trimmedName.length === 2 && countryCodeToFlag[upperName]) {
+    // Special case: UK should map to GB
+    if (upperName === 'UK') {
+      return 'GB';
+    }
+    return upperName;
   }
   
   // Try partial match
@@ -590,6 +595,15 @@ export default function RegionSpecificOffers() {
               return displayRegions.map((region, index) => {
                 const countryCode = getCountryCode(region.name);
                 const flagUrl = getFlagImageUrl(countryCode);
+                // Get emoji flag as fallback - check multiple variations
+                const regionNameUpper = region.name.toUpperCase();
+                const regionNameLower = region.name.toLowerCase();
+                const emojiFlag = regionFlags[region.name] 
+                  || regionFlags[regionNameUpper] 
+                  || regionFlags[regionNameLower]
+                  || countryCodeToFlag[countryCode] 
+                  || countryCodeToFlag[countryCode.toUpperCase()]
+                  || '🌍';
 
                 return (
                   <motion.button
@@ -608,16 +622,24 @@ export default function RegionSpecificOffers() {
                         role="img"
                         aria-label={`${region.name} flag`}
                       >
-                        <img
-                          src={flagUrl}
-                          alt={`${region.name} flag`}
-                          className="w-full h-full object-cover rounded-sm shadow-sm"
-                          onError={(e) => {
-                            // Fallback to a default flag if image fails to load
-                            const target = e.target as HTMLImageElement;
-                            target.src = 'https://flagcdn.com/w160/un.png';
-                          }}
-                        />
+                        {countryCode === 'XX' || !flagUrl || flagUrl.includes('un.png') ? (
+                          // Use emoji flag directly if country code is unknown or UN flag
+                          <span className="text-2xl sm:text-3xl">{emojiFlag}</span>
+                        ) : (
+                          <img
+                            src={flagUrl}
+                            alt={`${region.name} flag`}
+                            className="w-full h-full object-cover rounded-sm shadow-sm"
+                            onError={(e) => {
+                              // Fallback to emoji flag if image fails to load
+                              const target = e.target as HTMLImageElement;
+                              const parent = target.parentElement;
+                              if (parent) {
+                                parent.innerHTML = `<span class="text-2xl sm:text-3xl">${emojiFlag}</span>`;
+                              }
+                            }}
+                          />
+                        )}
                       </div>
                     </div>
                     {/* Country Name - Compact */}
@@ -652,14 +674,19 @@ export default function RegionSpecificOffers() {
               {/* Modal Header */}
               <div className="bg-black text-white p-6 flex items-center justify-between border-b-4 border-[#FFE019]">
                   <div className="flex items-center gap-3">
-                  <div className="w-12 h-8 flex-shrink-0">
+                  <div className="w-12 h-8 flex-shrink-0 flex items-center justify-center">
                     <img
                       src={getFlagImageUrl(getCountryCode(selectedRegion.name))}
                       alt={`${selectedRegion.name} flag`}
                       className="w-full h-full object-cover rounded-sm"
                       onError={(e) => {
+                        // Fallback to emoji flag if image fails to load
                         const target = e.target as HTMLImageElement;
-                        target.src = 'https://flagcdn.com/w160/un.png';
+                        const parent = target.parentElement;
+                        if (parent) {
+                          const emojiFlag = regionFlags[selectedRegion.name] || regionFlags[selectedRegion.name.toUpperCase()] || countryCodeToFlag[getCountryCode(selectedRegion.name)] || '🌍';
+                          parent.innerHTML = `<span class="text-2xl">${emojiFlag}</span>`;
+                        }
                       }}
                     />
                   </div>
