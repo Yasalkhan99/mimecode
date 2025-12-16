@@ -239,8 +239,8 @@ export default function CouponsPage() {
       setCategories(categoriesData);
       // Sort stores by numeric ID (1, 2, 3...)
       const sortedStores = storesData.sort((a, b) => {
-        const idA = parseInt(String(a.id || a.storeId || '0'), 10) || 0;
-        const idB = parseInt(String(b.id || b.storeId || '0'), 10) || 0;
+        const idA = parseInt(String(a.id || '0'), 10) || 0;
+        const idB = parseInt(String(b.id || '0'), 10) || 0;
         return idA - idB;
       });
       setStores(sortedStores);
