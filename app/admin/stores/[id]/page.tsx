@@ -411,7 +411,7 @@ export default function EditStorePage() {
 
           <div>
             <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-1">
-              Description
+              Description <span className="text-gray-500 font-normal">(Optional)</span>
             </label>
             <textarea
               id="description"
@@ -422,7 +422,6 @@ export default function EditStorePage() {
               }
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
               rows={4}
-              required
             />
           </div>
 
