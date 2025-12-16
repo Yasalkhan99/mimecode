@@ -237,7 +237,13 @@ export default function CouponsPage() {
       ]);
       setCoupons(couponsData);
       setCategories(categoriesData);
-      setStores(storesData);
+      // Sort stores by numeric ID (1, 2, 3...)
+      const sortedStores = storesData.sort((a, b) => {
+        const idA = parseInt(String(a.id || a.storeId || '0'), 10) || 0;
+        const idB = parseInt(String(b.id || b.storeId || '0'), 10) || 0;
+        return idA - idB;
+      });
+      setStores(sortedStores);
       setLoading(false);
     };
     load();
@@ -788,7 +794,7 @@ export default function CouponsPage() {
                   {isStoreDropdownOpen && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                       <div className="p-2">
-                        {stores.map((store) => {
+                        {stores.map((store, index) => {
                           const isSelected = selectedStoreIds.includes(store.id || '');
                           return (
                             <label
@@ -846,7 +852,9 @@ export default function CouponsPage() {
                                 }}
                                 className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                               />
-                              <span className="ml-3 text-sm text-gray-700">{store.name}</span>
+                              <span className="ml-3 text-sm text-gray-700">
+                                {index + 1} - {store.name}
+                              </span>
                             </label>
                           );
                         })}
@@ -943,26 +951,6 @@ export default function CouponsPage() {
               </div>
               <p className="mt-1 text-xs text-gray-500">
                 Select whether this is a coupon code or a deal. Frontend will show "Get Code" for codes and "Get Deal" for deals.
-              </p>
-            </div>
-
-            <div>
-              <label htmlFor="buttonText" className="block text-gray-700 text-sm font-semibold mb-2">
-                Custom "Get Code" Button Text (Optional)
-              </label>
-              <input
-                id="buttonText"
-                name="buttonText"
-                type="text"
-                placeholder="e.g., Get Code, Get Deal, Claim Now, Shop Now"
-                value={formData.buttonText || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, buttonText: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Customize the button text. If left empty, it will default to "Get Code" for codes and "Get Deal" for deals.
               </p>
             </div>
 

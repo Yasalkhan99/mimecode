@@ -1399,11 +1399,11 @@ export default function StoresPage() {
                   const endIndex = startIndex + itemsPerPage;
                   const paginatedStores = filteredStores.slice(startIndex, endIndex);
                   
-                  return paginatedStores.map((store) => (
+                  return paginatedStores.map((store, index) => (
                   <tr key={store.id} className="border-b hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div className="font-mono text-sm text-gray-800 font-medium truncate" title={store.id}>
-                        {store.id}
+                        {startIndex + index + 1}
                       </div>
                     </td>
                     <td className="px-6 py-4">

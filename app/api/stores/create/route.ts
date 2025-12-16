@@ -28,8 +28,40 @@ export async function POST(req: NextRequest) {
 
     console.log('✅ Creating store:', store.name);
 
-    // Generate a unique Store Id (use timestamp + random)
-    const storeId = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
+    // Generate a sequential numeric Store Id starting from 1
+    // Ignore timestamp-based IDs (those > 100000) and only consider reasonable sequential IDs
+    const { data: existingStores, error: fetchError } = await supabaseAdmin
+      .from('stores')
+      .select('"Store Id"');
+
+    let storeId: string;
+    
+    if (fetchError) {
+      console.error('❌ Error fetching existing stores:', fetchError);
+      // Start from 1 if fetch fails
+      storeId = '1';
+    } else {
+      // Find the maximum numeric ID, but only consider IDs that are reasonable (not timestamps)
+      // Timestamp-based IDs are typically > 100000, so we ignore those
+      const MAX_REASONABLE_ID = 100000;
+      let maxId = 0;
+      
+      if (existingStores && existingStores.length > 0) {
+        for (const storeRow of existingStores) {
+          const id = storeRow['Store Id'];
+          if (id) {
+            // Try to parse as number
+            const numericId = parseInt(String(id), 10);
+            // Only consider IDs that are reasonable (not timestamp-based)
+            if (!isNaN(numericId) && numericId <= MAX_REASONABLE_ID && numericId > maxId) {
+              maxId = numericId;
+            }
+          }
+        }
+      }
+      // Generate next sequential ID starting from 1
+      storeId = String(maxId + 1);
+    }
 
     // Convert camelCase to snake_case for Supabase
     const supabaseStore: any = {
