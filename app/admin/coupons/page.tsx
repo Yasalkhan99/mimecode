@@ -48,6 +48,7 @@ export default function CouponsPage() {
   const [stores, setStores] = useState<Store[]>([]);
   const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
   const [isStoreDropdownOpen, setIsStoreDropdownOpen] = useState(false);
+  const [manualStoreId, setManualStoreId] = useState<string>('');
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -767,94 +768,207 @@ export default function CouponsPage() {
               <label className="block text-gray-700 text-sm font-semibold mb-2">
                 Add to Stores (Select one or more existing stores)
               </label>
+              
               {stores.length > 0 ? (
                 <div className="relative" ref={storeDropdownRef}>
-                  {/* Dropdown Button */}
-                  <button
-                    type="button"
-                    onClick={() => setIsStoreDropdownOpen(!isStoreDropdownOpen)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-left focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-between"
-                  >
-                    <span className="text-gray-700">
-                      {selectedStoreIds.length > 0 
-                        ? `${selectedStoreIds.length} store${selectedStoreIds.length > 1 ? 's' : ''} selected`
-                        : 'Select stores...'}
-                    </span>
-                    <svg
-                      className={`w-5 h-5 text-gray-400 transition-transform ${isStoreDropdownOpen ? 'transform rotate-180' : ''}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                  {/* Writable Input with Dropdown */}
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={manualStoreId}
+                      onChange={(e) => {
+                        setManualStoreId(e.target.value);
+                        // Open dropdown when user types to show filtered results
+                        setIsStoreDropdownOpen(true);
+                      }}
+                      onFocus={() => setIsStoreDropdownOpen(true)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const storeId = manualStoreId.trim();
+                          if (storeId) {
+                            // Try to find store by ID (check both string match and numeric match)
+                            const foundStore = stores.find(store => {
+                              const storeIdNum = parseInt(String(store.id || '0'), 10);
+                              const inputIdNum = parseInt(storeId, 10);
+                              return store.id === storeId || 
+                                     (storeIdNum > 0 && storeIdNum === inputIdNum && inputIdNum <= 100000);
+                            });
+                            
+                            if (foundStore && foundStore.id) {
+                              if (!selectedStoreIds.includes(foundStore.id)) {
+                                const newSelected = [...selectedStoreIds, foundStore.id];
+                                setSelectedStoreIds(newSelected);
+                                
+                                // Auto-populate storeName and logoUrl
+                                const updates: Partial<Coupon> = { storeName: foundStore.name };
+                                if (foundStore.logoUrl && foundStore.logoUrl.trim() !== '') {
+                                  updates.logoUrl = foundStore.logoUrl;
+                                  setLogoUrl(foundStore.logoUrl);
+                                  handleLogoUrlChange(foundStore.logoUrl);
+                                  setLogoUploadMethod('url');
+                                }
+                                setFormData({ ...formData, ...updates });
+                                setManualStoreId('');
+                                // Keep dropdown open so user can see the selected store
+                                setIsStoreDropdownOpen(true);
+                              } else {
+                                // Store already selected
+                                setManualStoreId('');
+                                setIsStoreDropdownOpen(true);
+                              }
+                            } else {
+                              alert(`Store with ID "${storeId}" not found. Please check the ID and try again.`);
+                            }
+                          }
+                        } else if (e.key === 'Escape') {
+                          setIsStoreDropdownOpen(false);
+                          setManualStoreId('');
+                        }
+                      }}
+                      onBlur={(e) => {
+                        // Delay to allow click events on dropdown items
+                        const currentValue = manualStoreId.trim();
+                        setTimeout(() => {
+                          if (currentValue) {
+                            const foundStore = stores.find(store => {
+                              const storeIdNum = parseInt(String(store.id || '0'), 10);
+                              const inputIdNum = parseInt(currentValue, 10);
+                              return store.id === currentValue || 
+                                     (storeIdNum > 0 && storeIdNum === inputIdNum && inputIdNum <= 100000);
+                            });
+                            
+                            if (foundStore && foundStore.id && !selectedStoreIds.includes(foundStore.id)) {
+                              const newSelected = [...selectedStoreIds, foundStore.id];
+                              setSelectedStoreIds(newSelected);
+                              
+                              const updates: Partial<Coupon> = { storeName: foundStore.name };
+                              if (foundStore.logoUrl && foundStore.logoUrl.trim() !== '') {
+                                updates.logoUrl = foundStore.logoUrl;
+                                setLogoUrl(foundStore.logoUrl);
+                                handleLogoUrlChange(foundStore.logoUrl);
+                                setLogoUploadMethod('url');
+                              }
+                              setFormData({ ...formData, ...updates });
+                              setManualStoreId('');
+                              // Keep dropdown open so user can see the selected store
+                              setIsStoreDropdownOpen(true);
+                            } else if (foundStore && foundStore.id && selectedStoreIds.includes(foundStore.id)) {
+                              // Store already selected
+                              setManualStoreId('');
+                              setIsStoreDropdownOpen(true);
+                            } else {
+                              setManualStoreId('');
+                              setIsStoreDropdownOpen(false);
+                            }
+                          } else {
+                            setIsStoreDropdownOpen(false);
+                          }
+                        }, 200);
+                      }}
+                      placeholder={selectedStoreIds.length > 0 
+                        ? `${selectedStoreIds.length} store${selectedStoreIds.length > 1 ? 's' : ''} selected (or type ID)`
+                        : 'Select stores... (or type Store ID)'}
+                      className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg bg-white text-left focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setIsStoreDropdownOpen(!isStoreDropdownOpen)}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
+                      <svg
+                        className={`w-5 h-5 transition-transform ${isStoreDropdownOpen ? 'transform rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  </div>
 
                   {/* Dropdown Menu */}
                   {isStoreDropdownOpen && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                       <div className="p-2">
-                        {stores.map((store, index) => {
-                          const isSelected = selectedStoreIds.includes(store.id || '');
-                          return (
-                            <label
-                              key={store.id}
-                              className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer rounded"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={(e) => {
-                                  if (!store.id) {
-                                    console.warn('⚠️ Store has no ID:', store);
-                                    return;
-                                  }
-                                  
-                                  let newSelected: string[];
-                                  if (e.target.checked) {
-                                    // Only add if not already selected
-                                    if (!selectedStoreIds.includes(store.id)) {
-                                      newSelected = [...selectedStoreIds, store.id];
-                                    } else {
-                                      newSelected = selectedStoreIds;
+                        {stores
+                          .filter((store, index) => {
+                            // Filter stores based on manualStoreId input
+                            if (!manualStoreId.trim()) {
+                              return true; // Show all stores if no input
+                            }
+                            const inputNum = parseInt(manualStoreId.trim(), 10);
+                            if (isNaN(inputNum)) {
+                              return true; // Show all if not a number
+                            }
+                            // Match by index (1-based) or by actual store ID
+                            const storeIdNum = parseInt(String(store.id || '0'), 10);
+                            return (index + 1 === inputNum) || 
+                                   (storeIdNum > 0 && storeIdNum === inputNum && inputNum <= 100000);
+                          })
+                          .map((store) => {
+                            // Find original index for display
+                            const originalIndex = stores.findIndex(s => s.id === store.id);
+                            const isSelected = selectedStoreIds.includes(store.id || '');
+                            return (
+                              <label
+                                key={store.id}
+                                className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer rounded"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={(e) => {
+                                    if (!store.id) {
+                                      console.warn('⚠️ Store has no ID:', store);
+                                      return;
                                     }
-                                  } else {
-                                    newSelected = selectedStoreIds.filter(id => id !== store.id);
-                                  }
-                                  
-                                  console.log('🛒 Store selection changed:', {
-                                    storeId: store.id,
-                                    storeName: store.name,
-                                    isChecked: e.target.checked,
-                                    newSelected: newSelected
-                                  });
-                                  
-                                  setSelectedStoreIds(newSelected);
-                                  
-                                  // Auto-populate storeName and logoUrl from first selected store
-                                  if (newSelected.length > 0) {
-                                    const firstStore = stores.find(s => s.id === newSelected[0]);
-                                    if (firstStore) {
-                                      const updates: Partial<Coupon> = { storeName: firstStore.name };
-                                      // Auto-set logo from store if store has a logo
-                                      if (firstStore.logoUrl && firstStore.logoUrl.trim() !== '') {
-                                        updates.logoUrl = firstStore.logoUrl;
-                                        setLogoUrl(firstStore.logoUrl);
-                                        handleLogoUrlChange(firstStore.logoUrl);
-                                        // Switch to URL method if logo is set
-                                        setLogoUploadMethod('url');
+                                    
+                                    let newSelected: string[];
+                                    if (e.target.checked) {
+                                      // Only add if not already selected
+                                      if (!selectedStoreIds.includes(store.id)) {
+                                        newSelected = [...selectedStoreIds, store.id];
+                                      } else {
+                                        newSelected = selectedStoreIds;
                                       }
-                                      setFormData({ ...formData, ...updates });
+                                    } else {
+                                      newSelected = selectedStoreIds.filter(id => id !== store.id);
                                     }
-                                  } else {
-                                    setFormData({ ...formData, storeName: '' });
-                                  }
-                                }}
-                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                              />
-                              <span className="ml-3 text-sm text-gray-700">
-                                {index + 1} - {store.name}
-                              </span>
+                                    
+                                    console.log('🛒 Store selection changed:', {
+                                      storeId: store.id,
+                                      storeName: store.name,
+                                      isChecked: e.target.checked,
+                                      newSelected: newSelected
+                                    });
+                                    
+                                    setSelectedStoreIds(newSelected);
+                                    
+                                    // Auto-populate storeName and logoUrl from first selected store
+                                    if (newSelected.length > 0) {
+                                      const firstStore = stores.find(s => s.id === newSelected[0]);
+                                      if (firstStore) {
+                                        const updates: Partial<Coupon> = { storeName: firstStore.name };
+                                        // Auto-set logo from store if store has a logo
+                                        if (firstStore.logoUrl && firstStore.logoUrl.trim() !== '') {
+                                          updates.logoUrl = firstStore.logoUrl;
+                                          setLogoUrl(firstStore.logoUrl);
+                                          handleLogoUrlChange(firstStore.logoUrl);
+                                          // Switch to URL method if logo is set
+                                          setLogoUploadMethod('url');
+                                        }
+                                        setFormData({ ...formData, ...updates });
+                                      }
+                                    } else {
+                                      setFormData({ ...formData, storeName: '' });
+                                    }
+                                  }}
+                                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
+                                <span className="ml-3 text-sm text-gray-700">
+                                  {originalIndex + 1} - {store.name}
+                                </span>
                             </label>
                           );
                         })}
