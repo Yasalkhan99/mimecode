@@ -65,6 +65,18 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Google tag (gtag.js) */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17807681618"></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'AW-17807681618');
+            `,
+          }}
+        />
         <meta name="linkbuxverifycode" content="32dc01246faccb7f5b3cad5016dd5033" />
         <meta name="verify-admitad" content="ed8e6fa9c3" />
         {/* Resource hints for faster connections */}
