@@ -282,7 +282,13 @@ export default function StoresPage() {
         getCategories(),
         getActiveRegions()
       ]);
-      setStores(storesData);
+      // Sort stores by numeric ID (1, 2, 3...) to match coupon dropdown
+      const sortedStores = storesData.sort((a, b) => {
+        const idA = parseInt(String(a.id || '0'), 10) || 0;
+        const idB = parseInt(String(b.id || '0'), 10) || 0;
+        return idA - idB;
+      });
+      setStores(sortedStores);
       setCategories(categoriesData);
       setRegions(regionsData);
       setLoading(false);

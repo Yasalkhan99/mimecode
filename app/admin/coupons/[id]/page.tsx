@@ -227,7 +227,13 @@ export default function EditCouponPage() {
                               className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                             />
                             <span className="ml-3 text-sm text-gray-700">
-                              {index + 1} - {store.name}
+                              {(() => {
+                                const storeId = parseInt(String(store.id || '0'), 10) || 0;
+                                // Only show numeric ID if it's reasonable (not a timestamp)
+                                return storeId > 0 && storeId <= 100000 
+                                  ? `${storeId} - ${store.name}` 
+                                  : store.name;
+                              })()}
                             </span>
                           </label>
                         );
