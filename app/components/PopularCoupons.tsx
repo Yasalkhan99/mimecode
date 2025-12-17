@@ -148,9 +148,10 @@ export default function PopularCoupons() {
     // Get the correct logo URL - SAME LOGIC as card display
     let correctLogoUrl: string | null = null;
     
-    // Priority 1: Store tracking URL favicon
-    if (storeTrackingUrl) {
-      const domain = extractDomainForLogo(storeTrackingUrl);
+    // Priority 1: Store tracking Link/Tracking URL favicon (use same priority as urlToOpen)
+    const storeTrackingUrlForLogo = store?.trackingLink || store?.trackingUrl || store?.websiteUrl || (store as any)?.['Tracking Url'] || (store as any)?.['Store Display Url'] || null;
+    if (storeTrackingUrlForLogo) {
+      const domain = extractDomainForLogo(storeTrackingUrlForLogo);
       if (domain) {
         correctLogoUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
       }
