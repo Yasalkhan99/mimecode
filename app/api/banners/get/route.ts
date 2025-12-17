@@ -1,11 +1,8 @@
 // Server-side banner read route
-// Uses Firebase Firestore with caching
+// Uses Supabase with caching
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminFirestore } from '@/lib/firebase-admin';
-
-// Collection name for banners
-const BANNERS_COLLECTION = process.env.NEXT_PUBLIC_BANNERS_COLLECTION || 'banners-mimecode';
+import { supabaseAdmin } from '@/lib/supabase';
 
 // Simple in-memory cache with shorter TTL for better real-time updates
 let bannersCache: { data: any[] | null; timestamp: number } = { data: null, timestamp: 0 };
@@ -17,11 +14,9 @@ export function clearBannersCache() {
   console.log('🗑️ Banners cache cleared');
 }
 
-// Helper function to convert Firebase doc to API format
-const convertToAPIFormat = (doc: any) => {
-  const data = doc.data();
-  
-  let layoutPosition = data.layoutPosition;
+// Helper function to convert Supabase row to API format
+const convertToAPIFormat = (row: any) => {
+  let layoutPosition = row.layout_position;
   if (layoutPosition !== null && layoutPosition !== undefined) {
     layoutPosition = Number(layoutPosition);
     if (isNaN(layoutPosition)) layoutPosition = null;
@@ -29,27 +24,17 @@ const convertToAPIFormat = (doc: any) => {
     layoutPosition = null;
   }
   
-  let createdAt = null;
-  if (data.createdAt) {
-    if (data.createdAt.toDate) {
-      createdAt = data.createdAt.toDate().toISOString();
-    } else if (data.createdAt instanceof Date) {
-      createdAt = data.createdAt.toISOString();
-    } else {
-      createdAt = data.createdAt;
-    }
-  }
-  
   return {
-    id: doc.id || '',
-    title: data.title || '',
-    imageUrl: data.imageUrl || '',
+    id: row.id || '',
+    title: row.title || '',
+    imageUrl: row.image_url || '',
     layoutPosition: layoutPosition,
-    createdAt: createdAt,
+    createdAt: row.created_at || null,
   };
 };
 
 export async function GET(req: NextRequest) {
+  const startTime = Date.now();
   try {
     // Check for cache-busting query parameter
     const { searchParams } = new URL(req.url);
@@ -59,7 +44,7 @@ export async function GET(req: NextRequest) {
     // Check cache first (unless force refresh)
     const now = Date.now();
     if (!forceRefresh && bannersCache.data && (now - bannersCache.timestamp) < CACHE_TTL) {
-      console.log('📦 Returning cached banners');
+      console.log('📦 Returning cached banners (', bannersCache.data.length, 'banners)');
       return NextResponse.json(
         { success: true, banners: bannersCache.data },
         { 
@@ -72,33 +57,54 @@ export async function GET(req: NextRequest) {
       );
     }
     
-    console.log('🔄 Fetching banners from database', forceRefresh ? '(force refresh)' : '');
+    console.log('🔄 Fetching banners from Supabase', forceRefresh ? '(force refresh)' : '');
 
-    const db = getAdminFirestore();
-    const snapshot = await db.collection(BANNERS_COLLECTION).get();
+    // Check if Supabase Admin is available
+    if (!supabaseAdmin) {
+      console.warn('⚠️ Supabase Admin not initialized, returning empty banners array');
+      return NextResponse.json(
+        { success: true, banners: [] },
+        { 
+          headers: { 
+            'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600, max-age=60',
+            'CDN-Cache-Control': 'public, s-maxage=300',
+            'Vary': 'Accept-Encoding'
+          } 
+        }
+      );
+    }
     
-    const banners: any[] = [];
-    snapshot.forEach((doc) => {
-      banners.push(convertToAPIFormat(doc));
-    });
-
-    // Sort by layoutPosition (ascending, nulls last), then by createdAt (descending)
-    banners.sort((a, b) => {
-      if (a.layoutPosition === null && b.layoutPosition === null) {
-        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
-      }
-      if (a.layoutPosition === null) return 1;
-      if (b.layoutPosition === null) return -1;
-      if (a.layoutPosition !== b.layoutPosition) {
-        return a.layoutPosition - b.layoutPosition;
-      }
-      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
-    });
+    // Fetch banners from Supabase
+    const { data: bannersData, error } = await supabaseAdmin
+      .from('banners')
+      .select('*')
+      .order('layout_position', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('❌ Supabase get banners error:', error);
+      return NextResponse.json(
+        { success: false, error: error.message || 'Failed to get banners', banners: [] },
+        { 
+          status: 200,
+          headers: { 
+            'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120, max-age=30',
+            'CDN-Cache-Control': 'public, s-maxage=60',
+            'Vary': 'Accept-Encoding'
+          } 
+        }
+      );
+    }
+    
+    // Convert Supabase rows to API format
+    // Supabase already orders by layout_position and created_at, so no need to sort again
+    const banners: any[] = (bannersData || []).map(convertToAPIFormat);
 
     // Update cache
     bannersCache = { data: banners, timestamp: now };
     
-    console.log('✅ Fetched', banners.length, 'banners from database');
+    const duration = Date.now() - startTime;
+    console.log('✅ Fetched', banners.length, 'banners from Supabase in', duration, 'ms');
 
     return NextResponse.json(
       { success: true, banners: banners },
@@ -111,10 +117,10 @@ export async function GET(req: NextRequest) {
       }
     );
   } catch (error: any) {
-    console.error('Firebase get banners error:', error);
+    console.error('❌ Supabase get banners error:', error);
     // Return 200 with empty array to prevent frontend errors
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to get banners', banners: [] },
+      { success: true, banners: [] },
       { 
         status: 200,
         headers: { 

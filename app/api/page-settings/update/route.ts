@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase';
 import { NextRequest, NextResponse } from 'next/server';
+import { clearCache } from '@/lib/cache/pageSettingsCache';
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -55,6 +56,9 @@ export async function POST(req: NextRequest) {
 
       if (insertError) throw insertError;
     }
+
+    // Clear cache after update
+    clearCache();
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {

@@ -139,7 +139,7 @@ export async function getBanners(): Promise<Banner[]> {
     }
     
     // If API returns error, check what type
-    let errorData = {};
+    let errorData: any = {};
     try {
       errorData = await res.json();
     } catch (e) {
@@ -147,7 +147,7 @@ export async function getBanners(): Promise<Banner[]> {
     }
     
     // If API fails for any reason, return empty array
-    console.warn('⚠️ Server API failed:', res.status, errorData.error || 'Unknown error');
+    console.warn('⚠️ Server API failed:', res.status, errorData?.error || 'Unknown error');
     return [];
     
   } catch (error: any) {
@@ -160,11 +160,16 @@ export async function getBanners(): Promise<Banner[]> {
 // Get banners with layout positions (1-4) for hero section
 export async function getBannersWithLayout(): Promise<(Banner | null)[]> {
   try {
+    console.log('🔄 getBannersWithLayout: Starting...');
     const allBanners = await getBanners();
+    console.log('🔄 getBannersWithLayout: Got', allBanners.length, 'total banners');
+    
     // Filter banners with layout positions (1-4)
     const bannersWithPositions = allBanners
       .filter(banner => banner.layoutPosition && banner.layoutPosition >= 1 && banner.layoutPosition <= 4)
       .sort((a, b) => (a.layoutPosition || 0) - (b.layoutPosition || 0));
+    
+    console.log('🔄 getBannersWithLayout: Found', bannersWithPositions.length, 'banners with layout positions 1-4');
     
     // Create array of 4 slots (positions 1-4)
     const layoutSlots: (Banner | null)[] = Array(4).fill(null);
@@ -173,12 +178,14 @@ export async function getBannersWithLayout(): Promise<(Banner | null)[]> {
     bannersWithPositions.forEach(banner => {
       if (banner.layoutPosition && banner.layoutPosition >= 1 && banner.layoutPosition <= 4) {
         layoutSlots[banner.layoutPosition - 1] = banner; // layoutPosition 1 = index 0
+        console.log(`✅ Placed banner "${banner.title}" at position ${banner.layoutPosition}`);
       }
     });
     
+    console.log('✅ getBannersWithLayout: Returning', layoutSlots.filter(Boolean).length, 'banners');
     return layoutSlots;
   } catch (error) {
-    console.error('Error getting banners with layout:', error);
+    console.error('❌ Error getting banners with layout:', error);
     return Array(4).fill(null);
   }
 }

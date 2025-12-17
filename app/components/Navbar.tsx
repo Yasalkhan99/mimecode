@@ -49,21 +49,22 @@ export default function Navbar() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [categoriesData, storesData, eventsData, pageSettings] = await Promise.all([
-          getCategories(),
-          getStores(),
-          getEvents(),
-          getPageSettings()
-        ]);
-        setCategories(categoriesData);
-        setStores(storesData);
-        setHasEvents(eventsData.length > 0);
-        
-        // Set page settings for dynamic labels and slugs
+        // Fetch page settings first (critical for navbar display)
+        const pageSettings = await getPageSettings();
         if (pageSettings) {
           setEventsNavLabel(pageSettings.eventsNavLabel || 'Events');
           setEventsSlug(pageSettings.eventsSlug || 'events');
         }
+        
+        // Fetch other data in parallel
+        const [categoriesData, storesData, eventsData] = await Promise.all([
+          getCategories(),
+          getStores(),
+          getEvents()
+        ]);
+        setCategories(categoriesData);
+        setStores(storesData);
+        setHasEvents(eventsData.length > 0);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
