@@ -484,7 +484,7 @@ export default function CouponsPage() {
             throw new Error(`Store "${storeName}" not found in database.${suggestionText}`);
           }
           
-          console.log(`✅ Found store: "${storeMatch.name}" (UUID: ${storeMatch.id}, Numeric ID: ${storeMatch.numericId || 'N/A'})`);
+          console.log(`✅ Found store: "${storeMatch.name}" (UUID: ${storeMatch.id}, Numeric ID: ${(storeMatch as any).numericId || 'N/A'})`);
           
           const storeId = storeMatch.id;
           const actualStoreName = storeMatch.name;
@@ -512,7 +512,7 @@ export default function CouponsPage() {
           
           // Create coupon (actualStoreName already found above)
           // storeMatch.id is UUID, which is correct - API will convert to numeric Store Id
-          console.log(`Creating coupon: ${title} for store: ${actualStoreName} (UUID: ${storeMatch.id}, Numeric ID: ${storeMatch.numericId || 'N/A'})`);
+          console.log(`Creating coupon: ${title} for store: ${actualStoreName} (UUID: ${storeMatch.id}, Numeric ID: ${(storeMatch as any).numericId || 'N/A'})`);
           const result = await createCouponFromUrl({
             code: code.toString(),
             storeName: actualStoreName, // Use actual store name from database
