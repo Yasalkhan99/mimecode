@@ -30,27 +30,57 @@ const decodeHtmlEntities = (value: any): any => {
 };
 
 // Helper function to convert to API format
-const convertToAPIFormat = (doc: any, docId: string, storeData?: any) => {
-  const data = doc.data();
+// Excel headers: Store Name, Title, Description, Code, Type, Expiry, Deeplink
+// Supabase columns: Store Name, Coupon Title, Coupon Desc, Coupon Code, Coupon Type, Coupon Expiry, Coupon Deep Link
+const convertToAPIFormat = (couponData: any, docId: string, storeData?: any) => {
+  // Handle both Supabase format (plain object) and Firestore format (doc.data())
+  const data = typeof couponData.data === 'function' ? couponData.data() : couponData;
   
-  let couponUrl = data['Coupon Deep Link'] || data.url || null;
+  // Deeplink - Excel column name
+  let couponUrl = data['Coupon Deep Link'] || data['Deeplink'] || data.url || null;
   if (!couponUrl && storeData) {
     couponUrl = storeData['Tracking Url'] || storeData['Store Display Url'] || storeData.websiteUrl || null;
   }
   couponUrl = normalizeUrl(couponUrl);
   
+  // Store IDs
   let storeIdsArray: string[] = [];
   if (data['Store  Id']) storeIdsArray = [data['Store  Id']];
   else if (data.store_ids && Array.isArray(data.store_ids)) storeIdsArray = data.store_ids;
   else if (data.storeIds && Array.isArray(data.storeIds)) storeIdsArray = data.storeIds;
 
-  const rawDescription = data['Coupon Desc'] || data.description || '';
-  const rawTitle = data['Coupon Title'] || data['Coupon Desc'] || data.description || data.title || null;
+  // Description - Excel column name, Supabase: Coupon Desc
+  const rawDescription = data['Coupon Desc'] || data['Description'] || data.description || '';
+  
+  // Title - Excel column name, Supabase: Coupon Title
+  // Only get from Title/Coupon Title fields, don't fallback to description
+  const rawTitle = data['Coupon Title'] || data['Title'] || data.title || null;
+  
+  // Code - Excel column name, Supabase: Coupon Code
+  const couponCode = data['Coupon Code'] || data['Code'] || data.code || '';
+  
+  // Type - Excel column name, Supabase: Coupon Type
+  const couponType = data['Coupon Type'] || data['Type'] || data.coupon_type || data.couponType || 'code';
+  
+  // Expiry - Excel column name, Supabase: Coupon Expiry
+  const expiryDate = data['Coupon Expiry'] || data['Expiry'] || data.expiry_date || data.expiryDate || null;
+  
+  // Store Name - ALWAYS get from storeData first (most accurate from database)
+  // Only fallback to coupon data if storeData is completely unavailable
+  // This ensures we always show the actual store name from database, not what's saved in coupon
+  let storeName = '';
+  if (storeData && storeData['Store Name']) {
+    storeName = storeData['Store Name'];
+  } else if (!storeData) {
+    // Only use coupon's Store Name field as last resort if we couldn't fetch store data
+    storeName = data['Store Name'] || data.store_name || data.storeName || '';
+  }
+  // If storeData exists but doesn't have Store Name, keep storeName as empty string
   
   return {
     id: docId || data['Coupon Id'] || data.id || '',
-    code: data['Coupon Code'] || data.code || '',
-    storeName: data['Store Name'] || data.store_name || data.storeName || storeData?.['Store Name'] || '',
+    code: couponCode,
+    storeName: storeName,
     storeIds: storeIdsArray,
     discount: data.discount ? parseFloat(String(data.discount)) : 0,
     discountType: data.discount_type || data.discountType || 'percentage',
@@ -59,11 +89,11 @@ const convertToAPIFormat = (doc: any, docId: string, storeData?: any) => {
     isActive: data.is_active !== false && data.isActive !== false,
     maxUses: data.max_uses || data.maxUses || 1000,
     currentUses: data.current_uses || data.currentUses || 0,
-    expiryDate: data['Coupon Expiry'] || data.expiry_date || data.expiryDate || null,
+    expiryDate: expiryDate,
     logoUrl: data.logo_url || data.logoUrl || null,
     url: couponUrl,
     affiliateLink: data.affiliate_link || data.affiliateLink || null,
-    couponType: data['Coupon Type'] || data.coupon_type || data.couponType || 'code',
+    couponType: couponType,
     isPopular: data.is_popular || data.isPopular || false,
     layoutPosition: data['Coupon Priority'] ? parseInt(String(data['Coupon Priority'])) : (data.layoutPosition || null),
     isLatest: data.is_latest || data.isLatest || false,
@@ -86,12 +116,15 @@ export async function GET(req: NextRequest) {
     const storeId = searchParams.get('storeId');
     const activeOnly = searchParams.get('activeOnly') === 'true';
 
+    // Check for cache bypass parameter
+    const bypassCache = searchParams.get('_t') !== null; // If _t parameter exists, bypass cache
+
     // Create cache key from params
     const cacheKey = `${id || ''}-${categoryId || ''}-${storeId || ''}-${activeOnly}`;
     const now = Date.now();
 
-    // Check cache for list queries (not single item)
-    if (!id && couponsCache.data && couponsCache.key === cacheKey && (now - couponsCache.timestamp) < CACHE_TTL) {
+    // Check cache for list queries (not single item) - skip if bypassCache is true
+    if (!id && !bypassCache && couponsCache.data && couponsCache.key === cacheKey && (now - couponsCache.timestamp) < CACHE_TTL) {
       return NextResponse.json(
         { success: true, coupons: couponsCache.data },
         { headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' } }
@@ -103,11 +136,25 @@ export async function GET(req: NextRequest) {
 
     // Get coupon by ID (no cache)
     if (id) {
-      const { data: couponData, error: couponError } = await supabaseAdmin
+      // Try by Supabase row ID first, then by Coupon Id field
+      let { data: couponData, error: couponError } = await supabaseAdmin
         .from(tableName)
         .select('*')
         .eq('id', id)
         .single();
+      
+      // If not found by row ID, try by Coupon Id field
+      if (couponError || !couponData) {
+        const { data: couponByCustomId, error: errorByCustomId } = await supabaseAdmin
+          .from(tableName)
+          .select('*')
+          .eq('Coupon Id', id)
+          .single();
+        if (!errorByCustomId && couponByCustomId) {
+          couponData = couponByCustomId;
+          couponError = null;
+        }
+      }
       
       if (couponError || !couponData) {
         return NextResponse.json({ success: true, coupon: null });
@@ -126,60 +173,272 @@ export async function GET(req: NextRequest) {
       
       return NextResponse.json({
         success: true,
-        coupon: convertToAPIFormat({ data: () => couponData }, id, storeData),
+        coupon: convertToAPIFormat(couponData, id, storeData),
       });
     }
 
-    // Get all coupons with filters
+    // Get all coupons with filters - use * to get all columns
     let query = supabaseAdmin.from(tableName).select('*');
     
-    if (storeId) query = query.eq('Store  Id', storeId);
+    let numericStoreId: string | null = null;
+    let isUuid = false;
+    
+    if (storeId) {
+      // Handle both UUID and numeric Store Id
+      // First, try to get the numeric Store Id if storeId is a UUID
+      numericStoreId = storeId;
+      
+      // Check if storeId looks like a UUID (contains hyphens)
+      if (storeId.includes('-')) {
+        isUuid = true;
+        // It's likely a UUID, fetch the store to get its numeric Store Id
+        const { data: storeData, error: storeError } = await supabaseAdmin
+          .from(storesTableName)
+          .select('"Store Id"')
+          .eq('id', storeId)
+          .single();
+        
+        if (storeError) {
+          console.warn('⚠️ Could not fetch store to get numeric Store Id:', storeError);
+        }
+        
+        if (storeData && storeData['Store Id']) {
+          numericStoreId = String(storeData['Store Id']);
+          console.log(`✅ Converted UUID ${storeId} to numeric Store Id: ${numericStoreId}`);
+        } else {
+          console.warn(`⚠️ Store with UUID ${storeId} not found or has no numeric Store Id`);
+        }
+      }
+      
+      console.log(`🔍 Querying coupons with Store Id: ${numericStoreId} (original: ${storeId}, isUuid: ${isUuid})`);
+      
+      // Query by numeric Store Id (with two spaces) - primary query
+      // Also check store_ids array for UUID matches if original was UUID
+      if (isUuid && numericStoreId) {
+        // Try multiple approaches: numeric Store Id, UUID in Store Id field, or UUID in store_ids array
+        // Use OR to check all possibilities
+        query = query.or(`Store  Id.eq.${numericStoreId},Store  Id.eq.${storeId},store_ids.cs.{${storeId}}`);
+      } else if (numericStoreId) {
+        // Try both numeric Store Id and original storeId (in case it's already numeric)
+        query = query.or(`Store  Id.eq.${numericStoreId},Store  Id.eq.${storeId}`);
+      }
+    }
     if (categoryId) query = query.or(`category_id.eq.${categoryId},categoryId.eq.${categoryId}`);
     
-    const { data: coupons, error: couponsError } = await query;
-    if (couponsError) throw couponsError;
+    console.log('📊 Fetching coupons from Supabase...');
+    let { data: coupons, error: couponsError } = await query;
+    
+    // If no coupons found, try fallback: fetch all and filter manually (better matching)
+    if (storeId && (!coupons || coupons.length === 0)) {
+      console.log(`⚠️ No coupons found with primary query for storeId: ${storeId}, trying fallback: fetch all and filter manually...`);
+      let fallbackQuery = supabaseAdmin.from(tableName).select('*');
+      if (categoryId) fallbackQuery = fallbackQuery.or(`category_id.eq.${categoryId},categoryId.eq.${categoryId}`);
+      
+      const { data: allCoupons, error: fallbackError } = await fallbackQuery;
+      if (!fallbackError && allCoupons) {
+        console.log(`📊 Fetched ${allCoupons.length} total coupons for manual filtering`);
+        
+        // Also get store name from storeId for name-based matching
+        let storeNameFromDb: string | null = null;
+        if (isUuid && storeId) {
+          const { data: storeInfo } = await supabaseAdmin
+            .from(storesTableName)
+            .select('"Store Name"')
+            .eq('id', storeId)
+            .single();
+          if (storeInfo && storeInfo['Store Name']) {
+            storeNameFromDb = storeInfo['Store Name'];
+            console.log(`📋 Store name from database: "${storeNameFromDb}"`);
+          }
+        }
+        
+        // Filter manually by checking multiple possibilities
+        const filteredCoupons = allCoupons.filter((coupon: any) => {
+          const couponStoreIds = coupon.store_ids || coupon.storeIds || [];
+          const couponStoreId = coupon['Store  Id'];
+          const couponStoreName = coupon['Store Name'];
+          
+          // Check multiple conditions:
+          // 1. UUID in store_ids array
+          const hasUuidInArray = Array.isArray(couponStoreIds) && couponStoreIds.includes(storeId);
+          
+          // 2. Numeric Store Id matches
+          const numericIdMatches = numericStoreId && couponStoreId && String(couponStoreId) === String(numericStoreId);
+          
+          // 3. UUID matches Store Id field (in case UUID was saved directly)
+          const uuidMatches = storeId.includes('-') && couponStoreId && String(couponStoreId) === String(storeId);
+          
+          // 4. Store name match (if we have store name from DB)
+          const storeNameMatches = storeNameFromDb && couponStoreName && 
+                                   couponStoreName.toLowerCase().trim() === storeNameFromDb.toLowerCase().trim();
+          
+          const matches = hasUuidInArray || numericIdMatches || uuidMatches || storeNameMatches;
+          
+          if (matches) {
+            console.log(`✅ Coupon matched:`, {
+              couponId: coupon.id || coupon['Coupon Id'],
+              couponStoreId: couponStoreId,
+              couponStoreIds: couponStoreIds,
+              couponStoreName: couponStoreName,
+              storeId: storeId,
+              numericStoreId: numericStoreId,
+              storeNameFromDb: storeNameFromDb,
+              matchType: hasUuidInArray ? 'UUID in array' : 
+                        numericIdMatches ? 'Numeric ID' : 
+                        uuidMatches ? 'UUID in Store Id' : 
+                        'Store Name'
+            });
+          }
+          
+          return matches;
+        });
+        
+        if (filteredCoupons.length > 0) {
+          console.log(`✅ Found ${filteredCoupons.length} coupons using fallback query (manual filtering)`);
+          // Replace coupons array with filtered results - need to reassign
+          coupons = filteredCoupons;
+        } else {
+          console.log(`❌ Still no coupons found after fallback filtering. Sample coupon Store Ids:`, 
+            allCoupons.slice(0, 5).map((c: any) => ({ 
+              storeId: c['Store  Id'], 
+              storeIds: c.store_ids,
+              storeName: c['Store Name']
+            }))
+          );
+        }
+      } else if (fallbackError) {
+        console.error('❌ Fallback query error:', fallbackError);
+      }
+    }
+    if (couponsError) {
+      console.error('❌ Error fetching coupons:', couponsError);
+      console.error('❌ Error details:', JSON.stringify(couponsError, null, 2));
+      throw couponsError;
+    }
+    
+    console.log(`📊 Found ${coupons?.length || 0} coupons in Supabase`);
+    if (coupons && coupons.length > 0) {
+      console.log('📋 Raw Supabase data sample (first coupon):', JSON.stringify(coupons[0], null, 2));
+    }
 
-    // Get unique store IDs for batch fetch
-    const storeIds = new Set<string>();
+    // Get unique store IDs for batch fetch (both numeric and UUID)
+    const numericStoreIds = new Set<string>();
+    const uuidStoreIds = new Set<string>();
+    
     coupons?.forEach((coupon: any) => {
-      if (coupon['Store  Id']) storeIds.add(coupon['Store  Id']);
-      if (coupon.storeIds && Array.isArray(coupon.storeIds)) {
-        coupon.storeIds.forEach((id: string) => storeIds.add(id));
+      if (coupon['Store  Id']) {
+        // Check if it's numeric or UUID
+        if (coupon['Store  Id'].includes('-')) {
+          uuidStoreIds.add(coupon['Store  Id']);
+        } else {
+          numericStoreIds.add(coupon['Store  Id']);
+        }
+      }
+      if (coupon.store_ids && Array.isArray(coupon.store_ids)) {
+        coupon.store_ids.forEach((id: string) => {
+          if (id.includes('-')) {
+            uuidStoreIds.add(id);
+          } else {
+            numericStoreIds.add(id);
+          }
+        });
       }
     });
     
-    // Fetch store data
+    // Fetch store data - try both numeric IDs and UUIDs
     const storeDataMap = new Map();
-    if (storeIds.size > 0) {
-      const { data: stores } = await supabaseAdmin
+    
+    // Fetch by numeric Store Id
+    if (numericStoreIds.size > 0) {
+      const { data: storesByNumericId } = await supabaseAdmin
         .from(storesTableName)
         .select('*')
-        .in('Store Id', Array.from(storeIds));
+        .in('Store Id', Array.from(numericStoreIds));
       
-      stores?.forEach(store => {
-        const storeIdKey = store['Store Id'] || store.store_id;
-        if (storeIdKey) storeDataMap.set(storeIdKey, store);
+      storesByNumericId?.forEach(store => {
+        const storeIdKey = store['Store Id'];
+        if (storeIdKey) {
+          storeDataMap.set(storeIdKey, store);
+          // Also map by UUID if available
+          if (store.id) {
+            storeDataMap.set(store.id, store);
+          }
+        }
       });
     }
+    
+    // Fetch by UUID (row id)
+    if (uuidStoreIds.size > 0) {
+      const { data: storesByUuid } = await supabaseAdmin
+        .from(storesTableName)
+        .select('*')
+        .in('id', Array.from(uuidStoreIds));
+      
+      storesByUuid?.forEach(store => {
+        if (store.id) {
+          storeDataMap.set(store.id, store);
+          // Also map by numeric Store Id if available
+          if (store['Store Id']) {
+            storeDataMap.set(store['Store Id'], store);
+          }
+        }
+      });
+    }
+    
+    console.log(`📊 Fetched ${storeDataMap.size} unique stores for coupon mapping`);
 
     // Convert coupons
+    console.log(`📊 Converting ${coupons?.length || 0} coupons...`);
+    if (coupons && coupons.length > 0) {
+      console.log('📋 Sample coupon data (first row):', {
+        id: coupons[0].id,
+        couponId: coupons[0]['Coupon Id'],
+        storeName: coupons[0]['Store Name'],
+        couponTitle: coupons[0]['Coupon Title'],
+        couponDesc: coupons[0]['Coupon Desc'],
+        couponCode: coupons[0]['Coupon Code'],
+        couponType: coupons[0]['Coupon Type'],
+        couponExpiry: coupons[0]['Coupon Expiry'],
+        couponDeepLink: coupons[0]['Coupon Deep Link'],
+        storeId: coupons[0]['Store  Id'],
+        is_active: coupons[0].is_active
+      });
+    }
+    
     let convertedCoupons = (coupons || []).map((coupon: any) => {
       const couponStoreId = coupon['Store  Id'] || coupon.storeIds?.[0];
       const storeData = couponStoreId ? storeDataMap.get(couponStoreId) : null;
-      return convertToAPIFormat({ data: () => coupon }, coupon.id, storeData);
+      // Use Supabase row id or Coupon Id field
+      const couponId = coupon.id || coupon['Coupon Id'] || '';
+      const converted = convertToAPIFormat(coupon, couponId, storeData);
+      return converted;
     });
 
-    // StoreId filtering is now done at database level (see query above)
-    // console.log(`📊 Total coupons after conversion: ${convertedCoupons.length}`);
-
-    // Apply activeOnly filtering
-    if (activeOnly) {
-      convertedCoupons = convertedCoupons.filter((coupon: any) => coupon.isActive !== false);
+    console.log(`📊 Total coupons after conversion: ${convertedCoupons.length}`);
+    if (convertedCoupons.length > 0) {
+      console.log('📋 Sample converted coupon (first):', {
+        id: convertedCoupons[0].id,
+        storeName: convertedCoupons[0].storeName,
+        code: convertedCoupons[0].code,
+        title: convertedCoupons[0].title,
+        description: convertedCoupons[0].description,
+        couponType: convertedCoupons[0].couponType,
+        url: convertedCoupons[0].url
+      });
     }
 
-    // Filter out expired coupons
+    // Apply activeOnly filtering
+    const beforeActiveFilter = convertedCoupons.length;
+    if (activeOnly) {
+      convertedCoupons = convertedCoupons.filter((coupon: any) => coupon.isActive !== false);
+      console.log(`📊 After activeOnly filter: ${convertedCoupons.length} (removed ${beforeActiveFilter - convertedCoupons.length})`);
+    }
+
+    // Filter out expired coupons - but be lenient for Excel imports
+    const beforeExpiryFilter = convertedCoupons.length;
     const nowDate = new Date();
     convertedCoupons = convertedCoupons.filter((coupon: any) => {
+      // If no expiry date, include it
       if (!coupon.expiryDate) return true;
       
       let expiryDate: Date | null = null;
@@ -187,20 +446,45 @@ export async function GET(req: NextRequest) {
         expiryDate = coupon.expiryDate;
       } else if (typeof coupon.expiryDate === 'string') {
         const dateStr = coupon.expiryDate.trim();
-        if (!dateStr || dateStr === '0000-00-00' || dateStr === 'null' || dateStr === 'NULL') return true;
+        // Allow empty/null dates
+        if (!dateStr || dateStr === '0000-00-00' || dateStr === 'null' || dateStr === 'NULL' || dateStr === '') return true;
         expiryDate = new Date(dateStr);
-        if (isNaN(expiryDate.getTime())) return true;
-        if (expiryDate.getFullYear() < 2000) return false;
+        // If date parsing fails, include the coupon (be lenient)
+        if (isNaN(expiryDate.getTime())) {
+          console.warn('⚠️ Invalid expiry date format, including coupon:', dateStr);
+          return true;
+        }
+        // Filter out invalid dates (like 1970 epoch time errors) - treat as no expiry
+        if (expiryDate.getFullYear() < 2000) {
+          console.warn('⚠️ Invalid expiry date (before 2000), treating as no expiry:', dateStr);
+          return true; // Include coupon if date is invalid/too old
+        }
       } else if (coupon.expiryDate && typeof (coupon.expiryDate as any).toDate === 'function') {
         expiryDate = (coupon.expiryDate as any).toDate();
       }
       
-      return !expiryDate || expiryDate >= nowDate;
+      // Only filter out if we have a valid future date that's actually expired
+      if (expiryDate && expiryDate.getFullYear() >= 2000) {
+        return expiryDate >= nowDate;
+      }
+      
+      // Include coupon if no valid expiry date
+      return true;
     });
+    
+    console.log(`📊 After expiry filter: ${convertedCoupons.length} (removed ${beforeExpiryFilter - convertedCoupons.length})`);
 
     // Update cache
     couponsCache = { data: convertedCoupons, timestamp: now, key: cacheKey };
 
+    console.log(`✅ Returning ${convertedCoupons.length} coupons to client (out of ${coupons?.length || 0} raw coupons from DB)`);
+    
+    // Debug: Log why coupons might be missing
+    if (convertedCoupons.length === 0 && coupons && coupons.length > 0) {
+      console.warn('⚠️ WARNING: Raw coupons exist but convertedCoupons is empty!');
+      console.warn('⚠️ This might indicate a conversion or filtering issue');
+    }
+    
     return NextResponse.json(
       { success: true, coupons: convertedCoupons },
       { headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' } }

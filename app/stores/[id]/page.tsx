@@ -105,6 +105,20 @@ export default function StoreDetailPage() {
         }
 
         if (storeData) {
+          // If store has a slug and URL is using ID, redirect to slug-based URL
+          if (storeData.slug && idOrSlug !== storeData.slug) {
+            // Check if current URL is using ID (numeric or UUID-like) instead of slug
+            const isNumericId = /^\d+$/.test(idOrSlug);
+            const isUuidLike = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug) || idOrSlug.length > 15;
+            
+            if (isNumericId || isUuidLike || idOrSlug === storeData.id) {
+              // Redirect to slug-based URL
+              const slugPath = getLocalizedPath(`/stores/${storeData.slug}`);
+              router.replace(slugPath);
+              return; // Exit early, redirect will happen
+            }
+          }
+          
           setStore(storeData);
           
           // Fetch coupons for this store
@@ -808,7 +822,7 @@ export default function StoreDetailPage() {
                   {/* Content Section */}
                   <div className="flex-1 min-w-0 flex flex-row items-center justify-between gap-3 sm:gap-4">
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-sm sm:text-base font-bold text-gray-900 break-words mb-0.5">
+                      <h3 className="text-sm sm:text-base font-bold text-gray-900 break-words mb-1">
                         {(() => {
                           // Helper to strip HTML tags
                           const stripHtml = (html: string) => {
@@ -818,9 +832,8 @@ export default function StoreDetailPage() {
                             return tmp.textContent || tmp.innerText || '';
                           };
                           
-                          // Get coupon title - prefer title, then description, then generate from discount
+                          // Get coupon title - prefer title, then generate from discount/code
                           if (coupon.title) return stripHtml(coupon.title);
-                          if (coupon.description) return stripHtml(coupon.description);
                           if (coupon.discount && coupon.discount > 0) {
                             return coupon.discountType === 'percentage' 
                               ? `${coupon.discount}% Off`
@@ -829,26 +842,20 @@ export default function StoreDetailPage() {
                           return coupon.code || coupon.storeName || store?.name || 'Coupon';
                         })()}
                       </h3>
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1 text-green-600">
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <span className="text-[10px]">Verified</span>
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {coupon.expiryDate ? (
-                            <div className="flex items-center gap-1">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                              <span>{formatDate(coupon.expiryDate) || '31 Dec, 2025'}</span>
-                            </div>
-                          ) : (
-                            <span>31 Dec, 2025</span>
-                          )}
-                        </div>
-                      </div>
+                      {coupon.description && (
+                        <p className="text-xs sm:text-sm text-gray-600 break-words mt-1">
+                          {(() => {
+                            // Helper to strip HTML tags
+                            const stripHtml = (html: string) => {
+                              if (!html) return '';
+                              const tmp = document.createElement('DIV');
+                              tmp.innerHTML = html;
+                              return tmp.textContent || tmp.innerText || '';
+                            };
+                            return stripHtml(coupon.description || '');
+                          })()}
+                        </p>
+                      )}
                     </div>
                     
                     {/* Button on Right */}

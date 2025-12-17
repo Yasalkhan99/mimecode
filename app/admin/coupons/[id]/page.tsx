@@ -462,8 +462,28 @@ export default function EditCouponPage() {
             )}
 
             <div>
+              <label htmlFor="title" className="block text-sm font-semibold text-gray-700 mb-1">
+                Coupon Title (Optional)
+              </label>
+              <input
+                id="title"
+                name="title"
+                type="text"
+                placeholder="Coupon Title (e.g., 20% Off Sitewide)"
+                value={formData.title || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Optional: Title for this coupon (will be displayed on coupon card)
+              </p>
+            </div>
+            
+            <div>
               <label htmlFor="storeName" className="block text-sm font-semibold text-gray-700 mb-1">
-                Coupon Title
+                Store Name <span className="text-red-500">*</span>
               </label>
               <input
                 id="storeName"
@@ -474,10 +494,11 @@ export default function EditCouponPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, storeName: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                required
               />
               <p className="mt-1 text-xs text-gray-500">
-                This name will be displayed on the coupon card instead of the coupon code
+                Store name for this coupon (required)
               </p>
             </div>
           </div>

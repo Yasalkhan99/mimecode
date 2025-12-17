@@ -209,7 +209,7 @@ export default function Navbar() {
                     {filteredStores.map((store) => (
                       <LocalizedLink
                         key={store.id}
-                        href={`/stores/${store.id}`}
+                        href={`/stores/${store.slug || store.id}`}
                         onClick={() => {
                           setShowSearchResults(false);
                           setSearchQuery('');
@@ -508,7 +508,7 @@ export default function Navbar() {
               {filteredStores.map((store) => (
                 <LocalizedLink
                   key={store.id}
-                  href={`/stores/${store.id}`}
+                  href={`/stores/${store.slug || store.id}`}
                   onClick={() => {
                     setShowSearchResults(false);
                     setSearchQuery('');

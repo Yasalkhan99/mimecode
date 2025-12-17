@@ -626,19 +626,19 @@ export default function RegionSpecificOffers() {
                           // Use emoji flag directly if country code is unknown or UN flag
                           <span className="text-2xl sm:text-3xl">{emojiFlag}</span>
                         ) : (
-                          <img
-                            src={flagUrl}
-                            alt={`${region.name} flag`}
-                            className="w-full h-full object-cover rounded-sm shadow-sm"
-                            onError={(e) => {
+                        <img
+                          src={flagUrl}
+                          alt={`${region.name} flag`}
+                          className="w-full h-full object-cover rounded-sm shadow-sm"
+                          onError={(e) => {
                               // Fallback to emoji flag if image fails to load
-                              const target = e.target as HTMLImageElement;
+                            const target = e.target as HTMLImageElement;
                               const parent = target.parentElement;
                               if (parent) {
                                 parent.innerHTML = `<span class="text-2xl sm:text-3xl">${emojiFlag}</span>`;
                               }
-                            }}
-                          />
+                          }}
+                        />
                         )}
                       </div>
                     </div>

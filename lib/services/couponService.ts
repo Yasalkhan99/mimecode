@@ -358,6 +358,40 @@ export async function deleteCoupon(id: string) {
   }
 }
 
+// Delete all coupons
+export async function deleteAllCoupons() {
+  try {
+    // Use server-side API route to delete all coupons (bypasses security rules)
+    const res = await fetch('/api/coupons/delete-all', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    let json: any = {};
+    let resText = '';
+    try {
+      resText = await res.text();
+      try {
+        json = JSON.parse(resText || '{}');
+      } catch (e) {
+        json = { text: resText };
+      }
+    } catch (e) {
+      console.error('Failed to read server response body', e);
+    }
+
+    if (!res.ok) {
+      console.error('Server delete all failed', { status: res.status, body: json });
+      return { success: false, error: json.error || json.text || 'Failed to delete all coupons' };
+    }
+
+    return { success: true, deletedCount: json.deletedCount || 0 };
+  } catch (error) {
+    console.error('Error deleting all coupons:', error);
+    return { success: false, error };
+  }
+}
+
 // Get coupons by category ID
 export async function getCouponsByCategoryId(categoryId: string): Promise<Coupon[]> {
   try {

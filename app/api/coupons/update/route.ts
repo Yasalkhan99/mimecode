@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
     if (updates.discount !== undefined) updateData.discount = updates.discount;
     if (updates.discountType !== undefined) updateData.discount_type = updates.discountType;
     if (updates.description !== undefined) updateData.description = updates.description;
+    if (updates.title !== undefined) updateData['Coupon Title'] = updates.title; // Title field
     if (updates.isActive !== undefined) updateData.is_active = updates.isActive;
     if (updates.maxUses !== undefined) updateData.max_uses = updates.maxUses;
     if (updates.currentUses !== undefined) updateData.current_uses = updates.currentUses;

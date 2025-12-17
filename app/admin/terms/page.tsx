@@ -133,12 +133,12 @@ export default function TermsPage() {
                 ))}
               </select>
             </div>
-            <button
-              onClick={() => setShowForm(true)}
-              className="bg-[#ABC443] hover:bg-[#16a34a] text-white font-semibold px-6 py-2 rounded-lg transition-colors"
-            >
-              {terms ? 'Edit Terms & Conditions' : '+ Create Terms & Conditions'}
-            </button>
+          <button
+            onClick={() => setShowForm(true)}
+            className="bg-[#ABC443] hover:bg-[#16a34a] text-white font-semibold px-6 py-2 rounded-lg transition-colors"
+          >
+            {terms ? 'Edit Terms & Conditions' : '+ Create Terms & Conditions'}
+          </button>
           </div>
         </div>
 
@@ -146,8 +146,8 @@ export default function TermsPage() {
           <div className="bg-white rounded-lg shadow-md p-6 mb-8">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold">
-                {terms ? 'Edit Terms & Conditions' : 'Create Terms & Conditions'}
-              </h2>
+              {terms ? 'Edit Terms & Conditions' : 'Create Terms & Conditions'}
+            </h2>
               <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg">
                 <span className="text-2xl">{selectedLang.flag}</span>
                 <span className="font-semibold text-gray-700">{selectedLang.name}</span>
