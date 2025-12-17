@@ -73,6 +73,10 @@ export default function Home() {
   const featuredDealsSliderRef = useRef<HTMLDivElement>(null);
   const storesOfSeasonSliderRef = useRef<HTMLDivElement>(null);
   const [isStoresOfSeasonPaused, setIsStoresOfSeasonPaused] = useState(false);
+  const [mimecodeCoupons, setMimecodeCoupons] = useState<Coupon[]>([]);
+  const [mimecodeCouponsLoading, setMimecodeCouponsLoading] = useState(true);
+  const [isMimecodeCouponsPaused, setIsMimecodeCouponsPaused] = useState(false);
+  const mimecodeCouponsSliderRef = useRef<HTMLDivElement>(null);
 
   // useEffect(() => {
   //   const hasSeenModal = localStorage.getItem('contactModalShown');
@@ -342,6 +346,30 @@ export default function Home() {
       clearTimeout(bannerTimeoutId);
       clearTimeout(couponTimeoutId);
     };
+  }, []);
+
+  // Fetch 8 coupons from coupons-mimecode collection
+  useEffect(() => {
+    const fetchMimecodeCoupons = async () => {
+      try {
+        setMimecodeCouponsLoading(true);
+        const res = await fetch('/api/coupons/get?collection=coupons-mimecode');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.coupons && Array.isArray(data.coupons)) {
+            // Filter for code-type coupons only
+            const codeCoupons = data.coupons.filter((coupon: Coupon) => coupon.couponType === 'code');
+            setMimecodeCoupons(codeCoupons);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching mimecode coupons:', error);
+      } finally {
+        setMimecodeCouponsLoading(false);
+      }
+    };
+
+    fetchMimecodeCoupons();
   }, []);
 
   // const handleCloseModal = () => {
@@ -858,6 +886,8 @@ export default function Home() {
   const handleFeaturedDealsMouseLeave = useCallback(() => setIsFeaturedDealsPaused(false), []);
   const handleStoresOfSeasonMouseEnter = useCallback(() => setIsStoresOfSeasonPaused(true), []);
   const handleStoresOfSeasonMouseLeave = useCallback(() => setIsStoresOfSeasonPaused(false), []);
+  const handleMimecodeCouponsMouseEnter = useCallback(() => setIsMimecodeCouponsPaused(true), []);
+  const handleMimecodeCouponsMouseLeave = useCallback(() => setIsMimecodeCouponsPaused(false), []);
 
   // Memoize stores with logos to avoid re-filtering on every render
   const storesWithLogos = useMemo(() => {
@@ -1602,7 +1632,10 @@ export default function Home() {
             </div>
 
             {/* Coupons Slider - Single Row Horizontal Scroll with Auto-scroll */}
-            {couponsLoading ? (
+            {/* OLD LOGIC REMOVED - replaced with simple fetch from API */}
+            
+            {/* NEW LOGIC - Fetch 8 coupons from /api/coupons/get?collection=coupons-mimecode */}
+            {mimecodeCouponsLoading ? (
               <div className="flex gap-4 md:gap-5 overflow-hidden">
                 {[...Array(8)].map((_, index) => (
                   <div
@@ -1615,7 +1648,7 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-            ) : displayLatestCoupons.length === 0 || displayLatestCoupons.every(c => c === null) ? (
+            ) : mimecodeCoupons.length === 0 ? (
               <div className="flex items-center justify-center ">
                 <div className="text-center">
                   <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1627,11 +1660,11 @@ export default function Home() {
             ) : (
               <div
                 className="overflow-hidden pb-4 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8"
-                onMouseEnter={handleLatestCouponsMouseEnter}
-                onMouseLeave={handleLatestCouponsMouseLeave}
+                onMouseEnter={handleMimecodeCouponsMouseEnter}
+                onMouseLeave={handleMimecodeCouponsMouseLeave}
               >
                 <div
-                  ref={sliderRef}
+                  ref={mimecodeCouponsSliderRef}
                   className="flex gap-4 md:gap-5"
                   style={{
                     width: 'fit-content',
@@ -1639,144 +1672,110 @@ export default function Home() {
                     animationDuration: '40s',
                     animationTimingFunction: 'linear',
                     animationIterationCount: 'infinite',
-                    animationPlayState: isLatestCouponsPaused ? 'paused' : 'running',
+                    animationPlayState: isMimecodeCouponsPaused ? 'paused' : 'running',
                     willChange: 'transform'
                   }}
                 >
-                  {[...displayLatestCoupons, ...displayLatestCoupons, ...displayLatestCoupons].map((coupon, index) => {
-                    const layoutNumber = (index % displayLatestCoupons.length) + 1;
-                    const isDuplicate = index >= displayLatestCoupons.length;
-
-                    if (!coupon) {
-                      return (
-                        <div
-                          key={`latest-coupon-empty-${index}-${isDuplicate ? 'dup' : ''}`}
-                          className="bg-gray-50 rounded-lg p-4 sm:p-5 border-2 border-dashed flex flex-col items-center justify-center min-h-[250px] border-gray-200 w-[200px] sm:w-[220px] flex-shrink-0"
-                        >
-                          <div className="text-gray-400 text-center">
-                            <svg className="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                            </svg>
-                            <p className="text-xs font-medium">Layout {layoutNumber} Empty Slot</p>
-                          </div>
-                        </div>
-                      );
-                    }
-
-                    // Coupon Card - Clean Minimalist Style
-                    // Use pre-computed data from memoized map (avoids blocking render)
-                    const couponData = coupon.id ? couponDataMap.get(coupon.id) : null;
-                    const store = couponData?.store || null;
-                    const storeUrl = couponData?.storeUrl || null;
-                    const storeName = couponData?.storeName || coupon.storeName || '';
-                    const logoUrl = couponData?.logoUrl || null;
-                    const isExpired = couponData?.isExpired || false;
-
+                  {/* Render 3 copies for seamless infinite scroll */}
+                  {[...mimecodeCoupons, ...mimecodeCoupons, ...mimecodeCoupons].map((coupon, index) => {
+                    const isDuplicate = index >= mimecodeCoupons.length;
+                    
                     return (
                       <motion.div
-                        key={`latest-coupon-${coupon.id || 'no-id'}-${index}-${isDuplicate ? 'dup' : ''}`}
+                        key={`mimecode-coupon-${coupon.id || index}-${isDuplicate ? 'dup' : ''}`}
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        transition={{ duration: 0.4, delay: (index % displayLatestCoupons.length) * 0.05 }}
+                        transition={{ duration: 0.4, delay: (index % mimecodeCoupons.length) * 0.05 }}
                         className="bg-white rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 flex flex-col relative overflow-hidden group cursor-pointer w-[200px] sm:w-[220px] flex-shrink-0"
                         onClick={(e) => {
-                          // CRITICAL: Use requestAnimationFrame to avoid blocking INP
                           requestAnimationFrame(() => {
                             handleGetDeal(coupon, e);
                           });
                         }}
                       >
-                        {/* Logo Section - Centered */}
-                        <div className="flex items-center justify-center h-16 relative">
-                          {logoUrl ? (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <img
-                                src={logoUrl}
-                                alt={coupon.storeName || coupon.code || 'Coupon'}
-                                className="max-w-full max-h-full object-contain"
-                                style={{
-                                  width: 'auto',
-                                  height: 'auto',
-                                  maxWidth: '40px',
-                                  maxHeight: '40px'
-                                }}
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.style.display = 'none';
-                                  const parent = target.parentElement;
-                                  if (parent) {
-                                    parent.innerHTML = `
-                                  <div class="w-24 h-24 rounded-lg bg-gradient-to-br from-[#ABC443] to-[#41361A] flex items-center justify-center">
-                                    <span class="text-white font-bold text-2xl">${(coupon.storeName || coupon.code || 'C').charAt(0)}</span>
-                                  </div>
-                                `;
-                                  }
-                                }}
-                              />
-                            </div>
-                          ) : (
-                            <div className="w-24 h-24 rounded-lg bg-gradient-to-br from-[#ABC443] to-[#41361A] flex items-center justify-center">
-                              <span className="text-white font-bold text-lg">
-                                {(coupon.storeName || coupon.code || 'C').charAt(0).toUpperCase()}
-                              </span>
-                            </div>
-                          )}
-
-                          {/* Discount Badge - Bottom Right of Logo Area - Only show if real discount exists */}
-                          {Number(coupon.discount) > 0 && (
-                            <div className="absolute bottom-0 right-0 bg-gray-200 rounded-lg px-3 py-1.5">
-                              <span className="text-gray-900 font-bold text-sm sm:text-base">
-                                {coupon.discount}% OFF
-                              </span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Brand Name */}
-                        <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-2 text-center uppercase line-clamp-2">
-                          {storeName || coupon?.storeName || 'Store'}
-                        </h3>
-
-                        {/* Actual Coupon Title/Description */}
-                        <p className="text-xs sm:text-sm text-gray-600 mb-4 text-center line-clamp-2 font-semibold leading-relaxed flex-grow">
-                          {coupon?.title}
-                        </p>
-
-                         {/* Actual Coupon Title/Description */}
-                         {/* <p className="text-xs sm:text-sm text-gray-600 mb-4 text-center line-clamp-2 leading-relaxed flex-grow">
-                          {coupon?.description}
-                        </p> */}
-
-                        {/* Get Code/Deal Button */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            // CRITICAL: Use requestAnimationFrame to avoid blocking INP
-                            requestAnimationFrame(() => {
-                              handleGetDeal(coupon, e);
-                            });
-                          }}
-                          className="cursor-pointer w-full relative bg-[#000] text-white font-semibold rounded-3xl px-4 py-2.5 flex items-center justify-between transition-all duration-300 shadow-sm hover:shadow-md group overflow-hidden"
-                        >
-                          {/* Main button label */}
-                          <span className="text-sm flex-1 relative z-10 transform transition-transform duration-300 group-hover:-translate-x-2">
-                            {coupon.id && revealedCoupons.has(coupon.id) && coupon.code ? (
-                              coupon.code
-                            ) : coupon.couponType === 'code' && coupon.code ? (
-                              'Get Code'
-                            ) : (
-                              'Get Deal'
-                            )}
-                          </span>
-
-                          {/* Hover code suffix (e.g. ...AB) */}
-                          {coupon.couponType === 'code' && coupon.code && !(coupon.id && revealedCoupons.has(coupon.id)) && (
-                            <span className="absolute top-0 right-3 h-full flex items-center text-[14px] font-bold text-white opacity-0 translate-x-3 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
-                              ...{coupon.code.slice(-3)}
+                      {/* Logo Section - Centered */}
+                      <div className="flex items-center justify-center h-16 relative">
+                        {coupon.logoUrl ? (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <img
+                              src={coupon.logoUrl}
+                              alt={coupon.storeName || coupon.code || 'Coupon'}
+                              className="max-w-full max-h-full object-contain"
+                              style={{
+                                width: 'auto',
+                                height: 'auto',
+                                maxWidth: '40px',
+                                maxHeight: '40px'
+                              }}
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  parent.innerHTML = `
+                                    <div class="w-24 h-24 rounded-lg bg-gradient-to-br from-[#ABC443] to-[#41361A] flex items-center justify-center">
+                                      <span class="text-white font-bold text-2xl">${(coupon.storeName || coupon.code || 'C').charAt(0)}</span>
+                                    </div>
+                                  `;
+                                }
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-24 h-24 rounded-lg bg-gradient-to-br from-[#ABC443] to-[#41361A] flex items-center justify-center">
+                            <span className="text-white font-bold text-lg">
+                              {(coupon.storeName || coupon.code || 'C').charAt(0).toUpperCase()}
                             </span>
+                          </div>
+                        )}
+
+                        {/* Discount Badge - Bottom Right of Logo Area */}
+                        {Number(coupon.discount) > 0 && (
+                          <div className="absolute bottom-0 right-0 bg-gray-200 rounded-lg px-3 py-1.5">
+                            <span className="text-gray-900 font-bold text-sm sm:text-base">
+                              {coupon.discount}% OFF
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Brand Name */}
+                      <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-2 text-center uppercase line-clamp-2">
+                        {coupon.storeName || 'Store'}
+                      </h3>
+
+                      {/* Coupon Title */}
+                      <p className="text-xs sm:text-sm text-gray-600 mb-4 text-center line-clamp-2 font-semibold leading-relaxed flex-grow">
+                        {coupon.title || coupon.description}
+                      </p>
+
+                      {/* Get Code/Deal Button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          requestAnimationFrame(() => {
+                            handleGetDeal(coupon, e);
+                          });
+                        }}
+                        className="cursor-pointer w-full relative bg-[#000] text-white font-semibold rounded-3xl px-4 py-2.5 flex items-center justify-between transition-all duration-300 shadow-sm hover:shadow-md group overflow-hidden"
+                      >
+                        <span className="text-sm flex-1 relative z-10 transform transition-transform duration-300 group-hover:-translate-x-2">
+                          {coupon.id && revealedCoupons.has(coupon.id) && coupon.code ? (
+                            coupon.code
+                          ) : coupon.couponType === 'code' && coupon.code ? (
+                            'Get Code'
+                          ) : (
+                            'Get Deal'
                           )}
-                        </button>
+                        </span>
+
+                        {coupon.couponType === 'code' && coupon.code && !(coupon.id && revealedCoupons.has(coupon.id)) && (
+                          <span className="absolute top-0 right-3 h-full flex items-center text-[14px] font-bold text-white opacity-0 translate-x-3 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                            ...{coupon.code.slice(-3)}
+                          </span>
+                        )}
+                      </button>
                       </motion.div>
                     );
                   })}
