@@ -107,6 +107,11 @@ export default function EditCouponPage() {
       logoUrl: logoUrlToSave,
     };
     
+    // Explicitly handle expiryDate (include null values)
+    updates.expiryDate = formData.expiryDate || null;
+    
+    console.log('💾 Saving coupon with expiryDate:', updates.expiryDate);
+    
     // For deal type, don't include code field
     if (formData.couponType === 'deal') {
       delete updates.code;
@@ -119,7 +124,9 @@ export default function EditCouponPage() {
     
     const result = await updateCoupon(couponId, updates);
     if (result.success) {
-      router.push('/admin/coupons');
+      // Force refresh by adding cache-busting query param
+      router.push('/admin/coupons?refresh=' + Date.now());
+      router.refresh(); // Also trigger Next.js router refresh
     }
     setSaving(false);
   };
@@ -576,6 +583,35 @@ export default function EditCouponPage() {
             />
             <p className="mt-1 text-xs text-gray-500">
               When user clicks "Get Deal", they will be redirected to this URL and the coupon code will be revealed.
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="expiryDate" className="block text-sm font-semibold text-gray-700 mb-1">
+              Expiry Date (Optional)
+            </label>
+            <input
+              id="expiryDate"
+              name="expiryDate"
+              type="date"
+              value={
+                formData.expiryDate
+                  ? new Date(formData.expiryDate).toISOString().slice(0, 10)
+                  : ''
+              }
+              onChange={(e) => {
+                const dateValue = e.target.value;
+                if (dateValue) {
+                  const date = new Date(dateValue);
+                  setFormData({ ...formData, expiryDate: date.toISOString() });
+                } else {
+                  setFormData({ ...formData, expiryDate: null });
+                }
+              }}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Optional: Set when this coupon expires. Leave empty if no expiry date.
             </p>
           </div>
 

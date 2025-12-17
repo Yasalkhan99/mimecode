@@ -856,6 +856,36 @@ export default function StoreDetailPage() {
                           })()}
                         </p>
                       )}
+                      {/* Verified Badge and Expiry Date */}
+                      <div className="flex items-center gap-3 mt-2">
+                        <div className="flex items-center gap-1 text-green-600">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="text-[10px] font-medium">Verified</span>
+                        </div>
+                        {coupon.expiryDate && (
+                          <div className="flex items-center gap-1 text-xs text-gray-500">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span className="text-[10px]">
+                              {formatDate(coupon.expiryDate) || (() => {
+                                try {
+                                  const date = new Date(coupon.expiryDate);
+                                  return date.toLocaleDateString('en-US', { 
+                                    year: 'numeric', 
+                                    month: 'short', 
+                                    day: 'numeric' 
+                                  });
+                                } catch {
+                                  return 'N/A';
+                                }
+                              })()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     
                     {/* Button on Right */}

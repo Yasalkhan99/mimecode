@@ -198,13 +198,18 @@ export default function CouponsPage() {
   const fetchCoupons = async (bypassCache = false) => {
     setLoading(true);
     try {
-      // Add cache-busting parameter if needed
-      const url = bypassCache 
-        ? `/api/coupons/get?_t=${Date.now()}`
-        : `/api/coupons/get`;
+      // Always use cache-busting to ensure fresh data
+      const url = `/api/coupons/get?collection=coupons-mimecode&_t=${Date.now()}`;
       
       console.log('🔄 Fetching coupons from:', url);
-      const res = await fetch(url);
+      const res = await fetch(url, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      });
       
       if (res.ok) {
         const responseData = await res.json();
@@ -636,31 +641,32 @@ export default function CouponsPage() {
   };
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const [couponsData, categoriesData, storesData] = await Promise.all([
-        getCoupons(),
-        getCategories(),
-        getStores()
-      ]);
-      // Sort coupons by numeric ID (1, 2, 3...) to match store ID indexing
-      const sortedCoupons = couponsData.sort((a, b) => {
-        const idA = parseInt(String(a.id || '0'), 10) || 0;
-        const idB = parseInt(String(b.id || '0'), 10) || 0;
-        return idA - idB;
-      });
-      setCoupons(sortedCoupons);
-      setCategories(categoriesData);
-      // Sort stores by numeric ID (1, 2, 3...)
-      const sortedStores = storesData.sort((a, b) => {
-        const idA = parseInt(String(a.id || '0'), 10) || 0;
-        const idB = parseInt(String(b.id || '0'), 10) || 0;
-        return idA - idB;
-      });
-      setStores(sortedStores);
-      setLoading(false);
+    fetchCoupons(true); // Always bypass cache on initial load
+    getCategories().then(setCategories);
+    getStores().then(setStores);
+  }, []);
+
+  // Refresh coupons when page becomes visible (e.g., returning from edit page)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('👁️ Page became visible, refreshing coupons...');
+        fetchCoupons(true);
+      }
     };
-    load();
+
+    const handleFocus = () => {
+      console.log('🎯 Window focused, refreshing coupons...');
+      fetchCoupons(true);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   // Load API key from environment on mount (if available via API)
@@ -2044,6 +2050,35 @@ export default function CouponsPage() {
               </p>
             </div>
 
+            <div>
+              <label htmlFor="expiryDate" className="block text-gray-700 text-sm font-semibold mb-2">
+                Expiry Date (Optional)
+              </label>
+              <input
+                id="expiryDate"
+                name="expiryDate"
+                type="date"
+                value={
+                  formData.expiryDate
+                    ? new Date(formData.expiryDate).toISOString().slice(0, 10)
+                    : ''
+                }
+                onChange={(e) => {
+                  const dateValue = e.target.value;
+                  if (dateValue) {
+                    const date = new Date(dateValue);
+                    setFormData({ ...formData, expiryDate: date.toISOString() });
+                  } else {
+                    setFormData({ ...formData, expiryDate: null });
+                  }
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Optional: Set when this coupon expires. Leave empty if no expiry date.
+              </p>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center">
                 <input
@@ -2251,6 +2286,9 @@ export default function CouponsPage() {
                     Description
                   </th>
                   <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold text-gray-900">
+                    Expiry Date
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold text-gray-900">
                     Status
                   </th>
                   <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold text-gray-900">
@@ -2284,6 +2322,22 @@ export default function CouponsPage() {
                     </td>
                     <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-800 max-w-xs truncate" title={coupon.description}>
                       {coupon.description || 'No description'}
+                    </td>
+                    <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-700">
+                      {coupon.expiryDate 
+                        ? (() => {
+                            try {
+                              const date = new Date(coupon.expiryDate);
+                              return date.toLocaleDateString('en-US', { 
+                                year: 'numeric', 
+                                month: 'short', 
+                                day: 'numeric' 
+                              });
+                            } catch {
+                              return 'Invalid Date';
+                            }
+                          })()
+                        : 'N/A'}
                     </td>
                     <td className="px-4 sm:px-6 py-4">
                       <button

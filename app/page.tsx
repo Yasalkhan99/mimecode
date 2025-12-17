@@ -1691,11 +1691,12 @@ export default function Home() {
                 >
                   {/* Render 3 copies for seamless infinite scroll */}
                   {[...mimecodeCoupons, ...mimecodeCoupons, ...mimecodeCoupons].map((coupon, index) => {
-                    const isDuplicate = index >= mimecodeCoupons.length;
+                    const copyIndex = Math.floor(index / mimecodeCoupons.length);
+                    const couponIndex = index % mimecodeCoupons.length;
                     
                     return (
                       <motion.div
-                        key={`mimecode-coupon-${coupon.id || index}-${isDuplicate ? 'dup' : ''}`}
+                        key={`mimecode-coupon-${coupon.id || couponIndex}-copy-${copyIndex}`}
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
@@ -1759,9 +1760,17 @@ export default function Home() {
                       </h3>
 
                       {/* Coupon Title */}
-                      <p className="text-xs sm:text-sm text-gray-600 mb-4 text-center line-clamp-2 font-semibold leading-relaxed flex-grow">
+                      <p className="text-xs sm:text-sm text-gray-600 mb-2 text-center line-clamp-2 font-semibold leading-relaxed flex-grow">
                         {coupon.title || coupon.description}
                       </p>
+                      
+                      {/* Verified Badge */}
+                      <div className="flex items-center justify-center gap-1 text-green-600 mb-4">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-[10px] font-medium">Verified</span>
+                      </div>
 
                       {/* Get Code/Deal Button */}
                       <button

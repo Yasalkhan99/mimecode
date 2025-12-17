@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { clearCouponsCache } from '@/lib/cache/couponsCache';
 
 export async function POST(req: NextRequest) {
   try {
@@ -40,7 +41,10 @@ export async function POST(req: NextRequest) {
     if (updates.isActive !== undefined) updateData.is_active = updates.isActive;
     if (updates.maxUses !== undefined) updateData.max_uses = updates.maxUses;
     if (updates.currentUses !== undefined) updateData.current_uses = updates.currentUses;
-    if (updates.expiryDate !== undefined) updateData.expiry_date = updates.expiryDate;
+    // Handle expiryDate - explicitly include null values
+    if (updates.expiryDate !== undefined) {
+      updateData.expiry_date = updates.expiryDate === null || updates.expiryDate === '' ? null : updates.expiryDate;
+    }
     if (updates.couponType !== undefined) updateData.coupon_type = updates.couponType;
     if (updates.dealUrl !== undefined) updateData.deal_url = updates.dealUrl;
     if (updates.categoryId !== undefined) updateData.category_id = updates.categoryId;
@@ -64,6 +68,11 @@ export async function POST(req: NextRequest) {
     }
 
     console.log('✅ Coupon updated successfully:', data);
+    
+    // Clear coupons cache to ensure fresh data on next fetch
+    clearCouponsCache();
+    console.log('🗑️ Cleared coupons cache after update');
+    
     return NextResponse.json({ success: true, coupon: data }, { status: 200 });
   } catch (error) {
     console.error('❌ Update coupon error:', error);

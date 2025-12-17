@@ -518,14 +518,14 @@ function CouponsContent() {
         </section>
       )} */}
       
-      <div className="w-full px-4 sm:px-6 md:px-8 py-8 sm:py-12 md:py-16">
-        <div className="max-w-3xl mx-auto">
+      <div className="w-full px-4 sm:px-6 md:px-8 py-8 sm:py-12 md:py-16 bg-white">
+        <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-6 sm:mb-8">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-4">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-4 text-gray-900">
               {t('allCoupons')}
             </h1>
-            <p className="text-center text-gray-600 text-sm sm:text-base">
+            <p className="text-center text-gray-700 text-sm sm:text-base">
               {t('browseAllCoupons')}
             </p>
           </div>
@@ -583,7 +583,7 @@ function CouponsContent() {
               )}
             </div>
             
-            <div className="mt-4 text-sm text-gray-600">
+            <div className="mt-4 text-sm text-gray-700">
               {t('showingArticles')} <span className="font-semibold text-gray-900">{filteredCoupons.length}</span> {t('ofArticles')} <span className="font-semibold text-gray-900">{coupons.length}</span> {t('coupons')}
             </div>
           </div>
@@ -602,11 +602,11 @@ function CouponsContent() {
             </div>
           ) : filteredCoupons.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500 text-lg mb-4">{t('noCouponsFound')}</p>
+              <p className="text-gray-700 text-lg mb-4">{t('noCouponsFound')}</p>
               {(selectedCategory || selectedStore) && (
                 <button
                   onClick={clearFilters}
-                    className="text-[#ABC443] hover:text-[#41361A] font-semibold"
+                    className="text-gray-900 hover:text-[#FFE019] font-semibold underline"
                 >
                   {t('noCouponsFoundMessage')}
                 </button>
@@ -745,7 +745,7 @@ function CouponsContent() {
                           </div>
                         ) : (
                           <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-gray-200 flex items-center justify-center">
-                            <span className="text-xs sm:text-sm font-semibold text-gray-500">
+                            <span className="text-xs sm:text-sm font-semibold text-gray-700">
                               {coupon.code?.charAt(0) || coupon.storeName?.charAt(0) || '?'}
                             </span>
                           </div>
@@ -784,7 +784,7 @@ function CouponsContent() {
                             </svg>
                             <span className="text-[10px]">Verified</span>
                           </div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-gray-600">
                             {coupon.expiryDate ? (
                               <div className="flex items-center gap-1">
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -808,7 +808,7 @@ function CouponsContent() {
                         ) : (
                           <button
                             onClick={(e) => handleGetDeal(coupon, e)}
-                            className="bg-[#ABC443] hover:bg-[#9BB03A] text-white font-semibold rounded-lg px-4 py-2.5 sm:px-6 sm:py-3 flex items-center justify-between transition-all duration-300 shadow-md hover:shadow-lg whitespace-nowrap group relative overflow-hidden"
+                            className="bg-black hover:bg-black text-white hover:text-[#FFE019] border-2 border-black font-semibold rounded-lg px-4 py-2.5 sm:px-6 sm:py-3 flex items-center justify-between transition-all duration-300 shadow-md hover:shadow-lg whitespace-nowrap group relative overflow-hidden"
                           >
                             <span className="flex-1 flex items-center justify-center">
                               {isRevealed && coupon.couponType === 'code' && coupon.code ? (
@@ -822,7 +822,7 @@ function CouponsContent() {
                               )}
                             </span>
                             {getLastTwoDigits(coupon) && !isRevealed && (
-                              <div className="w-0 opacity-0 group-hover:w-20 group-hover:opacity-100 transition-all duration-300 ease-out flex items-center justify-center border-l-2 border-white/70 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-white/10">
+                              <div className="w-0 opacity-0 group-hover:w-20 group-hover:opacity-100 transition-all duration-300 ease-out flex items-center justify-center border-l-2 border-white/20 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-white/10">
                                 <span className="text-white font-bold text-xs">...{getLastTwoDigits(coupon)}</span>
                               </div>
                             )}
@@ -879,7 +879,7 @@ function CouponsContent() {
               
               return (
                 <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-700">
                     Showing <span className="font-semibold text-gray-900">
                       {((currentPage - 1) * couponsPerPage) + 1}
                     </span> to <span className="font-semibold text-gray-900">
@@ -897,10 +897,10 @@ function CouponsContent() {
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
                       disabled={currentPage === 1}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all duration-300 border-2 ${
                         currentPage === 1
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : 'bg-[#ABC443] text-white hover:bg-[#9BB03A] hover:shadow-lg active:scale-95'
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200'
+                          : 'bg-white text-gray-900 border-gray-900 hover:bg-gray-900 hover:text-white hover:shadow-lg active:scale-95'
                       }`}
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -928,10 +928,10 @@ function CouponsContent() {
                               setCurrentPage(pageNum);
                               window.scrollTo({ top: 0, behavior: 'smooth' });
                             }}
-                            className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                            className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 border-2 ${
                               currentPage === pageNum
-                                ? 'bg-[#ABC443] text-white'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                ? 'bg-[#FFE019] text-gray-900 border-gray-900'
+                                : 'bg-white text-gray-900 border-gray-300 hover:border-gray-900 hover:bg-gray-50'
                             }`}
                           >
                             {pageNum}
@@ -947,10 +947,10 @@ function CouponsContent() {
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
                       disabled={currentPage === totalPages}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all duration-300 border-2 ${
                         currentPage === totalPages
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : 'bg-[#ABC443] text-white hover:bg-[#9BB03A] hover:shadow-lg active:scale-95'
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200'
+                          : 'bg-white text-gray-900 border-gray-900 hover:bg-gray-900 hover:text-white hover:shadow-lg active:scale-95'
                       }`}
                     >
                       <span>Next</span>

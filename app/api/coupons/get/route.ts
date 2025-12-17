@@ -4,8 +4,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 
-// Simple in-memory cache
-let couponsCache: { data: any[] | null; timestamp: number; key: string } = { data: null, timestamp: 0, key: '' };
+import { getCouponsCache, setCouponsCache } from '@/lib/cache/couponsCache';
+
+// Simple in-memory cache (now shared via couponsCache module)
 const CACHE_TTL = 30 * 1000; // 30 seconds cache
 
 // Helper function to normalize URL
@@ -124,6 +125,7 @@ export async function GET(req: NextRequest) {
     const now = Date.now();
 
     // Check cache for list queries (not single item) - skip if bypassCache is true
+    const couponsCache = getCouponsCache();
     if (!id && !bypassCache && couponsCache.data && couponsCache.key === cacheKey && (now - couponsCache.timestamp) < CACHE_TTL) {
       return NextResponse.json(
         { success: true, coupons: couponsCache.data },
@@ -475,7 +477,7 @@ export async function GET(req: NextRequest) {
     console.log(`📊 After expiry filter: ${convertedCoupons.length} (removed ${beforeExpiryFilter - convertedCoupons.length})`);
 
     // Update cache
-    couponsCache = { data: convertedCoupons, timestamp: now, key: cacheKey };
+    setCouponsCache(convertedCoupons, now, cacheKey);
 
     console.log(`✅ Returning ${convertedCoupons.length} coupons to client (out of ${coupons?.length || 0} raw coupons from DB)`);
     
