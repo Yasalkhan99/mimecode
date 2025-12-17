@@ -20,7 +20,7 @@ export default function EditCouponPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState<Partial<Coupon>>({});
+  const [formData, setFormData] = useState<Partial<Omit<Coupon, 'expiryDate'> & { expiryDate: string | Date | null }>>({});
   const [logoUrl, setLogoUrl] = useState('');
   const [extractedLogoUrl, setExtractedLogoUrl] = useState<string | null>(null);
   const [stores, setStores] = useState<Store[]>([]);
@@ -55,9 +55,26 @@ export default function EditCouponPage() {
       ]);
       if (couponData) {
         setCoupon(couponData);
+        // Convert expiryDate to string if it's a Timestamp or Date
+        let expiryDateString: string | null = null;
+        if (couponData.expiryDate) {
+          try {
+            if (couponData.expiryDate instanceof Date) {
+              expiryDateString = couponData.expiryDate.toISOString();
+            } else if (typeof (couponData.expiryDate as any).toDate === 'function') {
+              // Firestore Timestamp
+              expiryDateString = (couponData.expiryDate as any).toDate().toISOString();
+            } else if (typeof couponData.expiryDate === 'string') {
+              expiryDateString = couponData.expiryDate;
+            }
+          } catch (e) {
+            console.error('Error converting expiryDate:', e);
+          }
+        }
         setFormData({
           ...couponData,
           couponType: couponData.couponType || 'code', // Default to 'code' if not set
+          expiryDate: expiryDateString,
         });
         setSelectedStoreIds(couponData.storeIds || []);
         if (couponData.logoUrl) {
@@ -208,7 +225,7 @@ export default function EditCouponPage() {
                                 setLogoUrl(foundStore.logoUrl);
                                 handleLogoUrlChange(foundStore.logoUrl);
                               }
-                              setFormData({ ...formData, ...updates });
+                              setFormData({ ...formData, ...updates } as any);
                               setManualStoreId('');
                               // Keep dropdown open so user can see the selected store
                               setIsStoreDropdownOpen(true);
@@ -248,7 +265,7 @@ export default function EditCouponPage() {
                               setLogoUrl(foundStore.logoUrl);
                               handleLogoUrlChange(foundStore.logoUrl);
                             }
-                            setFormData({ ...formData, ...updates });
+                            setFormData({ ...formData, ...updates } as any);
                             setManualStoreId('');
                             // Keep dropdown open so user can see the selected store
                             setIsStoreDropdownOpen(true);
@@ -337,10 +354,10 @@ export default function EditCouponPage() {
                                         setLogoUrl(firstStore.logoUrl);
                                         handleLogoUrlChange(firstStore.logoUrl);
                                       }
-                                      setFormData({ ...formData, ...updates });
+                                      setFormData({ ...formData, ...updates } as any);
                                     }
                                   } else {
-                                    setFormData({ ...formData, storeName: '' });
+                                    setFormData({ ...formData, storeName: '' } as any);
                                   }
                                 }}
                                 className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
@@ -387,7 +404,7 @@ export default function EditCouponPage() {
                                 setLogoUrl(firstStore.logoUrl);
                                 handleLogoUrlChange(firstStore.logoUrl);
                               }
-                              setFormData({ ...formData, ...updates });
+                              setFormData({ ...formData, ...updates } as any);
                             }
                           } else {
                             setFormData({ ...formData, storeName: '' });
@@ -499,7 +516,7 @@ export default function EditCouponPage() {
                 placeholder="Store/Brand Name (e.g., Nike)"
                 value={formData.storeName || ''}
                 onChange={(e) =>
-                  setFormData({ ...formData, storeName: e.target.value })
+                  setFormData({ ...formData, storeName: e.target.value } as any)
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 required
@@ -596,7 +613,24 @@ export default function EditCouponPage() {
               type="date"
               value={
                 formData.expiryDate
-                  ? new Date(formData.expiryDate).toISOString().slice(0, 10)
+                  ? (() => {
+                      try {
+                        let date: Date;
+                        if (formData.expiryDate instanceof Date) {
+                          date = formData.expiryDate;
+                        } else if (formData.expiryDate && typeof (formData.expiryDate as any).toDate === 'function') {
+                          // Firestore Timestamp
+                          date = (formData.expiryDate as any).toDate();
+                        } else if (typeof formData.expiryDate === 'string') {
+                          date = new Date(formData.expiryDate);
+                        } else {
+                          date = new Date(formData.expiryDate as any);
+                        }
+                        return date.toISOString().slice(0, 10);
+                      } catch {
+                        return '';
+                      }
+                    })()
                   : ''
               }
               onChange={(e) => {

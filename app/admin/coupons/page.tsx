@@ -21,7 +21,7 @@ export default function CouponsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState<Partial<Coupon>>({
+  const [formData, setFormData] = useState<Partial<Omit<Coupon, 'expiryDate'> & { expiryDate: string | Date | null }>>({
     code: '',
     storeName: '',
     title: '', // Coupon title field
@@ -1536,7 +1536,7 @@ export default function CouponsPage() {
                                   handleLogoUrlChange(foundStore.logoUrl);
                                   setLogoUploadMethod('url');
                                 }
-                                setFormData({ ...formData, ...updates });
+                                setFormData({ ...formData, ...updates } as any);
                                 setManualStoreId('');
                                 // Keep dropdown open so user can see the selected store
                                 setIsStoreDropdownOpen(true);
@@ -1577,7 +1577,7 @@ export default function CouponsPage() {
                                 handleLogoUrlChange(foundStore.logoUrl);
                                 setLogoUploadMethod('url');
                               }
-                              setFormData({ ...formData, ...updates });
+                              setFormData({ ...formData, ...updates } as any);
                               setManualStoreId('');
                               // Keep dropdown open so user can see the selected store
                               setIsStoreDropdownOpen(true);
@@ -1686,7 +1686,7 @@ export default function CouponsPage() {
                                           // Switch to URL method if logo is set
                                           setLogoUploadMethod('url');
                                         }
-                                        setFormData({ ...formData, ...updates });
+                                        setFormData({ ...formData, ...updates } as any);
                                       }
                                     } else {
                                       setFormData({ ...formData, storeName: '' });
@@ -1738,7 +1738,7 @@ export default function CouponsPage() {
                                   // Switch to URL method if logo is set
                                   setLogoUploadMethod('url');
                                 }
-                                setFormData({ ...formData, ...updates });
+                                setFormData({ ...formData, ...updates } as any);
                               }
                             } else {
                               setFormData({ ...formData, storeName: '' });
@@ -2060,16 +2060,33 @@ export default function CouponsPage() {
                 type="date"
                 value={
                   formData.expiryDate
-                    ? new Date(formData.expiryDate).toISOString().slice(0, 10)
+                    ? (() => {
+                        try {
+                          let date: Date;
+                          if (formData.expiryDate instanceof Date) {
+                            date = formData.expiryDate;
+                          } else if (formData.expiryDate && typeof (formData.expiryDate as any).toDate === 'function') {
+                            // Firestore Timestamp
+                            date = (formData.expiryDate as any).toDate();
+                          } else if (typeof formData.expiryDate === 'string') {
+                            date = new Date(formData.expiryDate);
+                          } else {
+                            date = new Date(formData.expiryDate as any);
+                          }
+                          return date.toISOString().slice(0, 10);
+                        } catch {
+                          return '';
+                        }
+                      })()
                     : ''
                 }
                 onChange={(e) => {
                   const dateValue = e.target.value;
                   if (dateValue) {
                     const date = new Date(dateValue);
-                    setFormData({ ...formData, expiryDate: date.toISOString() });
+                    setFormData({ ...formData, expiryDate: date.toISOString() } as any);
                   } else {
-                    setFormData({ ...formData, expiryDate: null });
+                    setFormData({ ...formData, expiryDate: null } as any);
                   }
                 }}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
@@ -2327,7 +2344,17 @@ export default function CouponsPage() {
                       {coupon.expiryDate 
                         ? (() => {
                             try {
-                              const date = new Date(coupon.expiryDate);
+                              let date: Date;
+                              if (coupon.expiryDate instanceof Date) {
+                                date = coupon.expiryDate;
+                              } else if (coupon.expiryDate && typeof (coupon.expiryDate as any).toDate === 'function') {
+                                // Firestore Timestamp
+                                date = (coupon.expiryDate as any).toDate();
+                              } else if (typeof coupon.expiryDate === 'string') {
+                                date = new Date(coupon.expiryDate);
+                              } else {
+                                date = new Date(coupon.expiryDate as any);
+                              }
                               return date.toLocaleDateString('en-US', { 
                                 year: 'numeric', 
                                 month: 'short', 

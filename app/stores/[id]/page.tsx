@@ -872,7 +872,17 @@ export default function StoreDetailPage() {
                             <span className="text-[10px]">
                               {formatDate(coupon.expiryDate) || (() => {
                                 try {
-                                  const date = new Date(coupon.expiryDate);
+                                  let date: Date;
+                                  if (coupon.expiryDate instanceof Date) {
+                                    date = coupon.expiryDate;
+                                  } else if (coupon.expiryDate && typeof (coupon.expiryDate as any).toDate === 'function') {
+                                    // Firestore Timestamp
+                                    date = (coupon.expiryDate as any).toDate();
+                                  } else if (typeof coupon.expiryDate === 'string') {
+                                    date = new Date(coupon.expiryDate);
+                                  } else {
+                                    date = new Date(coupon.expiryDate as any);
+                                  }
                                   return date.toLocaleDateString('en-US', { 
                                     year: 'numeric', 
                                     month: 'short', 
