@@ -11,7 +11,8 @@ export interface PageSettings {
 export async function getPageSettings(): Promise<PageSettings | null> {
   try {
     const res = await fetch('/api/page-settings/get', {
-      cache: 'no-store',
+      cache: 'force-cache',
+      next: { revalidate: 300 }, // Cache for 5 minutes
     });
     if (res.ok) {
       const data = await res.json();

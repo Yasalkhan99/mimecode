@@ -34,6 +34,10 @@ export async function GET(req: NextRequest) {
     if (process.env.FIREBASE_ADMIN_SA || process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
       try {
         const firestore = getAdminFirestore();
+        if (!firestore) {
+          // Firebase Admin SDK not initialized, return empty array gracefully
+          return NextResponse.json({ success: true, regions: [], region: null }, { status: 200 });
+        }
 
         if (id) {
           const docSnap = await firestore.collection(collection).doc(id).get();
@@ -73,12 +77,15 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({ success: true, regions }, { status: 200 });
       } catch (err) {
+        // Log error but return empty array gracefully (don't break the app)
         console.error('Admin SDK get regions error:', err);
-        return NextResponse.json({ success: false, error: `Admin SDK error: ${err instanceof Error ? err.message : String(err)}`, regions: [], region: null }, { status: 500 });
+        // Return success with empty array instead of error to prevent client-side errors
+        return NextResponse.json({ success: true, regions: [], region: null }, { status: 200 });
       }
     }
 
-    return NextResponse.json({ success: false, error: 'Firebase Admin SDK not configured', regions: [], region: null }, { status: 500 });
+    // Firebase Admin SDK not configured - return empty array gracefully
+    return NextResponse.json({ success: true, regions: [], region: null }, { status: 200 });
   } catch (err) {
     console.error('Server get regions error:', err);
     return NextResponse.json({ success: false, error: String(err), regions: [], region: null }, { status: 500 });

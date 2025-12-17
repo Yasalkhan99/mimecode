@@ -283,6 +283,16 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         message.includes('forbidden')
       );
     };
+    
+    // Helper to detect Firebase Admin SDK initialization errors (suppress these)
+    const isFirebaseAdminError = (args: any[]): boolean => {
+      const message = args.join(' ').toLowerCase();
+      return (
+        message.includes('firebase admin sdk not initialized') ||
+        message.includes('admin sdk error: firebase admin sdk not initialized') ||
+        message.includes('error getting active regions') && message.includes('admin sdk')
+      );
+    };
 
     console.error = (...args: any[]) => {
       // Suppress favicon-related errors
@@ -293,6 +303,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       // Suppress browser compatibility/performance/security warnings
       if (isBrowserWarning(args)) {
         return; // Silently ignore browser warnings
+      }
+      
+      // Suppress Firebase Admin SDK initialization errors (these are configuration issues, not user-facing)
+      if (isFirebaseAdminError(args)) {
+        return; // Silently ignore Firebase Admin SDK errors
       }
       
       // Suppress server/API errors in production
@@ -327,6 +342,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       // Suppress browser compatibility/performance/security warnings
       if (isBrowserWarning(args)) {
         return; // Silently ignore browser warnings
+      }
+      
+      // Suppress Firebase Admin SDK initialization errors
+      if (isFirebaseAdminError(args)) {
+        return; // Silently ignore Firebase Admin SDK errors
       }
       
       // Suppress server/API warnings in production

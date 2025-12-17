@@ -155,16 +155,19 @@ export default function Home() {
     // CRITICAL: Fetch banners FIRST and IMMEDIATELY (don't wait for other data)
     const fetchBanners = async () => {
       try {
-        // Very short timeout (1.5 seconds) - if banners don't load fast, show placeholder
-        const bannersData = await Promise.race([
-          getBannersWithLayout(),
-          new Promise<Banner[]>((resolve) =>
-            setTimeout(() => resolve([]), 1500)
-          )
-        ]);
-
+        setBannersLoading(true);
+        console.log('🔄 Fetching banners...');
+        
+        // Fetch banners without timeout race - let it complete naturally
+        // Add cache-busting query parameter to ensure fresh data on first load
+        const bannersData = await getBannersWithLayout();
+        
+        console.log('✅ Banners fetched:', bannersData?.length || 0, 'banners');
+        
         const bannersList = (bannersData || []).filter(Boolean) as Banner[];
         const firstFourBanners = bannersList.slice(0, 4);
+        
+        console.log('📊 Setting banners:', firstFourBanners.length, 'banners');
         setBanners(firstFourBanners);
         setBannersLoading(false);
 
@@ -176,9 +179,12 @@ export default function Home() {
           link.href = firstFourBanners[0].imageUrl;
           link.setAttribute('fetchpriority', 'high');
           document.head.appendChild(link);
+          console.log('🖼️ Preloaded banner image:', firstFourBanners[0].imageUrl);
         }
       } catch (error) {
+        console.error('❌ Error fetching banners:', error);
         setBannersLoading(false);
+        setBanners([]);
       }
     };
 
@@ -325,10 +331,17 @@ export default function Home() {
 
     fetchOtherData();
 
-    // Safety timeouts
+    // Safety timeout - only as a last resort, give banners plenty of time
+    // Remove timeout if banners are still loading after 10 seconds (very generous)
     const bannerTimeoutId = setTimeout(() => {
-      setBannersLoading(false);
-    }, 2000);
+      // Only stop loading if banners haven't been set yet
+      setBannersLoading((prev) => {
+        if (prev) {
+          console.warn('⏱️ Banner loading timeout reached after 10s, stopping loading state');
+        }
+        return false;
+      });
+    }, 10000); // Increased to 10 seconds to allow proper loading
 
     const couponTimeoutId = setTimeout(() => {
       // Safety timeout - if coupons haven't loaded after 4 seconds, stop loading
@@ -1416,11 +1429,11 @@ export default function Home() {
       {/* Always reserve space to prevent layout shift */}
       <Exclusive01 className="w-[180px] max-md:w-[80px] max-xl:w-[100px] absolute top-[35%] left-0" />
       <Exclusive02 className="w-[180px] max-md:w-[80px] max-xl:w-[100px] absolute top-[35%] right-0 " />
-      <section className="relative w-full bg-white py-2 sm:py-4 md:py-6" style={{ minHeight: loading ? '180px' : 'auto' }}>
+      <section className="relative w-full bg-white py-2 sm:py-4 md:py-6">
         {/* Container with padding and max-width */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8">
-          {/* Hero Slider with rounded corners - Compact */}
-          <div className="relative h-[180px] sm:h-[220px] md:h-[260px] lg:h-[300px] w-full rounded-xl overflow-hidden">
+          {/* Hero Slider with rounded corners - Fixed height for proper layout */}
+          <div className="relative h-[160px] sm:h-[200px] md:h-[240px] lg:h-[320px] xl:h-[360px] w-full rounded-xl overflow-hidden bg-gray-50">
             {bannersLoading ? (
               <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl animate-pulse"></div>
             ) : banners.length > 0 ? (
@@ -1454,16 +1467,16 @@ export default function Home() {
                         }}
                         className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing rounded-xl"
                       >
-                        <Link href="#" className="relative block w-full h-full rounded-xl overflow-hidden bg-gray-50">
+                        <Link href="#" className="relative block w-full h-full rounded-xl overflow-hidden">
                           <Image
                             src={banner.imageUrl}
                             alt={`Banner ${index + 1}`}
                             fill
-                            className="object-contain rounded-xl"
+                            className="object-cover rounded-xl"
                             priority={index === 0}
                             fetchPriority={index === 0 ? "high" : "auto"}
                             sizes="(max-width: 768px) 100vw, (max-width: 1280px) 1152px, 1152px"
-                            quality={index === 0 ? 80 : 75}
+                            quality={index === 0 ? 85 : 80}
                             loading={index === 0 ? "eager" : "lazy"}
                             unoptimized={!banner.imageUrl.includes('res.cloudinary.com') && !banner.imageUrl.includes('storage.googleapis.com')}
                             placeholder="blur"

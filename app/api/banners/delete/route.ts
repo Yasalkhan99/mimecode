@@ -1,11 +1,8 @@
 // Server-side banner delete route
-// Uses Firebase Firestore
+// Uses Supabase
 
-import { getAdminFirestore } from '@/lib/firebase-admin';
+import { supabaseAdmin } from '@/lib/supabase';
 import { clearBannersCache } from '../get/route';
-
-// Collection name for banners
-const BANNERS_COLLECTION = process.env.NEXT_PUBLIC_BANNERS_COLLECTION || 'banners-mimecode';
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -16,11 +13,36 @@ export async function POST(req: Request) {
   }
 
   try {
-    const db = getAdminFirestore();
+    // Check if Supabase Admin is available
+    if (!supabaseAdmin) {
+      console.error('❌ Supabase Admin not initialized');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Supabase Admin not initialized' 
+        }), 
+        { status: 500 }
+      );
+    }
 
-    await db.collection(BANNERS_COLLECTION).doc(id).delete();
+    // Delete banner from Supabase
+    const { error } = await supabaseAdmin
+      .from('banners')
+      .delete()
+      .eq('id', id);
 
-    console.log(`✅ Banner deleted successfully: ${id}`);
+    if (error) {
+      console.error('❌ Supabase delete banner error:', error);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: error.message || 'Failed to delete banner' 
+        }), 
+        { status: 500 }
+      );
+    }
+
+    console.log(`✅ Banner deleted successfully from Supabase: ${id}`);
 
     // Clear cache to remove deleted banner immediately
     clearBannersCache();
@@ -30,7 +52,7 @@ export async function POST(req: Request) {
       { status: 200 }
     );
   } catch (err: any) {
-    console.error('Firebase delete banner error:', err);
+    console.error('❌ Delete banner error:', err);
     return new Response(
       JSON.stringify({ 
         success: false, 
