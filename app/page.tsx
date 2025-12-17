@@ -673,8 +673,18 @@ export default function Home() {
       e.stopPropagation();
     }
 
-    // CRITICAL: Get raw URL immediately (no processing)
-    const rawUrl = coupon.url || coupon.affiliateLink || null;
+    // Get store for this coupon to access trackingLink/trackingUrl
+    const store = getStoreForCoupon(coupon);
+    
+    // CRITICAL: Prioritize store trackingLink, then trackingUrl, then coupon URL
+    let rawUrl = null;
+    if (store?.trackingLink && store.trackingLink.trim()) {
+      rawUrl = store.trackingLink.trim();
+    } else if (store?.trackingUrl && store.trackingUrl.trim()) {
+      rawUrl = store.trackingUrl.trim();
+    } else {
+      rawUrl = coupon.url || coupon.affiliateLink || null;
+    }
 
     // CRITICAL: Different behavior for CODE vs DEAL
     if (coupon.couponType === 'code' && coupon.code) {

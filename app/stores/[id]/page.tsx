@@ -328,8 +328,15 @@ export default function StoreDetailPage() {
       const codeToCopy = coupon.code.trim();
       copyToClipboard(codeToCopy);
       
-      // Get redirect URL
-      const redirectUrl = (coupon.url && coupon.url.trim()) || (coupon.affiliateLink && coupon.affiliateLink.trim());
+      // Get redirect URL - prioritize store trackingLink, then trackingUrl, then coupon URL
+      let redirectUrl = null;
+      if (store?.trackingLink && store.trackingLink.trim()) {
+        redirectUrl = store.trackingLink.trim();
+      } else if (store?.trackingUrl && store.trackingUrl.trim()) {
+        redirectUrl = store.trackingUrl.trim();
+      } else {
+        redirectUrl = (coupon.url && coupon.url.trim()) || (coupon.affiliateLink && coupon.affiliateLink.trim()) || null;
+      }
       
       if (redirectUrl) {
         // Open popup in NEW tab (with current store page URL + coupon info in query params)
@@ -351,7 +358,15 @@ export default function StoreDetailPage() {
     setShowPopup(true);
     
     // Automatically open URL in new tab after a short delay (to ensure popup is visible first)
-    const redirectUrl = (coupon.url && coupon.url.trim()) || (coupon.affiliateLink && coupon.affiliateLink.trim());
+    // Prioritize store trackingLink, then trackingUrl, then coupon URL
+    let redirectUrl = null;
+    if (store?.trackingLink && store.trackingLink.trim()) {
+      redirectUrl = store.trackingLink.trim();
+    } else if (store?.trackingUrl && store.trackingUrl.trim()) {
+      redirectUrl = store.trackingUrl.trim();
+    } else {
+      redirectUrl = (coupon.url && coupon.url.trim()) || (coupon.affiliateLink && coupon.affiliateLink.trim()) || null;
+    }
     if (redirectUrl) {
       setTimeout(() => {
         window.open(redirectUrl, '_blank', 'noopener,noreferrer');
@@ -360,8 +375,15 @@ export default function StoreDetailPage() {
   };
 
   const handleContinue = () => {
-    // Use url first, then affiliateLink as fallback
-    const redirectUrl = selectedCoupon?.url || selectedCoupon?.affiliateLink;
+    // Prioritize store trackingLink, then trackingUrl, then coupon URL
+    let redirectUrl = null;
+    if (store?.trackingLink && store.trackingLink.trim()) {
+      redirectUrl = store.trackingLink.trim();
+    } else if (store?.trackingUrl && store.trackingUrl.trim()) {
+      redirectUrl = store.trackingUrl.trim();
+    } else {
+      redirectUrl = selectedCoupon?.url || selectedCoupon?.affiliateLink || null;
+    }
     if (redirectUrl) {
       window.open(redirectUrl, '_blank', 'noopener,noreferrer');
     }

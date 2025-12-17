@@ -197,10 +197,17 @@ function CouponsContent() {
     
     // Get store for this coupon
     const store = getStoreForCoupon(coupon);
-    const storeTrackingUrl = store?.websiteUrl || (store as any)?.['Tracking Url'] || (store as any)?.['Store Display Url'] || null;
     
-    // Get URL to open
-    let urlToOpen = storeTrackingUrl || coupon.url || coupon.affiliateLink || null;
+    // Get URL to open - prioritize store trackingLink, then trackingUrl, then other URLs
+    let urlToOpen = null;
+    if (store?.trackingLink && store.trackingLink.trim()) {
+      urlToOpen = store.trackingLink.trim();
+    } else if (store?.trackingUrl && store.trackingUrl.trim()) {
+      urlToOpen = store.trackingUrl.trim();
+    } else {
+      const storeTrackingUrl = store?.websiteUrl || (store as any)?.['Tracking Url'] || (store as any)?.['Store Display Url'] || null;
+      urlToOpen = storeTrackingUrl || coupon.url || coupon.affiliateLink || null;
+    }
     if (urlToOpen && !urlToOpen.startsWith('http')) {
       urlToOpen = `https://${urlToOpen}`;
     }
@@ -215,9 +222,10 @@ function CouponsContent() {
     // Get the correct logo URL - SAME LOGIC as card display
     let correctLogoUrl: string | null = null;
     
-    // Priority 1: Store tracking URL favicon
-    if (storeTrackingUrl) {
-      const domain = extractDomainForLogo(storeTrackingUrl);
+    // Priority 1: Store tracking Link/Tracking URL favicon (use same priority as urlToOpen)
+    const storeTrackingUrlForLogo = store?.trackingLink || store?.trackingUrl || store?.websiteUrl || (store as any)?.['Tracking Url'] || (store as any)?.['Store Display Url'] || null;
+    if (storeTrackingUrlForLogo) {
+      const domain = extractDomainForLogo(storeTrackingUrlForLogo);
       if (domain) {
         correctLogoUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
       }
