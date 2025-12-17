@@ -745,24 +745,19 @@ export default function EditStorePage() {
             <label htmlFor="networkId" className="block text-sm font-semibold text-gray-700 mb-1">
               Network ID (Region)
             </label>
-            <select
+            <input
               id="networkId"
               name="networkId"
+              type="number"
               value={formData.networkId || ''}
               onChange={(e) =>
                 setFormData({ ...formData, networkId: e.target.value || undefined })
               }
+              placeholder="Enter numeric Network ID (e.g., 1, 2, 100)"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-            >
-              <option value="">No Network ID</option>
-              {regions.map((region) => (
-                <option key={region.id} value={region.networkId}>
-                  {region.name} ({region.networkId})
-                </option>
-              ))}
-            </select>
+            />
             <p className="mt-1 text-xs text-gray-500">
-              Select the region/network ID for this store. <a href="/admin/regions" target="_blank" className="text-blue-600 hover:underline">Manage regions</a>
+              Enter the numeric Network ID for this store. <a href="/admin/regions" target="_blank" className="text-blue-600 hover:underline">Manage regions</a>
             </p>
           </div>
 

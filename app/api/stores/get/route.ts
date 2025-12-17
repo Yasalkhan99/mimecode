@@ -125,8 +125,14 @@ const convertToAPIFormat = (row: any) => {
   const uuidId = row.id || null;
   
   const rawLogo = row['Store Logo'] || row.logo_url || '';
-  // Try Tracking Url first (most reliable), then Store Display Url, then website_url
-  const rawWebsiteUrl = row['Tracking Url'] || row['Store Display Url'] || row.website_url || '';
+  // Get Tracking Url separately
+  const trackingUrl = row['Tracking Url'] || '';
+  // Get Tracking Link separately
+  const trackingLink = row['Tracking Link'] || '';
+  // Get website URL separately (prefer Store Display Url, then website_url)
+  const websiteUrl = row['Store Display Url'] || row.website_url || '';
+  // Use trackingUrl for logo extraction if available, otherwise use websiteUrl
+  const rawWebsiteUrl = trackingUrl || websiteUrl;
   
   // Determine logo URL strategy:
   // 1. If logo is a full URL (http/https/cloudinary), use it directly
@@ -161,10 +167,12 @@ const convertToAPIFormat = (row: any) => {
     id: uuidId || storeIdValue, // Use UUID if exists, otherwise use Store Id
     name: row['Store Name'] || row.name || '',
     slug: row.Slug || row.slug || '',
-    networkId: row['Network Id'] || row.network_id || '',
+    networkId: (row['Network ID'] || row['Network Id'] || row.network_id || '').toString().trim(),
     logoUrl: logoUrl, // Logo URL with smart fallback to website favicon
     description: row.description || row['Store Description'] || row['Store Summary'] || '',
-    websiteUrl: rawWebsiteUrl,
+    websiteUrl: websiteUrl,
+    trackingUrl: trackingUrl || null, // Separate tracking URL
+    trackingLink: trackingLink || null, // Separate tracking Link
     // Expose both normalized mainCategoryId and backward-compatible categoryId
     mainCategoryId,
     categoryId: mainCategoryId,
@@ -308,7 +316,7 @@ export async function GET(req: NextRequest) {
 
     // Get store(s) by network ID
     if (networkId) {
-      const { data, error } = await query.eq('Network Id', networkId);
+      const { data, error } = await query.eq('Network ID', networkId);
       if (error) throw error;
       
       let convertedStores = (data || []).map(convertToAPIFormat);

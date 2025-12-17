@@ -18,6 +18,8 @@ export interface Store {
   userId?: string; // User ID of the store owner (for user-created stores)
   // Detailed Store Info fields
   websiteUrl?: string; // Store's official website URL
+  trackingUrl?: string; // Tracking/affiliate URL for the store
+  trackingLink?: string; // Tracking Link for the store (separate from Tracking Url)
   aboutText?: string; // Detailed about section for Store Info tab
   features?: string[]; // List of store features (e.g., ["Free Shipping", "24/7 Support"])
   shippingInfo?: string; // Shipping information
@@ -381,6 +383,40 @@ export async function deleteStore(id: string) {
     return { success: true };
   } catch (error) {
     console.error('Error deleting store:', error);
+    return { success: false, error };
+  }
+}
+
+// Delete all stores
+export async function deleteAllStores() {
+  try {
+    // Use server-side API route to delete all stores (bypasses security rules)
+    const res = await fetch('/api/stores/delete-all', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    let json: any = {};
+    let resText = '';
+    try {
+      resText = await res.text();
+      try {
+        json = JSON.parse(resText || '{}');
+      } catch (e) {
+        json = { text: resText };
+      }
+    } catch (e) {
+      console.error('Failed to read server response body', e);
+    }
+
+    if (!res.ok) {
+      console.error('Server delete all failed', { status: res.status, body: json });
+      return { success: false, error: json.error || json.text || 'Failed to delete all stores' };
+    }
+
+    return { success: true, deletedCount: json.deletedCount || 0 };
+  } catch (error) {
+    console.error('Error deleting all stores:', error);
     return { success: false, error };
   }
 }

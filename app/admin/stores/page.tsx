@@ -106,7 +106,7 @@ export default function StoresPage() {
       'Slug',
       'Description',
       'Logo URL',
-      'Website URL',
+      'Tracking Link',
       'Voucher Text',
       'Network ID',
       'Affiliate Fallback URL',
@@ -142,7 +142,7 @@ export default function StoresPage() {
         escapeCsv(store.slug),
         escapeCsv(store.description),
         escapeCsv(store.logoUrl),
-        escapeCsv(store.websiteUrl),
+        escapeCsv(store.trackingLink || store.trackingUrl || ''),
         escapeCsv(store.voucherText),
         escapeCsv(store.networkId),
         escapeCsv((store as any).affiliateFallbackUrl || (store as any).affiliateFallbackURL),
@@ -1081,24 +1081,19 @@ export default function StoresPage() {
               <label htmlFor="networkId" className="block text-gray-700 text-sm font-semibold mb-2">
                 Network ID (Region)
               </label>
-              <select
+              <input
                 id="networkId"
                 name="networkId"
+                type="number"
                 value={formData.networkId || ''}
                 onChange={(e) =>
                   setFormData({ ...formData, networkId: e.target.value || undefined })
                 }
+                placeholder="Enter numeric Network ID (e.g., 1, 2, 100)"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-              >
-                <option value="">No Network ID</option>
-                {regions.map((region) => (
-                  <option key={region.id} value={region.networkId}>
-                    {region.name} ({region.networkId})
-                  </option>
-                ))}
-              </select>
+              />
               <p className="mt-1 text-xs text-gray-500">
-                Select the region/network ID for this store. <Link href="/admin/regions" className="text-blue-600 hover:underline">Manage regions</Link>
+                Enter the numeric Network ID for this store. <Link href="/admin/regions" className="text-blue-600 hover:underline">Manage regions</Link>
               </p>
             </div>
 
@@ -1392,6 +1387,9 @@ export default function StoresPage() {
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-28">
                     Network ID
                   </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-48">
+                    Tracking Link
+                  </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-40">
                     Actions
                   </th>
@@ -1438,6 +1436,30 @@ export default function StoresPage() {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-800 font-mono text-center">
                       {store.networkId || '-'}
+                    </td>
+                    <td className="px-6 py-4">
+                      {(() => {
+                        // Use trackingLink if available, otherwise fallback to trackingUrl
+                        const linkToShow = store.trackingLink && store.trackingLink.trim() 
+                          ? store.trackingLink 
+                          : (store.trackingUrl && store.trackingUrl.trim() ? store.trackingUrl : null);
+                        
+                        return linkToShow ? (
+                          <a
+                            href={linkToShow}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 hover:underline truncate block text-sm max-w-xs"
+                            title={linkToShow}
+                          >
+                            {linkToShow.length > 40 
+                              ? `${linkToShow.substring(0, 40)}...` 
+                              : linkToShow}
+                          </a>
+                        ) : (
+                          <span className="text-gray-400 text-sm" title="No tracking link available">-</span>
+                        );
+                      })()}
                     </td>
                     <td className="px-6 py-4 space-x-2">
                       <Link

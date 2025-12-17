@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { createStore, updateStore } from '@/lib/services/storeService';
+import { createStore, updateStore, deleteAllStores, Store } from '@/lib/services/storeService';
 import { createCouponFromUrl, updateCoupon } from '@/lib/services/couponService';
 import { Timestamp } from 'firebase/firestore';
 import Link from 'next/link';
@@ -12,6 +12,12 @@ interface ExcelStore {
   'Description'?: string;
   'Logo URL'?: string;
   'Website URL'?: string;
+  'Tracking URL'?: string;
+  'Tracking Link'?: string;
+  'Network ID'?: string;
+  'Network Id'?: string;
+  'networkId'?: string;
+  'network_id'?: string;
   'Voucher Text'?: string;
   'Category ID'?: string;
   'Slug'?: string;
@@ -52,6 +58,7 @@ export default function ImportPage() {
   const [previewData, setPreviewData] = useState<any[]>([]);
   const [excelData, setExcelData] = useState<any[]>([]);
   const [showPreview, setShowPreview] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -119,6 +126,43 @@ export default function ImportPage() {
               row['Store URL'] ?? row['Store Url'] ?? row['storeUrl'] ?? 
               row['Website URL'] ?? row['Website Url'] ?? row['websiteUrl'] ?? row.websiteUrl ?? '';
 
+            // Get Tracking URL from Excel (add this section)
+            // Check if Tracking URL column exists in the row (even if empty)
+            const hasTrackingUrlColumn = 'Tracking URL' in row || 'Tracking Url' in row || 'trackingUrl' in row || 'tracking_url' in row;
+            const trackingUrlRaw = hasTrackingUrlColumn 
+              ? (row['Tracking URL'] ?? row['Tracking Url'] ?? row['trackingUrl'] ?? row.trackingUrl ?? row['tracking_url'] ?? '')
+              : undefined;
+            // Convert to string and trim, or keep as undefined if column doesn't exist
+            const trackingUrl = trackingUrlRaw !== undefined && trackingUrlRaw !== null 
+              ? String(trackingUrlRaw).trim() 
+              : undefined;
+            
+            // Log tracking URL for debugging
+            if (trackingUrl) {
+              console.log(`🔗 Store "${storeName}" has Tracking URL: ${trackingUrl}`);
+            } else if (hasTrackingUrlColumn) {
+              console.log(`⚠️ Store "${storeName}" has Tracking URL column but value is empty`);
+            }
+            
+            // Get Tracking Link from Excel
+            const hasTrackingLinkColumn = 'Tracking Link' in row || 'trackingLink' in row || 'tracking_link' in row;
+            const trackingLinkRaw = hasTrackingLinkColumn 
+              ? (row['Tracking Link'] ?? row['trackingLink'] ?? row['tracking_link'] ?? '')
+              : undefined;
+            // Convert to string and trim, or keep as undefined if column doesn't exist
+            const trackingLink = trackingLinkRaw !== undefined && trackingLinkRaw !== null 
+              ? String(trackingLinkRaw).trim() 
+              : undefined;
+            
+            // Log tracking Link for debugging
+            if (trackingLink) {
+              console.log(`🔗 Store "${storeName}" has Tracking Link: ${trackingLink}`);
+            } else if (hasTrackingLinkColumn) {
+              console.log(`⚠️ Store "${storeName}" has Tracking Link column but value is empty`);
+            }
+
+            const websiteUrl = storeUrl;
+
             // Helper function to extract logo from a URL
             const extractLogoFromUrl = async (url: string): Promise<string | null> => {
               if (!url || url.trim() === '') return null;
@@ -177,8 +221,6 @@ export default function ImportPage() {
               logoUrl = defaultLogoUrl;
             }
 
-            const websiteUrl = storeUrl;
-
             const voucherText =
               row['Voucher Text'] ?? row['voucherText'] ?? row.voucherText ?? '';
 
@@ -188,18 +230,35 @@ export default function ImportPage() {
             const slug =
               row['Slug'] ?? row.slug ?? storeName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
-            const merchantId =
+            const merchantIdRaw =
               row['Merchant ID'] ?? row['Merchant Id'] ?? row.merchantId ?? '';
+            // Convert to string and trim
+            const merchantId = merchantIdRaw ? String(merchantIdRaw).trim() : '';
 
-            const networkId =
-              row['Network ID'] ?? row['Network Id'] ?? row.networkId ?? '';
+            // Get Network ID from Excel - try multiple column name variations
+            const networkIdRaw = row['Network ID'] ?? row['Network Id'] ?? row['network ID'] ?? row.networkId ?? row['network_id'] ?? '';
+            let networkId: string | undefined = undefined;
+            // Check if Network ID column exists in the row (even if empty)
+            const hasNetworkIdColumn = 'Network ID' in row || 'Network Id' in row || 'network ID' in row || 'networkId' in row || 'network_id' in row;
+            
+            if (networkIdRaw !== null && networkIdRaw !== undefined && networkIdRaw !== '') {
+              networkId = String(networkIdRaw).trim();
+              // Log for debugging
+              console.log(`📊 Store "${storeName}" has Network ID: ${networkId} (raw: ${networkIdRaw})`);
+            } else if (hasNetworkIdColumn) {
+              // Column exists but value is empty - set to undefined so we know it was provided
+              networkId = undefined;
+              console.log(`⚠️ Store "${storeName}" has Network ID column but value is empty`);
+            }
 
             // Common store payload from Excel row
-            const storePayload = {
+            const storePayload: any = {
               name: storeName.trim(),
               description,
               logoUrl,
               websiteUrl,
+              trackingUrl: trackingUrl !== undefined ? (trackingUrl || null) : undefined,
+              trackingLink: trackingLink !== undefined ? (trackingLink || null) : undefined,
               voucherText,
               categoryId,
               slug,
@@ -210,18 +269,131 @@ export default function ImportPage() {
               isTrending: false,
               layoutPosition: null,
               merchantId,
-              networkId,
+            };
+            // Only add networkId if it has a value
+            if (networkId) {
+              storePayload.networkId = networkId;
+              console.log(`✅ Adding Network ID "${networkId}" to store payload for "${storeName}"`);
+            }
+
+            // Helper function to find existing store by name, slug, or merchant ID
+            const findExistingStore = async (): Promise<string | null> => {
+              try {
+                // Try to find by slug first
+                if (slug) {
+                  const res = await fetch(`/api/stores/get?slug=${encodeURIComponent(slug)}`);
+                  if (res.ok) {
+                    const data = await res.json();
+                    if (data.success && data.store && data.store.id) {
+                      console.log(`🔍 Found existing store by slug: ${slug} (ID: ${data.store.id})`);
+                      return data.store.id;
+                    }
+                  }
+                }
+
+                // Try to find by merchant ID if available
+                if (merchantId) {
+                  const allStoresRes = await fetch('/api/stores/get');
+                  if (allStoresRes.ok) {
+                    const allStoresData = await allStoresRes.json();
+                    if (allStoresData.success && allStoresData.stores) {
+                      const foundStore = allStoresData.stores.find((s: Store) => 
+                        s.merchantId === merchantId || 
+                        (s.name && s.name.toLowerCase().trim() === storeName.toLowerCase().trim())
+                      );
+                      if (foundStore && foundStore.id) {
+                        console.log(`🔍 Found existing store by merchant ID or name: ${merchantId || storeName} (ID: ${foundStore.id})`);
+                        return foundStore.id;
+                      }
+                    }
+                  }
+                }
+
+                // Try to find by exact name match
+                const allStoresRes = await fetch('/api/stores/get');
+                if (allStoresRes.ok) {
+                  const allStoresData = await allStoresRes.json();
+                  if (allStoresData.success && allStoresData.stores) {
+                    const foundStore = allStoresData.stores.find((s: Store) => 
+                      s.name && s.name.toLowerCase().trim() === storeName.toLowerCase().trim()
+                    );
+                    if (foundStore && foundStore.id) {
+                      console.log(`🔍 Found existing store by name: ${storeName} (ID: ${foundStore.id})`);
+                      return foundStore.id;
+                    }
+                  }
+                }
+              } catch (error) {
+                console.warn('Error finding existing store:', error);
+              }
+              return null;
             };
 
+            let existingStoreId: string | null = null;
+
             if (storeId) {
-              // Update existing store by Store ID
-              const result = await updateStore(storeId, storePayload);
-              if (!result.success) {
-                throw new Error(result.error || 'Failed to update store');
+              // If Store ID is provided, use it directly
+              existingStoreId = storeId;
+              console.log(`📝 Updating store by Store ID: ${storeId}`);
+            } else {
+              // Try to find existing store by name, slug, or merchant ID
+              existingStoreId = await findExistingStore();
+            }
+
+            if (existingStoreId) {
+              // Update existing store - update fields that are provided in Excel
+              // This will add missing fields like trackingUrl and networkId
+              const updatePayload: any = {};
+              
+              // Always update trackingUrl if provided in Excel (even if empty string, to add missing field)
+              if (trackingUrl !== undefined) {
+                updatePayload.trackingUrl = trackingUrl && trackingUrl.trim() ? trackingUrl.trim() : null;
+                console.log(`📝 Adding trackingUrl to update: "${trackingUrl}" for store "${storeName}"`);
+              }
+              
+              // Always update trackingLink if provided in Excel
+              if (trackingLink !== undefined) {
+                updatePayload.trackingLink = trackingLink && trackingLink.trim() ? trackingLink.trim() : null;
+                console.log(`📝 Adding trackingLink to update: "${trackingLink}" for store "${storeName}"`);
+              }
+              
+              // Always update networkId if provided in Excel (even if empty, to ensure field exists)
+              // Check if Network ID column exists in Excel row
+              const hasNetworkIdColumn = 'Network ID' in row || 'Network Id' in row || 'network ID' in row || 'networkId' in row || 'network_id' in row;
+              if (hasNetworkIdColumn) {
+                if (networkId !== undefined && networkId !== null && networkId.trim()) {
+                  updatePayload.networkId = networkId.trim();
+                  console.log(`📝 Adding Network ID to update: "${networkId}" for store "${storeName}"`);
+                } else {
+                  // Column exists but value is empty - set to null to clear the field
+                  updatePayload.networkId = null;
+                  console.log(`📝 Clearing Network ID (setting to null) for store "${storeName}"`);
+                }
+              }
+              
+              // Update other fields if provided
+              if (websiteUrl && websiteUrl.trim()) updatePayload.websiteUrl = websiteUrl.trim();
+              if (description && description.trim()) updatePayload.description = description;
+              if (logoUrl && logoUrl.trim()) updatePayload.logoUrl = logoUrl;
+              if (voucherText && voucherText.trim()) updatePayload.voucherText = voucherText;
+              if (categoryId) updatePayload.categoryId = categoryId;
+              if (merchantId) updatePayload.merchantId = merchantId;
+              
+              // Only update if there are fields to update
+              if (Object.keys(updatePayload).length > 0) {
+                console.log(`🔄 Updating store "${storeName}" with fields:`, Object.keys(updatePayload));
+                const result = await updateStore(existingStoreId, updatePayload);
+                if (!result.success) {
+                  throw new Error(result.error || 'Failed to update store');
+                }
+                console.log(`✅ Updated existing store: ${storeName} (ID: ${existingStoreId})`);
+              } else {
+                console.log(`ℹ️ No updates needed for store: ${storeName}`);
               }
             } else {
-              // Create new store when no Store ID is provided
+              // Create new store when no existing store is found
               await createStore(storePayload);
+              console.log(`✅ Created new store: ${storeName}`);
             }
 
             successCount++;
@@ -391,7 +563,10 @@ export default function ImportPage() {
           <h2 className="text-xl font-bold text-gray-900 mb-4">Step 1: Select Import Type</h2>
           <div className="flex gap-4">
             <button
-              onClick={() => {
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 setImportType('stores');
                 resetForm();
               }}
@@ -404,7 +579,10 @@ export default function ImportPage() {
               🏪 Stores
             </button>
             <button
-              onClick={() => {
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 setImportType('coupons');
                 resetForm();
               }}
@@ -418,6 +596,67 @@ export default function ImportPage() {
             </button>
           </div>
         </div>
+
+        {/* Delete All Stores Button - Only show for stores import */}
+        {importType === 'stores' && (
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6 border-l-4 border-red-500">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">⚠️ Delete All Stores</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              This will permanently delete all stores from the database. This action cannot be undone.
+            </p>
+            <button
+              onClick={async () => {
+                // First confirmation
+                const firstConfirm = confirm(
+                  `⚠️ WARNING: This will delete ALL stores!\n\nAre you sure you want to continue?`
+                );
+
+                if (!firstConfirm) return;
+
+                // Second confirmation (double check for safety)
+                const secondConfirm = confirm(
+                  `🚨 FINAL WARNING: You are about to DELETE ALL STORES!\n\nThis action CANNOT be undone!\n\nType OK in the next prompt to confirm.`
+                );
+
+                if (!secondConfirm) return;
+
+                // Third confirmation with text input simulation
+                const finalText = prompt(
+                  `Type "DELETE ALL" (without quotes) to confirm deletion of all stores:`
+                );
+
+                if (finalText !== 'DELETE ALL') {
+                  alert('Deletion cancelled. You must type "DELETE ALL" exactly to confirm.');
+                  return;
+                }
+
+                try {
+                  setDeletingAll(true);
+                  const result = await deleteAllStores();
+                  
+                  if (result.success) {
+                    alert(`✅ Successfully deleted ${result.deletedCount || 0} stores!`);
+                    setResult(null);
+                    setFile(null);
+                    setExcelData([]);
+                    setPreviewData([]);
+                    setShowPreview(false);
+                  } else {
+                    alert(`❌ Failed to delete all stores: ${result.error || 'Unknown error'}`);
+                  }
+                } catch (error: any) {
+                  alert(`❌ Failed to delete all stores: ${error.message || 'Unknown error'}`);
+                } finally {
+                  setDeletingAll(false);
+                }
+              }}
+              disabled={deletingAll}
+              className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {deletingAll ? 'Deleting...' : '🗑️ Delete All Stores'}
+            </button>
+          </div>
+        )}
 
         {/* File Upload */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">

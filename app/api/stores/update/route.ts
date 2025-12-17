@@ -33,11 +33,42 @@ export async function POST(req: NextRequest) {
     if (updates.description !== undefined) supabaseUpdates['description'] = updates.description;
     if (updates.logoUrl !== undefined) supabaseUpdates['Store Logo'] = updates.logoUrl;
     if (updates.websiteUrl !== undefined) {
-      supabaseUpdates['Tracking Url'] = updates.websiteUrl;
-      supabaseUpdates['Store Display Url'] = updates.websiteUrl;
       supabaseUpdates['website_url'] = updates.websiteUrl;
+      supabaseUpdates['Store Display Url'] = updates.websiteUrl;
     }
-    if (updates.networkId !== undefined) supabaseUpdates['Network Id'] = updates.networkId;
+    // Update tracking URL separately if provided (only if explicitly provided)
+    if (updates.trackingUrl !== undefined) {
+      if (updates.trackingUrl && updates.trackingUrl.trim()) {
+        supabaseUpdates['Tracking Url'] = updates.trackingUrl.trim();
+      } else {
+        // If trackingUrl is explicitly set to empty/null, clear it
+        supabaseUpdates['Tracking Url'] = null;
+      }
+    }
+    // Update tracking Link separately if provided
+    if (updates.trackingLink !== undefined) {
+      if (updates.trackingLink && updates.trackingLink.trim()) {
+        supabaseUpdates['Tracking Link'] = updates.trackingLink.trim();
+      } else {
+        // If trackingLink is explicitly set to empty/null, clear it
+        supabaseUpdates['Tracking Link'] = null;
+      }
+    }
+    // Update Network ID if provided (even if null, to clear the field)
+    // Use exact column name "Network ID" (with capital ID) as in Supabase
+    if (updates.networkId !== undefined) {
+      if (updates.networkId !== null && updates.networkId !== '') {
+        const networkIdStr = String(updates.networkId).trim();
+        if (networkIdStr && networkIdStr !== 'null' && networkIdStr !== 'undefined') {
+          supabaseUpdates['Network ID'] = networkIdStr;
+          console.log(`💾 Updating Network ID: "${networkIdStr}" for store ID: ${id}`);
+        }
+      } else {
+        // If explicitly set to null or empty, clear the field
+        supabaseUpdates['Network ID'] = null;
+        console.log(`💾 Clearing Network ID (setting to null) for store ID: ${id}`);
+      }
+    }
     if (updates.categoryId !== undefined) supabaseUpdates['Parent Category Id'] = updates.categoryId;
     if (updates.aboutText !== undefined) supabaseUpdates['about_text'] = updates.aboutText;
     if (updates.features !== undefined) supabaseUpdates['features'] = updates.features;

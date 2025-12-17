@@ -93,6 +93,66 @@ export default function StoreDetailPage() {
     }
   }, [store]);
 
+  // CRITICAL: Handle popup from query parameters (for code type coupons opened in new tab)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const popup = urlParams.get('popup');
+    const couponId = urlParams.get('id');
+    const code = urlParams.get('code');
+    const storeName = urlParams.get('store');
+
+    // If popup query param exists and it's for a coupon
+    if (popup === 'coupon' && couponId && code) {
+      // Create a temporary coupon object for the popup
+      // Title will be updated when full coupon is fetched
+      const tempCoupon: Coupon = {
+        id: couponId,
+        code: decodeURIComponent(code),
+        storeName: decodeURIComponent(storeName || ''),
+        title: '', // Will be set from fetched coupon
+        description: 'Code copied to clipboard!',
+        couponType: 'code',
+        discount: 0,
+        discountType: 'percentage',
+        url: '',
+        logoUrl: '',
+        isActive: true,
+        maxUses: 1,
+        currentUses: 0,
+        expiryDate: null,
+        dealScope: 'sitewide',
+      };
+
+      // Show popup with temporary coupon data
+      setSelectedCoupon(tempCoupon);
+      setShowPopup(true);
+
+      // Try to fetch full coupon details in background
+      setTimeout(async () => {
+        try {
+          const response = await fetch(`/api/coupons/get?id=${encodeURIComponent(couponId)}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.coupon) {
+              // Use actual coupon title from the fetched coupon
+              setSelectedCoupon(data.coupon);
+            }
+          }
+        } catch (error) {
+          console.warn('Failed to fetch full coupon details for popup:', error);
+        }
+      }, 100);
+
+      // Clean up URL (remove query params) after a brief delay
+      setTimeout(() => {
+        const cleanUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+      }, 500);
+    }
+  }, []);
+
   useEffect(() => {
     const fetchStoreData = async () => {
       setLoading(true);
@@ -272,9 +332,9 @@ export default function StoreDetailPage() {
       const redirectUrl = (coupon.url && coupon.url.trim()) || (coupon.affiliateLink && coupon.affiliateLink.trim());
       
       if (redirectUrl) {
-        // Open popup in NEW tab (with site URL + coupon info in query params)
-        const siteUrl = window.location.origin;
-        const popupUrl = `${siteUrl}/?popup=coupon&id=${encodeURIComponent(coupon.id || '')}&code=${encodeURIComponent(coupon.code || '')}&store=${encodeURIComponent(coupon.storeName || store?.name || '')}`;
+        // Open popup in NEW tab (with current store page URL + coupon info in query params)
+        const currentStoreUrl = window.location.href.split('?')[0]; // Get current URL without query params
+        const popupUrl = `${currentStoreUrl}?popup=coupon&id=${encodeURIComponent(coupon.id || '')}&code=${encodeURIComponent(coupon.code || '')}&store=${encodeURIComponent(coupon.storeName || store?.name || '')}`;
         window.open(popupUrl, '_blank', 'noopener,noreferrer');
         
         // Redirect current tab to coupon link after brief delay (to ensure popup opens first)
@@ -438,10 +498,10 @@ export default function StoreDetailPage() {
           {/* Store Info */}
           <div className="flex-1">
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-              Verified {store.subStoreName || store.name} Coupons & Promo Codes
+              {t('verified')} {store.subStoreName || store.name} {t('couponsAndPromoCodes')}
             </h1>
             <p className="text-sm sm:text-base text-gray-600 mb-1">
-              Trusted Partner since {getTrustedPartnerYear()}
+              {t('trustedPartnerSince')} {getTrustedPartnerYear()}
             </p>
             <p className="text-sm sm:text-base text-gray-600">
               {coupons.length} Coupons Validated by Our Experts on {getCurrentDate()}
@@ -510,9 +570,9 @@ export default function StoreDetailPage() {
               )}
 
               {/* Visit Store Button */}
-              {store.websiteUrl && (
+              {(store.trackingLink || store.trackingUrl || store.websiteUrl) && (
                 <a
-                  href={store.websiteUrl}
+                  href={store.trackingLink || store.trackingUrl || store.websiteUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block w-full bg-[#FFE019] hover:bg-black text-black hover:text-[#FFE019] border-2 border-black font-bold text-center py-3 px-4 rounded-lg transition-all duration-300"
@@ -523,42 +583,52 @@ export default function StoreDetailPage() {
 
               {/* Rating Section - Dynamic */}
               <div className="text-center">
-                <div className="flex items-center justify-center gap-1 mb-1">
-                  {[...Array(5)].map((_, i) => {
-                    const rating = store.rating || 4.5;
-                    const isFilled = i < Math.floor(rating);
-                    const isHalfFilled = i === Math.floor(rating) && rating % 1 >= 0.5;
-                    
-                    return (
-                      <div key={i} className="relative">
-                        {isFilled ? (
-                          // Filled star
-                          <svg className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                        ) : isHalfFilled ? (
-                          // Half-filled star
-                          <div className="relative">
-                            <svg className="w-5 h-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                            </svg>
-                            <svg className="w-5 h-5 text-yellow-400 absolute top-0 left-0" fill="currentColor" viewBox="0 0 20 20" style={{ clipPath: 'inset(0 50% 0 0)' }}>
-                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                            </svg>
-                          </div>
-                        ) : (
-                          // Empty star
-                          <svg className="w-5 h-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                        )}
+                {(() => {
+                  // Generate random rating and reviews if reviewCount is 0 or not available
+                  const generatedRating = getStoreRating(store.id);
+                  const displayRating = store.rating || generatedRating.rating;
+                  const displayReviews = (store.reviewCount && store.reviewCount > 0) ? store.reviewCount : generatedRating.reviews;
+                  
+                  return (
+                    <>
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        {[...Array(5)].map((_, i) => {
+                          const isFilled = i < Math.floor(displayRating);
+                          const isHalfFilled = i === Math.floor(displayRating) && displayRating % 1 >= 0.5;
+                          
+                          return (
+                            <div key={i} className="relative">
+                              {isFilled ? (
+                                // Filled star
+                                <svg className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                              ) : isHalfFilled ? (
+                                // Half-filled star
+                                <div className="relative">
+                                  <svg className="w-5 h-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                  </svg>
+                                  <svg className="w-5 h-5 text-yellow-400 absolute top-0 left-0" fill="currentColor" viewBox="0 0 20 20" style={{ clipPath: 'inset(0 50% 0 0)' }}>
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                  </svg>
+                                </div>
+                              ) : (
+                                // Empty star
+                                <svg className="w-5 h-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
-                </div>
-                <p className="text-sm text-gray-600">
-                  {store.reviewCount || 0} review{(store.reviewCount || 0) !== 1 ? 's' : ''}
-                </p>
+                      <p className="text-sm text-gray-600">
+                        {displayReviews} review{displayReviews !== 1 ? 's' : ''}
+                      </p>
+                    </>
+                  );
+                })()}
               </div>
 
               {/* User Feedback Box */}
@@ -589,7 +659,7 @@ export default function StoreDetailPage() {
                 <p className="text-sm font-semibold text-gray-900 mb-2">
                   Get latest {store.name} Coupons and Deals here!
                 </p>
-                <p className="text-xs text-gray-600 mb-3">Verified and updated</p>
+                <p className="text-xs text-gray-600 mb-3">{t('verifiedAndUpdated')}</p>
                 <div className="space-y-2">
                   <p className="text-sm text-gray-700">
                     Active Coupons: <span className="font-bold">{codeCoupons.length}</span>
@@ -752,7 +822,7 @@ export default function StoreDetailPage() {
                   return coupon.buttonText;
                 }
                 if ((coupon.couponType || 'deal') === 'code' && coupon.code) {
-                  return 'Get Code';
+                  return t('getCode');
                 }
                 return t('getDeal');
               };
@@ -836,8 +906,8 @@ export default function StoreDetailPage() {
                           if (coupon.title) return stripHtml(coupon.title);
                           if (coupon.discount && coupon.discount > 0) {
                             return coupon.discountType === 'percentage' 
-                              ? `${coupon.discount}% Off`
-                              : `$${coupon.discount} Off`;
+                              ? `${coupon.discount}% ${t('off')}`
+                              : `$${coupon.discount} ${t('off')}`;
                           }
                           return coupon.code || coupon.storeName || store?.name || 'Coupon';
                         })()}
@@ -862,7 +932,7 @@ export default function StoreDetailPage() {
                           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          <span className="text-[10px] font-medium">Verified</span>
+                          <span className="text-[10px] font-medium">{t('verified')}</span>
                         </div>
                         {coupon.expiryDate && (
                           <div className="flex items-center gap-1 text-xs text-gray-500">
@@ -1041,6 +1111,7 @@ export default function StoreDetailPage() {
           setSelectedCoupon(null);
         }}
         onContinue={handleContinue}
+        store={store}
       />
     </div>
   );

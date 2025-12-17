@@ -76,13 +76,27 @@ export async function POST(req: NextRequest) {
     // Add optional fields only if they have values
     if (store.logoUrl) supabaseStore['Store Logo'] = store.logoUrl;
     if (store.voucherText) supabaseStore['voucher_text'] = store.voucherText;
-    if (store.networkId) supabaseStore['Network Id'] = store.networkId;
+    // Save Network ID if provided
+    if (store.networkId !== undefined && store.networkId !== null && store.networkId !== '') {
+      const networkIdStr = String(store.networkId).trim();
+      if (networkIdStr && networkIdStr !== 'null' && networkIdStr !== 'undefined') {
+        supabaseStore['Network ID'] = networkIdStr;
+        console.log(`💾 Saving Network ID: "${networkIdStr}" for store: ${store.name}`);
+      }
+    }
     if (store.categoryId) supabaseStore['Parent Category Id'] = store.categoryId;
     if (store.merchantId) supabaseStore['Merchant Id'] = store.merchantId;
     if (store.websiteUrl) {
       supabaseStore['website_url'] = store.websiteUrl;
-      supabaseStore['Tracking Url'] = store.websiteUrl;
       supabaseStore['Store Display Url'] = store.websiteUrl;
+    }
+    // Save tracking URL separately if provided (even if empty string, to ensure field exists)
+    if (store.trackingUrl !== undefined && store.trackingUrl !== null) {
+      supabaseStore['Tracking Url'] = store.trackingUrl.trim() || null;
+    }
+    // Save tracking Link separately if provided
+    if (store.trackingLink !== undefined && store.trackingLink !== null) {
+      supabaseStore['Tracking Link'] = store.trackingLink.trim() || null;
     }
     if (store.layoutPosition !== null && store.layoutPosition !== undefined) {
       supabaseStore['layout_position'] = store.layoutPosition;
