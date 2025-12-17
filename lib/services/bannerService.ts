@@ -121,17 +121,30 @@ export async function createBanner(title: string, imageFile: File, layoutPositio
 export async function getBanners(): Promise<Banner[]> {
   try {
     // Use server-side API to fetch banners from Supabase
-    const res = await fetch('/api/banners/get');
+    // Add cache-busting timestamp to ensure fresh data on first load
+    const cacheBuster = Date.now();
+    const res = await fetch(`/api/banners/get?t=${cacheBuster}`, {
+      cache: 'no-store', // Disable browser cache
+      headers: {
+        'Cache-Control': 'no-cache',
+      },
+    });
     
     if (res.ok) {
       const data = await res.json();
       if (data.success && data.banners) {
+        console.log('✅ getBanners: Fetched', data.banners.length, 'banners');
         return data.banners as Banner[];
       }
     }
     
     // If API returns error, check what type
-    const errorData = await res.json().catch(() => ({}));
+    let errorData = {};
+    try {
+      errorData = await res.json();
+    } catch (e) {
+      // Response might not be JSON
+    }
     
     // If API fails for any reason, return empty array
     console.warn('⚠️ Server API failed:', res.status, errorData.error || 'Unknown error');

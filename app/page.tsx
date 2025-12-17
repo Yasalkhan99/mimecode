@@ -151,16 +151,19 @@ export default function Home() {
     // CRITICAL: Fetch banners FIRST and IMMEDIATELY (don't wait for other data)
     const fetchBanners = async () => {
       try {
-        // Very short timeout (1.5 seconds) - if banners don't load fast, show placeholder
-        const bannersData = await Promise.race([
-          getBannersWithLayout(),
-          new Promise<Banner[]>((resolve) =>
-            setTimeout(() => resolve([]), 1500)
-          )
-        ]);
-
+        setBannersLoading(true);
+        console.log('🔄 Fetching banners...');
+        
+        // Fetch banners without timeout race - let it complete naturally
+        // Add cache-busting query parameter to ensure fresh data on first load
+        const bannersData = await getBannersWithLayout();
+        
+        console.log('✅ Banners fetched:', bannersData?.length || 0, 'banners');
+        
         const bannersList = (bannersData || []).filter(Boolean) as Banner[];
         const firstFourBanners = bannersList.slice(0, 4);
+        
+        console.log('📊 Setting banners:', firstFourBanners.length, 'banners');
         setBanners(firstFourBanners);
         setBannersLoading(false);
 
@@ -172,9 +175,12 @@ export default function Home() {
           link.href = firstFourBanners[0].imageUrl;
           link.setAttribute('fetchpriority', 'high');
           document.head.appendChild(link);
+          console.log('🖼️ Preloaded banner image:', firstFourBanners[0].imageUrl);
         }
       } catch (error) {
+        console.error('❌ Error fetching banners:', error);
         setBannersLoading(false);
+        setBanners([]);
       }
     };
 
@@ -321,10 +327,11 @@ export default function Home() {
 
     fetchOtherData();
 
-    // Safety timeouts
+    // Safety timeouts - increased timeout to allow banners to load properly
     const bannerTimeoutId = setTimeout(() => {
+      console.log('⏱️ Banner loading timeout reached, stopping loading state');
       setBannersLoading(false);
-    }, 2000);
+    }, 5000); // Increased from 2s to 5s to allow proper loading
 
     const couponTimeoutId = setTimeout(() => {
       // Safety timeout - if coupons haven't loaded after 4 seconds, stop loading

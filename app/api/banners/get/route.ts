@@ -9,7 +9,7 @@ const BANNERS_COLLECTION = process.env.NEXT_PUBLIC_BANNERS_COLLECTION || 'banner
 
 // Simple in-memory cache with shorter TTL for better real-time updates
 let bannersCache: { data: any[] | null; timestamp: number } = { data: null, timestamp: 0 };
-const CACHE_TTL = 5 * 1000; // 5 seconds cache - faster real-time updates
+const CACHE_TTL = 10 * 1000; // 10 seconds cache - balance between performance and freshness
 
 // Export function to clear cache (called by create/update/delete routes)
 export function clearBannersCache() {
@@ -51,9 +51,15 @@ const convertToAPIFormat = (doc: any) => {
 
 export async function GET(req: NextRequest) {
   try {
-    // Check cache first
+    // Check for cache-busting query parameter
+    const { searchParams } = new URL(req.url);
+    const cacheBuster = searchParams.get('t');
+    const forceRefresh = cacheBuster !== null;
+    
+    // Check cache first (unless force refresh)
     const now = Date.now();
-    if (bannersCache.data && (now - bannersCache.timestamp) < CACHE_TTL) {
+    if (!forceRefresh && bannersCache.data && (now - bannersCache.timestamp) < CACHE_TTL) {
+      console.log('📦 Returning cached banners');
       return NextResponse.json(
         { success: true, banners: bannersCache.data },
         { 
@@ -65,6 +71,8 @@ export async function GET(req: NextRequest) {
         }
       );
     }
+    
+    console.log('🔄 Fetching banners from database', forceRefresh ? '(force refresh)' : '');
 
     const db = getAdminFirestore();
     const snapshot = await db.collection(BANNERS_COLLECTION).get();
@@ -89,6 +97,8 @@ export async function GET(req: NextRequest) {
 
     // Update cache
     bannersCache = { data: banners, timestamp: now };
+    
+    console.log('✅ Fetched', banners.length, 'banners from database');
 
     return NextResponse.json(
       { success: true, banners: banners },
