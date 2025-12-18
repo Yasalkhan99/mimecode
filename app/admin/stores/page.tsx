@@ -1335,6 +1335,47 @@ export default function StoresPage() {
                   Tracking/affiliate link for this store. Used for redirecting users to the store.
                 </p>
               </div>
+
+              {/* Store URL Display */}
+              {formData.slug && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    Store URL
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={`${typeof window !== 'undefined' ? window.location.origin : ''}/stores/${formData.slug}`}
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/stores/${formData.slug}`;
+                        navigator.clipboard.writeText(url).then(() => {
+                          alert('Store URL copied to clipboard!');
+                        }).catch(() => {
+                          // Fallback for older browsers
+                          const textArea = document.createElement('textarea');
+                          textArea.value = url;
+                          document.body.appendChild(textArea);
+                          textArea.select();
+                          document.execCommand('copy');
+                          document.body.removeChild(textArea);
+                          alert('Store URL copied to clipboard!');
+                        });
+                      }}
+                      className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition font-semibold text-sm whitespace-nowrap"
+                    >
+                      Copy URL
+                    </button>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    This is the public URL where users can view this store
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
