@@ -402,7 +402,7 @@ export default function StoresPage() {
     
     if (result.success) {
       // Force refresh with delay to ensure cache is cleared
-      await fetchStores(true);
+      await fetchStores();
       setShowForm(false);
       setFormData({
         name: '',
