@@ -178,9 +178,42 @@ const convertToAPIFormat = (row: any) => {
     websiteUrl: websiteUrl,
     trackingUrl: trackingUrl || null, // Separate tracking URL
     trackingLink: trackingLink || null, // Separate tracking Link
-    countryCodes: Array.isArray(row['country_codes']) 
-      ? row['country_codes'].join(',') // Convert array to comma-separated string
-      : (row['country_codes'] || row.countryCodes || '').toString().trim() || null, // Country codes
+    // Handle country_codes - Supabase TEXT[] arrays come as JavaScript arrays like ["FR"] or ["DE"]
+    // Convert to comma-separated string for API response
+    countryCodes: (() => {
+      if (!row['country_codes']) return null;
+      
+      if (Array.isArray(row['country_codes'])) {
+        // Supabase TEXT[] array comes as JavaScript array like ["FR"] or ["DE", "FR"]
+        const codes = row['country_codes'].map(c => String(c).trim().toUpperCase()).filter(c => c);
+        return codes.length > 0 ? codes.join(',') : null;
+      } else {
+        // Fallback: handle string representation
+        const str = String(row['country_codes']).trim();
+        if (!str) return null;
+        
+        // Try to parse as JSON array string first
+        if (str.startsWith('[') && str.endsWith(']')) {
+          try {
+            const parsed = JSON.parse(str);
+            if (Array.isArray(parsed)) {
+              const codes = parsed.map(c => String(c).trim().toUpperCase()).filter(c => c);
+              return codes.length > 0 ? codes.join(',') : null;
+            } else {
+              return String(parsed).trim().toUpperCase() || null;
+            }
+          } catch {
+            // If JSON parse fails, remove brackets and treat as comma-separated
+            const codes = str.replace(/[\[\]"]/g, '').split(',').map(c => c.trim().toUpperCase()).filter(c => c);
+            return codes.length > 0 ? codes.join(',') : null;
+          }
+        } else {
+          // Comma-separated string
+          const codes = str.split(',').map(c => c.trim().toUpperCase()).filter(c => c);
+          return codes.length > 0 ? codes.join(',') : null;
+        }
+      }
+    })(),
     // Expose both normalized mainCategoryId and backward-compatible categoryId
     mainCategoryId,
     categoryId: mainCategoryId,
@@ -282,6 +315,7 @@ export async function GET(req: NextRequest) {
     const id = searchParams.get('id');
     const networkId = searchParams.get('networkId');
     const countryCode = searchParams.get('countryCode'); // Filter by country code
+    console.log('[API Stores GET] 📥 Received countryCode parameter:', countryCode, 'from URL:', req.url);
 
     let query = supabaseAdmin.from('stores').select('*');
 
@@ -350,9 +384,13 @@ export async function GET(req: NextRequest) {
     }
 
     // Filter by country code if provided
-    // country_codes is a TEXT[] array in Supabase, so we use cs (contains) operator
+    // country_codes is a TEXT[] array in Supabase
+    // Note: We'll do client-side filtering after fetching since Supabase array filtering can be tricky
     if (countryCode) {
-      query = query.contains('country_codes', [countryCode.toUpperCase()]);
+      const upperCountryCode = countryCode.toUpperCase();
+      console.log('[API Stores GET] Will filter by country code:', upperCountryCode, '(client-side after fetch)');
+    } else {
+      console.log('[API Stores GET] No country code filter applied');
     }
 
     // Check for cache-busting parameter
@@ -372,6 +410,76 @@ export async function GET(req: NextRequest) {
     if (error) throw error;
 
     let convertedStores = (data || []).map(convertToAPIFormat);
+    
+    // Client-side filtering by country code (primary method)
+    if (countryCode) {
+      const upperCountryCode = countryCode.toUpperCase();
+      
+      // Special handling for US - show both US and UK stores for English
+      let countryCodeVariants: string[] = [];
+      if (upperCountryCode === 'US') {
+        // For English (US), show both USA and UK stores
+        countryCodeVariants = ['US', 'USA', 'UK', 'GB'];
+      } else {
+        // Handle US/USA mapping for other cases
+        countryCodeVariants = upperCountryCode === 'US' ? ['US', 'USA'] : [upperCountryCode];
+      }
+      
+      const beforeFilter = convertedStores.length;
+      console.log(`[API Stores GET] 🔍🔍🔍 FILTERING for country code: "${upperCountryCode}" (variants: [${countryCodeVariants.join(', ')}]), stores before: ${beforeFilter}`);
+      
+      if (beforeFilter === 0) {
+        console.log(`[API Stores GET] ⚠️ No stores to filter!`);
+      }
+      
+      convertedStores = convertedStores.filter(store => {
+        const storeCountryCodes = store.countryCodes;
+        
+        // If store has no country codes, exclude it when filtering by country code
+        if (!storeCountryCodes || storeCountryCodes === '' || storeCountryCodes === null || storeCountryCodes === 'null' || storeCountryCodes === 'undefined') {
+          return false; // Exclude stores without country codes
+        }
+        
+        // Parse country codes - can be comma-separated string like "FR,DE" or array string like '["FR"]'
+        let codes: string[] = [];
+        const codesStr = String(storeCountryCodes).trim();
+        
+        if (codesStr.startsWith('[') && codesStr.endsWith(']')) {
+          // JSON array string like '["FR"]' or '["FR","DE"]'
+          try {
+            const parsed = JSON.parse(codesStr);
+            codes = Array.isArray(parsed) 
+              ? parsed.map(c => String(c).trim().toUpperCase()).filter(c => c)
+              : [String(parsed).trim().toUpperCase()].filter(c => c);
+          } catch {
+            // If JSON parse fails, remove brackets and split
+            codes = codesStr.replace(/[\[\]"]/g, '').split(',').map(c => c.trim().toUpperCase()).filter(c => c);
+          }
+        } else {
+          // Comma-separated string like "FR,DE"
+          codes = codesStr.split(',').map(c => c.trim().toUpperCase()).filter(c => c);
+        }
+        
+        // Check if any of the country code variants match
+        const matches = codes.length > 0 && countryCodeVariants.some(variant => codes.includes(variant));
+        
+        // Log first 5 stores for debugging
+        if (convertedStores.indexOf(store) < 5) {
+          console.log(`[API Stores GET] Store "${store.name}" (ID: ${store.storeId}) - countryCodes: "${codesStr}" -> parsed: [${codes.join(', ')}] -> matches ${countryCodeVariants.join(' or ')}: ${matches}`);
+        }
+        
+        return matches;
+      });
+      
+      console.log(`[API Stores GET] ✅✅✅ FILTERED ${beforeFilter} stores to ${convertedStores.length} stores for country code: ${upperCountryCode}`);
+      
+      if (convertedStores.length === 0) {
+        console.log(`[API Stores GET] ⚠️⚠️⚠️ NO STORES FOUND for country code: ${upperCountryCode}! This might mean stores don't have this country code set.`);
+      }
+    } else {
+      console.log('[API Stores GET] ℹ️ No country code provided, returning all stores');
+    }
+    
     convertedStores = await enrichStoresWithCategory(convertedStores);
     
     // Sort by Store Id numerically

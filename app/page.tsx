@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Navbar from "./components/Navbar";
 import ContactSupportModal from "./components/ContactSupportModal";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import LanguageSelector from "./components/LanguageSelector";
 import { useTranslation } from '@/lib/hooks/useTranslation';
@@ -45,6 +45,7 @@ const Footer = dynamic(() => import('./components/Footer'), {
 
 export default function Home() {
   const { t } = useTranslation();
+  const pathname = usePathname();
   const { getCountryCode } = useLanguage(); // Get country code from language context
   // const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -326,6 +327,8 @@ export default function Home() {
         setLatestNews(newsData.slice(0, 4));
         setCategories(categoriesData.slice(0, 6));
         setFaqs(faqsData);
+        console.log('[Home Page] Categories loaded:', categoriesData.length, 'Setting:', categoriesData.slice(0, 6).length);
+        console.log('[Home Page] LanguageSelector should be visible');
         // console.log('FAQs loaded:', faqsData.length, faqsData);
       } catch (error) {
         // Silently handle errors
@@ -364,7 +367,7 @@ export default function Home() {
       clearTimeout(bannerTimeoutId);
       clearTimeout(couponTimeoutId);
     };
-  }, [getCountryCode]); // Dependency on getCountryCode
+  }, [pathname, getCountryCode]); // Re-fetch when pathname (language) or country code changes
 
   // Fetch 8 coupons from coupons-mimecode collection
   useEffect(() => {

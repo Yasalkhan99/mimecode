@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import LocalizedLink from '@/app/components/LocalizedLink';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { useTranslation } from '@/lib/hooks/useTranslation';
 import { TranslationKey } from '@/lib/translations';
@@ -68,6 +68,7 @@ const getCategoryTranslation = (categoryName: string, t: (key: TranslationKey) =
 export default function StoresPage() {
   const { t } = useTranslation();
   const router = useRouter();
+  const pathname = usePathname();
   const { getCountryCode } = useLanguage(); // Get country code from language context
   // const [banner10, setBanner10] = useState<Banner | null>(null);
   // const [banners, setBanners] = useState<Banner[]>([]);
@@ -107,6 +108,7 @@ export default function StoresPage() {
       try {
         // Get country code from current language
         const countryCode = getCountryCode();
+        console.log('[Stores Page] Fetching stores with country code:', countryCode, 'for pathname:', pathname);
         
         const [storesData, categoriesData] = await Promise.all([
           // getBannerByLayoutPosition(10),
@@ -114,6 +116,7 @@ export default function StoresPage() {
           getStores(countryCode), // Pass country code to filter stores
           getCategories()
         ]);
+        console.log('[Stores Page] Fetched stores count:', storesData.length, 'with country code:', countryCode);
         // setBanner10(bannerData);
         // const bannersList = bannersData.filter(Boolean) as Banner[];
         // setBanners(bannersList.slice(0, 4)); // Get first 4 banners
@@ -131,7 +134,7 @@ export default function StoresPage() {
     return () => {
       window.removeEventListener('resize', checkMobile);
     };
-  }, [getCountryCode]); // Dependency on getCountryCode
+  }, [pathname, getCountryCode]); // Re-fetch when pathname (language) or country code changes
 
   useEffect(() => {
     // Filter stores by search query first

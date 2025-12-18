@@ -20,7 +20,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
-  const { getLocalizedPath } = useLanguage();
+  const { getLocalizedPath, getCountryCode } = useLanguage();
   const { t } = useTranslation();
   const [searchCategoryOpen, setSearchCategoryOpen] = useState(false);
   const [storesDropdownOpen, setStoresDropdownOpen] = useState(false);
@@ -56,12 +56,17 @@ export default function Navbar() {
           setEventsSlug(pageSettings.eventsSlug || 'events');
         }
         
+        // Get country code from current language to filter stores
+        const countryCode = getCountryCode();
+        console.log('[Navbar] Fetching stores with country code:', countryCode);
+        
         // Fetch other data in parallel
         const [categoriesData, storesData, eventsData] = await Promise.all([
           getCategories(),
-          getStores(),
+          getStores(countryCode), // Pass country code to filter stores
           getEvents()
         ]);
+        console.log('[Navbar] Fetched stores count:', storesData.length, 'with country code:', countryCode);
         setCategories(categoriesData);
         setStores(storesData);
         setHasEvents(eventsData.length > 0);
@@ -88,7 +93,7 @@ export default function Navbar() {
       window.removeEventListener('notificationUpdated', handleNotificationUpdate);
       window.removeEventListener('favoritesUpdated', handleFavoritesUpdate);
     };
-  }, []);
+  }, [pathname, getCountryCode]); // Re-fetch when pathname (language) or country code changes
 
   const updateCounts = () => {
     setFavoritesCount(getFavoritesCount());
@@ -176,13 +181,13 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex items-center justify-between gap-4">
             {/* Logo */}
-            <Link href="/" className="flex-shrink-0">
+            <LocalizedLink href="/" className="flex-shrink-0">
               <img 
                 src="/Group 1171275050 (1).svg" 
                 alt="HB Mime Code Logo" 
                 className="h-10 sm:h-12 md:h-14 w-auto"
               />
-            </Link>
+            </LocalizedLink>
 
             {/* Search Bar - Center */}
             <div className="flex-1 max-w-2xl mx-4 hidden md:block">
@@ -291,7 +296,7 @@ export default function Navbar() {
           <div className="flex items-center justify-center gap-6 py-3">
             {/* Navigation Links - Desktop */}
             <div className="hidden md:flex items-center gap-6">
-              <Link 
+              <LocalizedLink 
                 href="/" 
                 className={`px-4 py-2 font-semibold text-sm transition-colors ${
                   isActive('/') 
@@ -300,7 +305,7 @@ export default function Navbar() {
                 }`}
               >
                 {t('home')}
-              </Link>
+              </LocalizedLink>
               <div 
                 className="relative stores-dropdown-container"
                 onMouseEnter={() => setStoresDropdownOpen(true)}
@@ -553,7 +558,7 @@ export default function Navbar() {
             {/* Navigation Links - Scrollable */}
             <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto scrollbar-hide flex-1 min-w-0">
               <div className="flex items-center gap-2 sm:gap-3 min-w-max">
-                <Link 
+                <LocalizedLink 
                   href="/" 
                   className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${
                     isActive('/') 
@@ -562,7 +567,7 @@ export default function Navbar() {
                   }`}
                 >
                   {t('home')}
-                </Link>
+                </LocalizedLink>
                 <LocalizedLink 
                   href="/categories" 
                   className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${

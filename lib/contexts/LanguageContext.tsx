@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { usePathname, useRouter } from 'next/navigation';
 
 export const languages = [
-  { code: 'en', name: 'English', flag: '🇬🇧', slug: 'en', countryCode: null }, // English - no country filter
+  { code: 'en', name: 'English', flag: '🇬🇧', slug: 'en', countryCode: 'US' }, // English - show USA stores
   { code: 'es', name: 'Español', flag: '🇪🇸', slug: 'es', countryCode: 'ES' },
   { code: 'fr', name: 'Français', flag: '🇫🇷', slug: 'fr', countryCode: 'FR' },
   { code: 'de', name: 'Deutsch', flag: '🇩🇪', slug: 'du', countryCode: 'DE' },
