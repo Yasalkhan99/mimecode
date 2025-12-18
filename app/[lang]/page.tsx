@@ -1,6 +1,6 @@
 'use client';
 
-// This route handles language-prefixed home pages (e.g., /du, /es, /fr)
+// This route handles language-prefixed home pages (e.g., /de, /es, /fr)
 // It also handles event slugs without language prefix (e.g., /christmas)
 // It checks if the lang parameter is a language code or an event slug
 
@@ -10,7 +10,7 @@ import { getPageSettings } from '@/lib/services/pageSettingsService';
 import Home from '../page';
 import EventsPage from '../events/page';
 
-const languageSlugs = ['en', 'es', 'fr', 'du', 'it', 'pt', 'nl', 'ru', 'zh', 'ja'];
+const languageSlugs = ['en', 'es', 'fr', 'de', 'it', 'pt', 'nl', 'ru', 'zh', 'ja'];
 
 export default function LangHomePage() {
   const params = useParams();

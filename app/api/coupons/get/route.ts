@@ -4,8 +4,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 
-// Simple in-memory cache
-let couponsCache: { data: any[] | null; timestamp: number; key: string } = { data: null, timestamp: 0, key: '' };
+import { getCouponsCache, setCouponsCache } from '@/lib/cache/couponsCache';
+
+// Simple in-memory cache (now shared via couponsCache module)
 const CACHE_TTL = 30 * 1000; // 30 seconds cache
 
 // Helper function to normalize URL
@@ -31,17 +32,49 @@ const decodeHtmlEntities = (value: any): any => {
 
 // Helper function to convert to API format
 // Excel headers: Store Name, Title, Description, Code, Type, Expiry, Deeplink
-// Supabase columns: Store Name, Coupon Title, Coupon Desc, Coupon Code, Coupon Type, Coupon Expiry, Coupon Deep Link
+// Supabase columns: Store Name, Coupon Title, Coupon Desc, Coupon Code, Coupon Type, Coupon Expiry, Coupon URL
 const convertToAPIFormat = (couponData: any, docId: string, storeData?: any) => {
   // Handle both Supabase format (plain object) and Firestore format (doc.data())
   const data = typeof couponData.data === 'function' ? couponData.data() : couponData;
   
-  // Deeplink - Excel column name
-  let couponUrl = data['Coupon Deep Link'] || data['Deeplink'] || data.url || null;
-  if (!couponUrl && storeData) {
-    couponUrl = storeData['Tracking Url'] || storeData['Store Display Url'] || storeData.websiteUrl || null;
+  // Coupon URL - primary field for coupon URL
+  // CRITICAL: Only use coupon's own URL, don't fallback to store URL here
+  // Fallback to store URL should happen in frontend handleGetDeal function, not here
+  // Priority: Coupon URL (new) > Coupon Deep Link (old/fallback) > Deeplink > url
+  // CRITICAL: Check Coupon URL first, and only use it if it's not null/empty
+  let couponUrl = null;
+  
+  // Try different ways to access the column (Supabase might return it differently)
+  const couponUrlValue = data['Coupon URL'] || data['coupon_url'] || data.couponUrl || data['CouponUrl'];
+  const couponDeepLinkValue = data['Coupon Deep Link'] || data['Coupon Deep Link'] || data['coupon_deep_link'] || data.couponDeepLink;
+  
+  // Debug: Log all URL-related fields to see what we have (ALWAYS log for debugging)
+  console.log('[GET Route] All URL fields in data for coupon:', {
+    couponId: docId || data['Coupon Id'] || data.id,
+    'Coupon URL': data['Coupon URL'],
+    'coupon_url': data['coupon_url'],
+    'couponUrl': data.couponUrl,
+    'CouponUrl': data['CouponUrl'],
+    'Coupon Deep Link': data['Coupon Deep Link'],
+    'coupon_deep_link': data['coupon_deep_link'],
+    'Deeplink': data['Deeplink'],
+    'url': data.url,
+    'All URL/Link keys': Object.keys(data).filter(k => k.toLowerCase().includes('url') || k.toLowerCase().includes('link') || k.toLowerCase().includes('deep'))
+  });
+  
+  if (couponUrlValue && couponUrlValue !== null && String(couponUrlValue).trim() !== '') {
+    couponUrl = couponUrlValue;
+    console.log('[GET Route] ✅ Using Coupon URL:', couponUrl);
+  } else if (couponDeepLinkValue && couponDeepLinkValue !== null && String(couponDeepLinkValue).trim() !== '') {
+    couponUrl = couponDeepLinkValue;
+    console.log('[GET Route] ⚠️ Using Coupon Deep Link (fallback):', couponUrl, 'Coupon URL was:', couponUrlValue);
+  } else if (data['Deeplink'] && data['Deeplink'] !== null && String(data['Deeplink']).trim() !== '') {
+    couponUrl = data['Deeplink'];
+  } else if (data.url && data.url !== null && String(data.url).trim() !== '') {
+    couponUrl = data.url;
   }
-  couponUrl = normalizeUrl(couponUrl);
+  // Only normalize if we have a URL - don't add store fallback here
+  couponUrl = couponUrl ? normalizeUrl(couponUrl) : null;
   
   // Store IDs
   let storeIdsArray: string[] = [];
@@ -77,6 +110,17 @@ const convertToAPIFormat = (couponData: any, docId: string, storeData?: any) => 
   }
   // If storeData exists but doesn't have Store Name, keep storeName as empty string
   
+  // Debug logging for URL priority
+  if (process.env.NODE_ENV === 'development' && docId) {
+    console.log(`[GET Route] Coupon ${docId} URL resolution:`, {
+      'Coupon URL': data['Coupon URL'],
+      'Coupon Deep Link': data['Coupon Deep Link'],
+      'Deeplink': data['Deeplink'],
+      'url': data.url,
+      'Final couponUrl': couponUrl
+    });
+  }
+  
   return {
     id: docId || data['Coupon Id'] || data.id || '',
     code: couponCode,
@@ -91,7 +135,7 @@ const convertToAPIFormat = (couponData: any, docId: string, storeData?: any) => 
     currentUses: data.current_uses || data.currentUses || 0,
     expiryDate: expiryDate,
     logoUrl: data.logo_url || data.logoUrl || null,
-    url: couponUrl,
+    url: couponUrl, // This should be from "Coupon URL" column if set
     affiliateLink: data.affiliate_link || data.affiliateLink || null,
     couponType: couponType,
     isPopular: data.is_popular || data.isPopular || false,
@@ -124,6 +168,7 @@ export async function GET(req: NextRequest) {
     const now = Date.now();
 
     // Check cache for list queries (not single item) - skip if bypassCache is true
+    const couponsCache = getCouponsCache();
     if (!id && !bypassCache && couponsCache.data && couponsCache.key === cacheKey && (now - couponsCache.timestamp) < CACHE_TTL) {
       return NextResponse.json(
         { success: true, coupons: couponsCache.data },
@@ -137,9 +182,10 @@ export async function GET(req: NextRequest) {
     // Get coupon by ID (no cache)
     if (id) {
       // Try by Supabase row ID first, then by Coupon Id field
+      // Explicitly select Coupon URL column to ensure it's included
       let { data: couponData, error: couponError } = await supabaseAdmin
         .from(tableName)
-        .select('*')
+        .select('*, "Coupon URL", "Coupon Deep Link"')
         .eq('id', id)
         .single();
       
@@ -147,7 +193,7 @@ export async function GET(req: NextRequest) {
       if (couponError || !couponData) {
         const { data: couponByCustomId, error: errorByCustomId } = await supabaseAdmin
           .from(tableName)
-          .select('*')
+          .select('*, "Coupon URL", "Coupon Deep Link"')
           .eq('Coupon Id', id)
           .single();
         if (!errorByCustomId && couponByCustomId) {
@@ -177,8 +223,8 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Get all coupons with filters - use * to get all columns
-    let query = supabaseAdmin.from(tableName).select('*');
+    // Get all coupons with filters - explicitly include Coupon URL column
+    let query = supabaseAdmin.from(tableName).select('*, "Coupon URL", "Coupon Deep Link"');
     
     let numericStoreId: string | null = null;
     let isUuid = false;
@@ -231,7 +277,8 @@ export async function GET(req: NextRequest) {
     // If no coupons found, try fallback: fetch all and filter manually (better matching)
     if (storeId && (!coupons || coupons.length === 0)) {
       console.log(`⚠️ No coupons found with primary query for storeId: ${storeId}, trying fallback: fetch all and filter manually...`);
-      let fallbackQuery = supabaseAdmin.from(tableName).select('*');
+      // Explicitly include Coupon URL column
+      let fallbackQuery = supabaseAdmin.from(tableName).select('*, "Coupon URL", "Coupon Deep Link"');
       if (categoryId) fallbackQuery = fallbackQuery.or(`category_id.eq.${categoryId},categoryId.eq.${categoryId}`);
       
       const { data: allCoupons, error: fallbackError } = await fallbackQuery;
@@ -399,7 +446,7 @@ export async function GET(req: NextRequest) {
         couponCode: coupons[0]['Coupon Code'],
         couponType: coupons[0]['Coupon Type'],
         couponExpiry: coupons[0]['Coupon Expiry'],
-        couponDeepLink: coupons[0]['Coupon Deep Link'],
+        couponDeepLink: coupons[0]['Coupon URL'] || coupons[0]['Coupon Deep Link'],
         storeId: coupons[0]['Store  Id'],
         is_active: coupons[0].is_active
       });
@@ -475,7 +522,7 @@ export async function GET(req: NextRequest) {
     console.log(`📊 After expiry filter: ${convertedCoupons.length} (removed ${beforeExpiryFilter - convertedCoupons.length})`);
 
     // Update cache
-    couponsCache = { data: convertedCoupons, timestamp: now, key: cacheKey };
+    setCouponsCache(convertedCoupons, now, cacheKey);
 
     console.log(`✅ Returning ${convertedCoupons.length} coupons to client (out of ${coupons?.length || 0} raw coupons from DB)`);
     

@@ -21,7 +21,7 @@ export default function CouponsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState<Partial<Coupon>>({
+  const [formData, setFormData] = useState<Partial<Omit<Coupon, 'expiryDate'> & { expiryDate: string | Date | null }>>({
     code: '',
     storeName: '',
     title: '', // Coupon title field
@@ -198,13 +198,18 @@ export default function CouponsPage() {
   const fetchCoupons = async (bypassCache = false) => {
     setLoading(true);
     try {
-      // Add cache-busting parameter if needed
-      const url = bypassCache 
-        ? `/api/coupons/get?_t=${Date.now()}`
-        : `/api/coupons/get`;
+      // Always use cache-busting to ensure fresh data
+      const url = `/api/coupons/get?collection=coupons-mimecode&_t=${Date.now()}`;
       
       console.log('🔄 Fetching coupons from:', url);
-      const res = await fetch(url);
+      const res = await fetch(url, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      });
       
       if (res.ok) {
         const responseData = await res.json();
@@ -636,31 +641,32 @@ export default function CouponsPage() {
   };
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const [couponsData, categoriesData, storesData] = await Promise.all([
-        getCoupons(),
-        getCategories(),
-        getStores()
-      ]);
-      // Sort coupons by numeric ID (1, 2, 3...) to match store ID indexing
-      const sortedCoupons = couponsData.sort((a, b) => {
-        const idA = parseInt(String(a.id || '0'), 10) || 0;
-        const idB = parseInt(String(b.id || '0'), 10) || 0;
-        return idA - idB;
-      });
-      setCoupons(sortedCoupons);
-      setCategories(categoriesData);
-      // Sort stores by numeric ID (1, 2, 3...)
-      const sortedStores = storesData.sort((a, b) => {
-        const idA = parseInt(String(a.id || '0'), 10) || 0;
-        const idB = parseInt(String(b.id || '0'), 10) || 0;
-        return idA - idB;
-      });
-      setStores(sortedStores);
-      setLoading(false);
+    fetchCoupons(true); // Always bypass cache on initial load
+    getCategories().then(setCategories);
+    getStores().then(setStores);
+  }, []);
+
+  // Refresh coupons when page becomes visible (e.g., returning from edit page)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('👁️ Page became visible, refreshing coupons...');
+        fetchCoupons(true);
+      }
     };
-    load();
+
+    const handleFocus = () => {
+      console.log('🎯 Window focused, refreshing coupons...');
+      fetchCoupons(true);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   // Load API key from environment on mount (if available via API)
@@ -794,6 +800,13 @@ export default function CouponsPage() {
           const newCoupon = await getCouponById(result.id);
           if (newCoupon) {
             setCoupons(prevCoupons => {
+              // Check if coupon already exists (avoid duplicates)
+              const exists = prevCoupons.some(c => c.id === newCoupon.id);
+              if (exists) {
+                // Update existing coupon instead of adding duplicate
+                return prevCoupons.map(c => c.id === newCoupon.id ? newCoupon : c);
+              }
+              // Add new coupon if it doesn't exist
               const updated = [...prevCoupons, newCoupon];
               // Sort to maintain order
               return updated.sort((a, b) => {
@@ -1530,7 +1543,7 @@ export default function CouponsPage() {
                                   handleLogoUrlChange(foundStore.logoUrl);
                                   setLogoUploadMethod('url');
                                 }
-                                setFormData({ ...formData, ...updates });
+                                setFormData({ ...formData, ...updates } as any);
                                 setManualStoreId('');
                                 // Keep dropdown open so user can see the selected store
                                 setIsStoreDropdownOpen(true);
@@ -1571,7 +1584,7 @@ export default function CouponsPage() {
                                 handleLogoUrlChange(foundStore.logoUrl);
                                 setLogoUploadMethod('url');
                               }
-                              setFormData({ ...formData, ...updates });
+                              setFormData({ ...formData, ...updates } as any);
                               setManualStoreId('');
                               // Keep dropdown open so user can see the selected store
                               setIsStoreDropdownOpen(true);
@@ -1680,7 +1693,7 @@ export default function CouponsPage() {
                                           // Switch to URL method if logo is set
                                           setLogoUploadMethod('url');
                                         }
-                                        setFormData({ ...formData, ...updates });
+                                        setFormData({ ...formData, ...updates } as any);
                                       }
                                     } else {
                                       setFormData({ ...formData, storeName: '' });
@@ -1689,7 +1702,7 @@ export default function CouponsPage() {
                                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                 />
                                 <span className="ml-3 text-sm text-gray-700">
-                                  {originalIndex + 1} - {store.name}
+                                  {(store as any).storeId || store.id || (originalIndex + 1)} - {store.name}
                                 </span>
                             </label>
                           );
@@ -1732,7 +1745,7 @@ export default function CouponsPage() {
                                   // Switch to URL method if logo is set
                                   setLogoUploadMethod('url');
                                 }
-                                setFormData({ ...formData, ...updates });
+                                setFormData({ ...formData, ...updates } as any);
                               }
                             } else {
                               setFormData({ ...formData, storeName: '' });
@@ -2044,6 +2057,52 @@ export default function CouponsPage() {
               </p>
             </div>
 
+            <div>
+              <label htmlFor="expiryDate" className="block text-gray-700 text-sm font-semibold mb-2">
+                Expiry Date (Optional)
+              </label>
+              <input
+                id="expiryDate"
+                name="expiryDate"
+                type="date"
+                value={
+                  formData.expiryDate
+                    ? (() => {
+                        try {
+                          let date: Date;
+                          if (formData.expiryDate instanceof Date) {
+                            date = formData.expiryDate;
+                          } else if (formData.expiryDate && typeof (formData.expiryDate as any).toDate === 'function') {
+                            // Firestore Timestamp
+                            date = (formData.expiryDate as any).toDate();
+                          } else if (typeof formData.expiryDate === 'string') {
+                            date = new Date(formData.expiryDate);
+                          } else {
+                            date = new Date(formData.expiryDate as any);
+                          }
+                          return date.toISOString().slice(0, 10);
+                        } catch {
+                          return '';
+                        }
+                      })()
+                    : ''
+                }
+                onChange={(e) => {
+                  const dateValue = e.target.value;
+                  if (dateValue) {
+                    const date = new Date(dateValue);
+                    setFormData({ ...formData, expiryDate: date.toISOString() } as any);
+                  } else {
+                    setFormData({ ...formData, expiryDate: null } as any);
+                  }
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Optional: Set when this coupon expires. Leave empty if no expiry date.
+              </p>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center">
                 <input
@@ -2251,6 +2310,9 @@ export default function CouponsPage() {
                     Description
                   </th>
                   <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold text-gray-900">
+                    Expiry Date
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold text-gray-900">
                     Status
                   </th>
                   <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold text-gray-900">
@@ -2267,7 +2329,7 @@ export default function CouponsPage() {
                   const paginatedCoupons = filteredCoupons.slice(startIndex, endIndex);
                   
                   return paginatedCoupons.map((coupon, index) => (
-                  <tr key={coupon.id} className="border-b hover:bg-gray-50">
+                  <tr key={`coupon-${coupon.id}-${index}`} className="border-b hover:bg-gray-50">
                     <td className="px-3 py-4">
                       <div className="font-mono text-xs text-gray-800 font-medium max-w-[120px] truncate" title={coupon.id}>
                         {startIndex + index + 1}
@@ -2284,6 +2346,32 @@ export default function CouponsPage() {
                     </td>
                     <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-800 max-w-xs truncate" title={coupon.description}>
                       {coupon.description || 'No description'}
+                    </td>
+                    <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-700">
+                      {coupon.expiryDate 
+                        ? (() => {
+                            try {
+                              let date: Date;
+                              if (coupon.expiryDate instanceof Date) {
+                                date = coupon.expiryDate;
+                              } else if (coupon.expiryDate && typeof (coupon.expiryDate as any).toDate === 'function') {
+                                // Firestore Timestamp
+                                date = (coupon.expiryDate as any).toDate();
+                              } else if (typeof coupon.expiryDate === 'string') {
+                                date = new Date(coupon.expiryDate);
+                              } else {
+                                date = new Date(coupon.expiryDate as any);
+                              }
+                              return date.toLocaleDateString('en-US', { 
+                                year: 'numeric', 
+                                month: 'short', 
+                                day: 'numeric' 
+                              });
+                            } catch {
+                              return 'Invalid Date';
+                            }
+                          })()
+                        : 'N/A'}
                     </td>
                     <td className="px-4 sm:px-6 py-4">
                       <button

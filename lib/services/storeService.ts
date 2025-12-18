@@ -18,6 +18,9 @@ export interface Store {
   userId?: string; // User ID of the store owner (for user-created stores)
   // Detailed Store Info fields
   websiteUrl?: string; // Store's official website URL
+  trackingUrl?: string; // Tracking/affiliate URL for the store
+  trackingLink?: string; // Tracking Link for the store (separate from Tracking Url)
+  countryCodes?: string; // Country codes for the store
   aboutText?: string; // Detailed about section for Store Info tab
   features?: string[]; // List of store features (e.g., ["Free Shipping", "24/7 Support"])
   shippingInfo?: string; // Shipping information
@@ -40,11 +43,19 @@ export interface Store {
 // Default to 'stores-mimecode' for this new project
 const stores = process.env.NEXT_PUBLIC_STORES_COLLECTION || 'stores-mimecode';
 
-export async function getStores(): Promise<Store[]> {
+export async function getStores(countryCode?: string | null): Promise<Store[]> {
   try {
     // Try server-side API first (bypasses security rules)
     try {
-      const res = await fetch(`/api/stores/get?collection=${encodeURIComponent(stores)}`);
+      // Build query parameters
+      const params = new URLSearchParams();
+      params.append('collection', stores);
+      params.append('_t', String(Date.now()));
+      if (countryCode) {
+        params.append('countryCode', countryCode);
+      }
+      
+      const res = await fetch(`/api/stores/get?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.stores) {
@@ -373,14 +384,54 @@ export async function deleteStore(id: string) {
     }
 
     if (!res.ok) {
-      console.error('Server delete failed', { status: res.status, body: json });
+      const errorMessage = json.error || json.text || json.message || `Failed to delete store (Status: ${res.status})`;
+      console.error('Server delete failed', { 
+        status: res.status, 
+        statusText: res.statusText,
+        body: json,
+        rawText: resText 
+      });
       // No fallback - API is required for Supabase
-      return { success: false, error: json.error || json.text || 'Failed to delete store' };
+      return { success: false, error: errorMessage };
     }
 
     return { success: true };
   } catch (error) {
     console.error('Error deleting store:', error);
+    return { success: false, error };
+  }
+}
+
+// Delete all stores
+export async function deleteAllStores() {
+  try {
+    // Use server-side API route to delete all stores (bypasses security rules)
+    const res = await fetch('/api/stores/delete-all', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    let json: any = {};
+    let resText = '';
+    try {
+      resText = await res.text();
+      try {
+        json = JSON.parse(resText || '{}');
+      } catch (e) {
+        json = { text: resText };
+      }
+    } catch (e) {
+      console.error('Failed to read server response body', e);
+    }
+
+    if (!res.ok) {
+      console.error('Server delete all failed', { status: res.status, body: json });
+      return { success: false, error: json.error || json.text || 'Failed to delete all stores' };
+    }
+
+    return { success: true, deletedCount: json.deletedCount || 0 };
+  } catch (error) {
+    console.error('Error deleting all stores:', error);
     return { success: false, error };
   }
 }

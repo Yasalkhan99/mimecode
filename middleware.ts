@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const languageSlugs = ['en', 'es', 'fr', 'du', 'it', 'pt', 'nl', 'ru', 'zh', 'ja'];
+const languageSlugs = ['en', 'es', 'fr', 'de', 'it', 'pt', 'nl', 'ru', 'zh', 'ja'];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

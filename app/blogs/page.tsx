@@ -160,7 +160,7 @@ export default function BlogsPage() {
   // };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white overflow-x-hidden w-full">
       <Navbar />
       
       {/* Hero Banner Section - COMMENTED OUT (only on home page) */}
@@ -295,7 +295,7 @@ export default function BlogsPage() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="w-full bg-gradient-to-r from-[#ABC443]/10 via-[#41361A]/5 to-[#ABC443]/10 py-12 sm:py-16 md:py-20"
+        className="w-full bg-white py-12 sm:py-16 md:py-20"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
           <div className="text-center">
@@ -303,7 +303,7 @@ export default function BlogsPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4"
+              className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4 text-gray-900"
             >
               {t('recentNewsAndArticles')}
             </motion.h1>
@@ -311,7 +311,7 @@ export default function BlogsPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto"
+              className="text-lg sm:text-xl text-gray-700 max-w-2xl mx-auto"
             >
               {t('stayUpdated')}
             </motion.p>
@@ -337,7 +337,7 @@ export default function BlogsPage() {
                 placeholder={t('searchArticles')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-3 pl-12 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ABC443] focus:border-[#ABC443] transition-all text-gray-900"
+                className="w-full px-4 py-3 pl-12 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all text-gray-900"
               />
               <svg 
                 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" 
@@ -399,7 +399,7 @@ export default function BlogsPage() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setSearchQuery('')}
-                  className="bg-gradient-to-r from-[#ABC443] to-[#41361A] hover:from-[#41361A] hover:to-[#ABC443] text-white font-semibold px-6 py-3 rounded-lg transition-all duration-300"
+                  className="bg-[#FFE019] hover:bg-black text-black hover:text-[#FFE019] border-2 border-black font-semibold px-6 py-3 rounded-lg transition-all duration-300"
                 >
                   {t('clearSearch')}
                 </motion.button>
@@ -413,7 +413,7 @@ export default function BlogsPage() {
                 transition={{ duration: 0.4 }}
                 className="mb-6 sm:mb-8"
               >
-                <p className="text-gray-600">
+                <p className="text-gray-700">
                   {t('showingArticles')} <span className="font-semibold text-gray-900">{filteredArticles.length}</span> {t('ofArticles')} <span className="font-semibold text-gray-900">{articles.length}</span> {t('articles')}
                 </p>
               </motion.div>
@@ -484,7 +484,7 @@ export default function BlogsPage() {
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: 0.2 }}
-                            className="absolute top-4 right-4 bg-gradient-to-r from-[#ABC443] to-[#41361A] text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg"
+                            className="absolute top-4 right-4 bg-black text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg"
                           >
                             {formatDate(article.date, article.createdAt)}
                           </motion.div>
@@ -509,7 +509,7 @@ export default function BlogsPage() {
                         </motion.h3>
 
                         {/* Description - Flex grow to push button down */}
-                        <p className="text-gray-600 mb-4 line-clamp-3 leading-relaxed flex-grow">
+                        <p className="text-gray-700 mb-4 line-clamp-3 leading-relaxed flex-grow">
                           {article.description || 'No description available'}
                         </p>
 
@@ -522,7 +522,7 @@ export default function BlogsPage() {
                             >
                               <Link
                                 href={`/blogs/${article.id}`}
-                                className="inline-flex items-center gap-2 bg-gradient-to-r from-[#ABC443] to-[#41361A] hover:from-[#41361A] hover:to-[#ABC443] text-white font-semibold px-5 py-2.5 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg w-full justify-center"
+                                className="inline-flex items-center gap-2 bg-black hover:bg-[#FFE019] text-white hover:text-black border-2 border-black font-semibold px-5 py-2.5 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg w-full justify-center"
                               >
                                 {t('readMore')}
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

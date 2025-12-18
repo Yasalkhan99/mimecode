@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { clearCouponsCache } from '@/lib/cache/couponsCache';
 
 export async function POST(req: NextRequest) {
   try {
@@ -51,7 +52,20 @@ export async function POST(req: NextRequest) {
     }
 
     console.log('✅ Coupon deleted successfully');
-    return NextResponse.json({ success: true }, { status: 200 });
+    
+    // Clear coupons cache to ensure fresh data on next fetch
+    clearCouponsCache();
+    console.log('🗑️ Cleared coupons cache after deletion');
+    
+    // Return response with revalidation headers to clear Next.js route cache
+    const response = NextResponse.json({ success: true }, { status: 200 });
+    
+    // Add cache revalidation headers
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    
+    return response;
   } catch (error: any) {
     console.error('❌ Delete coupon error:', error);
     return NextResponse.json(

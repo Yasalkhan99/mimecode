@@ -93,6 +93,66 @@ export default function StoreDetailPage() {
     }
   }, [store]);
 
+  // CRITICAL: Handle popup from query parameters (for code type coupons opened in new tab)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const popup = urlParams.get('popup');
+    const couponId = urlParams.get('id');
+    const code = urlParams.get('code');
+    const storeName = urlParams.get('store');
+
+    // If popup query param exists and it's for a coupon
+    if (popup === 'coupon' && couponId && code) {
+      // Create a temporary coupon object for the popup
+      // Title will be updated when full coupon is fetched
+      const tempCoupon: Coupon = {
+        id: couponId,
+        code: decodeURIComponent(code),
+        storeName: decodeURIComponent(storeName || ''),
+        title: '', // Will be set from fetched coupon
+        description: 'Code copied to clipboard!',
+        couponType: 'code',
+        discount: 0,
+        discountType: 'percentage',
+        url: '',
+        logoUrl: '',
+        isActive: true,
+        maxUses: 1,
+        currentUses: 0,
+        expiryDate: null,
+        dealScope: 'sitewide',
+      };
+
+      // Show popup with temporary coupon data
+      setSelectedCoupon(tempCoupon);
+      setShowPopup(true);
+
+      // Try to fetch full coupon details in background
+      setTimeout(async () => {
+        try {
+          const response = await fetch(`/api/coupons/get?id=${encodeURIComponent(couponId)}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.coupon) {
+              // Use actual coupon title from the fetched coupon
+              setSelectedCoupon(data.coupon);
+            }
+          }
+        } catch (error) {
+          console.warn('Failed to fetch full coupon details for popup:', error);
+        }
+      }, 100);
+
+      // Clean up URL (remove query params) after a brief delay
+      setTimeout(() => {
+        const cleanUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+      }, 500);
+    }
+  }, []);
+
   useEffect(() => {
     const fetchStoreData = async () => {
       setLoading(true);
@@ -268,13 +328,27 @@ export default function StoreDetailPage() {
       const codeToCopy = coupon.code.trim();
       copyToClipboard(codeToCopy);
       
-      // Get redirect URL
-      const redirectUrl = (coupon.url && coupon.url.trim()) || (coupon.affiliateLink && coupon.affiliateLink.trim());
+      // Get redirect URL - prioritize coupon.url (Coupon URL column) FIRST, then store trackingLink, then trackingUrl
+      let redirectUrl = null;
+      const couponUrl = coupon.url;
+      if (couponUrl && typeof couponUrl === 'string' && couponUrl.trim() !== '') {
+        redirectUrl = couponUrl.trim();
+        console.log('[handleCouponClick CODE] ✅ Using coupon.url (Coupon URL column):', redirectUrl);
+      } else if (store?.trackingLink && store.trackingLink.trim()) {
+        redirectUrl = store.trackingLink.trim();
+        console.log('[handleCouponClick CODE] ⚠️ Using store.trackingLink (fallback):', redirectUrl, 'coupon.url was:', couponUrl);
+      } else if (store?.trackingUrl && store.trackingUrl.trim()) {
+        redirectUrl = store.trackingUrl.trim();
+        console.log('[handleCouponClick CODE] ⚠️ Using store.trackingUrl (fallback):', redirectUrl, 'coupon.url was:', couponUrl);
+      } else {
+        redirectUrl = (coupon.affiliateLink && coupon.affiliateLink.trim()) || null;
+        console.log('[handleCouponClick CODE] ⚠️ Using affiliateLink (last fallback):', redirectUrl, 'coupon.url was:', couponUrl);
+      }
       
       if (redirectUrl) {
-        // Open popup in NEW tab (with site URL + coupon info in query params)
-        const siteUrl = window.location.origin;
-        const popupUrl = `${siteUrl}/?popup=coupon&id=${encodeURIComponent(coupon.id || '')}&code=${encodeURIComponent(coupon.code || '')}&store=${encodeURIComponent(coupon.storeName || store?.name || '')}`;
+        // Open popup in NEW tab (with current store page URL + coupon info in query params)
+        const currentStoreUrl = window.location.href.split('?')[0]; // Get current URL without query params
+        const popupUrl = `${currentStoreUrl}?popup=coupon&id=${encodeURIComponent(coupon.id || '')}&code=${encodeURIComponent(coupon.code || '')}&store=${encodeURIComponent(coupon.storeName || store?.name || '')}`;
         window.open(popupUrl, '_blank', 'noopener,noreferrer');
         
         // Redirect current tab to coupon link after brief delay (to ensure popup opens first)
@@ -291,7 +365,22 @@ export default function StoreDetailPage() {
     setShowPopup(true);
     
     // Automatically open URL in new tab after a short delay (to ensure popup is visible first)
-    const redirectUrl = (coupon.url && coupon.url.trim()) || (coupon.affiliateLink && coupon.affiliateLink.trim());
+    // Prioritize coupon.url (Coupon URL column) FIRST, then store trackingLink, then trackingUrl
+    let redirectUrl = null;
+    const couponUrl = coupon.url;
+    if (couponUrl && typeof couponUrl === 'string' && couponUrl.trim() !== '') {
+      redirectUrl = couponUrl.trim();
+      console.log('[handleCouponClick DEAL] ✅ Using coupon.url (Coupon URL column):', redirectUrl);
+    } else if (store?.trackingLink && store.trackingLink.trim()) {
+      redirectUrl = store.trackingLink.trim();
+      console.log('[handleCouponClick DEAL] ⚠️ Using store.trackingLink (fallback):', redirectUrl, 'coupon.url was:', couponUrl);
+    } else if (store?.trackingUrl && store.trackingUrl.trim()) {
+      redirectUrl = store.trackingUrl.trim();
+      console.log('[handleCouponClick DEAL] ⚠️ Using store.trackingUrl (fallback):', redirectUrl, 'coupon.url was:', couponUrl);
+    } else {
+      redirectUrl = (coupon.affiliateLink && coupon.affiliateLink.trim()) || null;
+      console.log('[handleCouponClick DEAL] ⚠️ Using affiliateLink (last fallback):', redirectUrl, 'coupon.url was:', couponUrl);
+    }
     if (redirectUrl) {
       setTimeout(() => {
         window.open(redirectUrl, '_blank', 'noopener,noreferrer');
@@ -300,8 +389,22 @@ export default function StoreDetailPage() {
   };
 
   const handleContinue = () => {
-    // Use url first, then affiliateLink as fallback
-    const redirectUrl = selectedCoupon?.url || selectedCoupon?.affiliateLink;
+    // Prioritize coupon.url (Coupon URL column) FIRST, then store trackingLink, then trackingUrl
+    let redirectUrl = null;
+    const couponUrl = selectedCoupon?.url;
+    if (couponUrl && typeof couponUrl === 'string' && couponUrl.trim() !== '') {
+      redirectUrl = couponUrl.trim();
+      console.log('[handleContinue] ✅ Using coupon.url (Coupon URL column):', redirectUrl);
+    } else if (store?.trackingLink && store.trackingLink.trim()) {
+      redirectUrl = store.trackingLink.trim();
+      console.log('[handleContinue] ⚠️ Using store.trackingLink (fallback):', redirectUrl, 'coupon.url was:', couponUrl);
+    } else if (store?.trackingUrl && store.trackingUrl.trim()) {
+      redirectUrl = store.trackingUrl.trim();
+      console.log('[handleContinue] ⚠️ Using store.trackingUrl (fallback):', redirectUrl, 'coupon.url was:', couponUrl);
+    } else {
+      redirectUrl = selectedCoupon?.affiliateLink || null;
+      console.log('[handleContinue] ⚠️ Using affiliateLink (last fallback):', redirectUrl, 'coupon.url was:', couponUrl);
+    }
     if (redirectUrl) {
       window.open(redirectUrl, '_blank', 'noopener,noreferrer');
     }
@@ -415,7 +518,7 @@ export default function StoreDetailPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Commission Disclosure */}
         <p className="text-xs sm:text-sm text-gray-500 mb-4">
-          When you buy through links on our site, we may earn a commission.
+          {t('commissionDisclosure')}
         </p>
 
         {/* Store Header Section */}
@@ -438,13 +541,13 @@ export default function StoreDetailPage() {
           {/* Store Info */}
           <div className="flex-1">
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-              Verified {store.subStoreName || store.name} Coupons & Promo Codes
+              {t('verified')} {store.subStoreName || store.name} {t('couponsAndPromoCodes')}
             </h1>
             <p className="text-sm sm:text-base text-gray-600 mb-1">
-              Trusted Partner since {getTrustedPartnerYear()}
+              {t('trustedPartnerSince')} {getTrustedPartnerYear()}
             </p>
             <p className="text-sm sm:text-base text-gray-600">
-              {coupons.length} Coupons Validated by Our Experts on {getCurrentDate()}
+              {coupons.length} {t('couponsValidatedByExperts')} {getCurrentDate()}
             </p>
           </div>
         </div>
@@ -460,7 +563,7 @@ export default function StoreDetailPage() {
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              Coupons
+              {t('coupons')}
             </button>
             <button
               onClick={() => scrollToSection('store-info-section')}
@@ -470,7 +573,7 @@ export default function StoreDetailPage() {
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              Store Info
+              {t('storeInfo')}
             </button>
             <button
               onClick={() => scrollToSection('faqs-section')}
@@ -480,7 +583,7 @@ export default function StoreDetailPage() {
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              FAQs
+              {t('faqs')}
             </button>
           </div>
         </div>
@@ -510,24 +613,31 @@ export default function StoreDetailPage() {
               )}
 
               {/* Visit Store Button */}
-              {store.websiteUrl && (
+              {(store.trackingLink || store.trackingUrl || store.websiteUrl) && (
                 <a
-                  href={store.websiteUrl}
+                  href={store.trackingLink || store.trackingUrl || store.websiteUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block w-full bg-[#FFE019] hover:bg-black text-black hover:text-[#FFE019] border-2 border-black font-bold text-center py-3 px-4 rounded-lg transition-all duration-300"
                 >
-                  Visit Store
+                  {t('visitStore')}
                 </a>
               )}
 
               {/* Rating Section - Dynamic */}
               <div className="text-center">
+                {(() => {
+                  // Generate random rating and reviews if reviewCount is 0 or not available
+                  const generatedRating = getStoreRating(store.id);
+                  const displayRating = store.rating || generatedRating.rating;
+                  const displayReviews = (store.reviewCount && store.reviewCount > 0) ? store.reviewCount : generatedRating.reviews;
+                  
+                  return (
+                    <>
                 <div className="flex items-center justify-center gap-1 mb-1">
                   {[...Array(5)].map((_, i) => {
-                    const rating = store.rating || 4.5;
-                    const isFilled = i < Math.floor(rating);
-                    const isHalfFilled = i === Math.floor(rating) && rating % 1 >= 0.5;
+                          const isFilled = i < Math.floor(displayRating);
+                          const isHalfFilled = i === Math.floor(displayRating) && displayRating % 1 >= 0.5;
                     
                     return (
                       <div key={i} className="relative">
@@ -557,13 +667,16 @@ export default function StoreDetailPage() {
                   })}
                 </div>
                 <p className="text-sm text-gray-600">
-                  {store.reviewCount || 0} review{(store.reviewCount || 0) !== 1 ? 's' : ''}
+                        {displayReviews} {displayReviews !== 1 ? t('reviews') : t('review')}
                 </p>
+                    </>
+                  );
+                })()}
               </div>
 
               {/* User Feedback Box */}
               <div className="bg-gray-800 text-white p-4 rounded-lg">
-                <p className="text-sm mb-3">Enjoying {store.name} offers on our website?</p>
+                <p className="text-sm mb-3">{t('enjoyingStoreOffers').replace('{storeName}', store.name)}</p>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setUserFeedback('yes')}
@@ -571,7 +684,7 @@ export default function StoreDetailPage() {
                       userFeedback === 'yes' ? 'bg-green-600' : 'bg-white text-gray-900 hover:bg-gray-100'
                     }`}
                   >
-                    Yes
+                    {t('yes')}
                   </button>
                   <button
                     onClick={() => setUserFeedback('no')}
@@ -579,7 +692,7 @@ export default function StoreDetailPage() {
                       userFeedback === 'no' ? 'bg-red-600' : 'bg-white text-gray-900 hover:bg-gray-100'
                     }`}
                   >
-                    No
+                    {t('no')}
                   </button>
                 </div>
               </div>
@@ -587,15 +700,15 @@ export default function StoreDetailPage() {
               {/* Store Stats */}
               <div className="bg-white border border-gray-200 rounded-lg p-4">
                 <p className="text-sm font-semibold text-gray-900 mb-2">
-                  Get latest {store.name} Coupons and Deals here!
+                  {t('getLatestStoreCouponsAndDeals').replace('{storeName}', store.name)}
                 </p>
-                <p className="text-xs text-gray-600 mb-3">Verified and updated</p>
+                <p className="text-xs text-gray-600 mb-3">{t('verifiedAndUpdated')}</p>
                 <div className="space-y-2">
                   <p className="text-sm text-gray-700">
-                    Active Coupons: <span className="font-bold">{codeCoupons.length}</span>
+                    {t('activeCoupons')}: <span className="font-bold">{codeCoupons.length}</span>
                   </p>
                   <p className="text-sm text-gray-700">
-                    Active Deals: <span className="font-bold">{dealCoupons.length}</span>
+                    {t('activeDeals')}: <span className="font-bold">{dealCoupons.length}</span>
                   </p>
                 </div>
               </div>
@@ -626,7 +739,7 @@ export default function StoreDetailPage() {
               {/* Related Stores Section */}
               {relatedStores.length > 0 && (
                 <div className="bg-white border border-gray-200 rounded-lg p-4">
-                  <h3 className="text-lg font-bold text-gray-900 mb-3">Related Stores</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-3">{t('relatedStores')}</h3>
                   <div className="grid grid-cols-3 gap-3">
                     {relatedStores.map((relatedStore) => (
                       <LocalizedLink
@@ -682,7 +795,7 @@ export default function StoreDetailPage() {
                       : 'border-transparent text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  All
+                  {t('all')}
                 </button>
                 <button
                   onClick={() => setFilterTab('coupons')}
@@ -692,7 +805,7 @@ export default function StoreDetailPage() {
                       : 'border-transparent text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  Coupons({codeCoupons.length})
+                  {t('coupons')}({codeCoupons.length})
                 </button>
                 <button
                   onClick={() => setFilterTab('deals')}
@@ -702,7 +815,7 @@ export default function StoreDetailPage() {
                       : 'border-transparent text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  Deals({dealCoupons.length})
+                  {t('deals')}({dealCoupons.length})
                 </button>
               </div>
             </div>
@@ -711,12 +824,18 @@ export default function StoreDetailPage() {
             <div id="coupons-section" className="w-full scroll-mt-24">
             {filteredCoupons.length === 0 ? (
               <div className="text-center py-12 bg-gray-50 rounded-xl">
-                <p className="text-gray-500 text-lg">No {filterTab === 'all' ? 'coupons' : filterTab} available for this store right now.</p>
+                <p className="text-gray-500 text-lg">
+                  {filterTab === 'all' 
+                    ? t('noCouponsAvailableForStore') 
+                    : filterTab === 'coupons' 
+                      ? t('noCouponsAvailableForStore') 
+                      : t('noDealsAvailableForStore')}
+                </p>
                 <LocalizedLink
                   href="/stores"
                   className="inline-block mt-4 px-6 py-3 bg-black hover:bg-[#FFE019] text-[#FFE019] hover:text-black border-2 border-[#FFE019] rounded-lg transition-all duration-300 font-semibold"
                 >
-                  Browse Other Stores
+                  {t('browseOtherStores')}
                 </LocalizedLink>
               </div>
             ) : (
@@ -752,7 +871,7 @@ export default function StoreDetailPage() {
                   return coupon.buttonText;
                 }
                 if ((coupon.couponType || 'deal') === 'code' && coupon.code) {
-                  return 'Get Code';
+                  return t('getCode');
                 }
                 return t('getDeal');
               };
@@ -836,8 +955,8 @@ export default function StoreDetailPage() {
                           if (coupon.title) return stripHtml(coupon.title);
                           if (coupon.discount && coupon.discount > 0) {
                             return coupon.discountType === 'percentage' 
-                              ? `${coupon.discount}% Off`
-                              : `$${coupon.discount} Off`;
+                              ? `${coupon.discount}% ${t('off')}`
+                              : `$${coupon.discount} ${t('off')}`;
                           }
                           return coupon.code || coupon.storeName || store?.name || 'Coupon';
                         })()}
@@ -856,6 +975,46 @@ export default function StoreDetailPage() {
                           })()}
                         </p>
                       )}
+                      {/* Verified Badge and Expiry Date */}
+                      <div className="flex items-center gap-3 mt-2">
+                        <div className="flex items-center gap-1 text-green-600">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="text-[10px] font-medium">{t('verified')}</span>
+                        </div>
+                        {coupon.expiryDate && (
+                          <div className="flex items-center gap-1 text-xs text-gray-500">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span className="text-[10px]">
+                              {formatDate(coupon.expiryDate) || (() => {
+                                try {
+                                  let date: Date;
+                                  if (coupon.expiryDate instanceof Date) {
+                                    date = coupon.expiryDate;
+                                  } else if (coupon.expiryDate && typeof (coupon.expiryDate as any).toDate === 'function') {
+                                    // Firestore Timestamp
+                                    date = (coupon.expiryDate as any).toDate();
+                                  } else if (typeof coupon.expiryDate === 'string') {
+                                    date = new Date(coupon.expiryDate);
+                                  } else {
+                                    date = new Date(coupon.expiryDate as any);
+                                  }
+                                  return date.toLocaleDateString('en-US', { 
+                                    year: 'numeric', 
+                                    month: 'short', 
+                                    day: 'numeric' 
+                                  });
+                                } catch {
+                                  return 'N/A';
+                                }
+                              })()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     
                     {/* Button on Right */}
@@ -902,14 +1061,25 @@ export default function StoreDetailPage() {
             {/* Discover More Tags */}
             {store && (
               <div className="mt-8 flex flex-wrap gap-2">
-                <span className="text-sm font-semibold text-gray-700 mr-2">Discover more:</span>
-                {['online stores', 'shopping', store.name, 'Online shopping', 'shopping online', 'coupons', 'deals', 'discounts', 'savings'].map((tag, index) => (
-                  <button
+                <span className="text-sm font-semibold text-gray-700 mr-2">{t('discoverMore')}:</span>
+                {[
+                  { key: 'onlineStores', searchTerm: 'online stores' },
+                  { key: 'shopping', searchTerm: 'shopping' },
+                  { key: 'storeName', searchTerm: store.name, isStoreName: true },
+                  { key: 'onlineShopping', searchTerm: 'online shopping' },
+                  { key: 'shoppingOnline', searchTerm: 'shopping online' },
+                  { key: 'coupons', searchTerm: 'coupons' },
+                  { key: 'deals', searchTerm: 'deals' },
+                  { key: 'discounts', searchTerm: 'discounts' },
+                  { key: 'savings', searchTerm: 'savings' }
+                ].map((tag, index) => (
+                  <LocalizedLink
                     key={index}
+                    href={`/search?q=${encodeURIComponent(tag.searchTerm)}`}
                     className="text-xs sm:text-sm text-gray-600 hover:text-[#16a34a] hover:underline transition-colors"
                   >
-                    {tag}
-                  </button>
+                    {tag.isStoreName ? tag.searchTerm : t(tag.key as any)}
+                  </LocalizedLink>
                 ))}
               </div>
             )}
@@ -953,7 +1123,7 @@ export default function StoreDetailPage() {
 
             {/* FAQs Section */}
             <div id="faqs-section" className="mt-12">
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">FAQs</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">{t('faqs')}</h2>
               {storeFaqs.length > 0 ? (
                 <div className="space-y-4">
                   {storeFaqs.map((faq, index) => (
@@ -972,12 +1142,12 @@ export default function StoreDetailPage() {
                 </div>
               ) : (
                 <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                  <p className="text-gray-600 text-lg mb-4">No FAQs available for this store at the moment.</p>
+                  <p className="text-gray-600 text-lg mb-4">{t('noFaqsAvailableForStore')}</p>
                   <Link
                     href="/faqs"
                     className="inline-block px-6 py-3 bg-black hover:bg-[#FFE019] text-[#FFE019] hover:text-black border-2 border-[#FFE019] rounded-lg transition-all duration-300 font-semibold"
                   >
-                    View General FAQs
+                    {t('viewGeneralFaqs')}
                   </Link>
                 </div>
               )}
@@ -1001,6 +1171,7 @@ export default function StoreDetailPage() {
           setSelectedCoupon(null);
         }}
         onContinue={handleContinue}
+        store={store}
       />
     </div>
   );

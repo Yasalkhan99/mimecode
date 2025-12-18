@@ -215,7 +215,7 @@ export async function POST(req: NextRequest) {
     // Fetch all stores from Supabase
     const { data: stores, error: storesError } = await supabaseAdmin
       .from('stores')
-      .select('id, "Store Name", "Tracking Url", "Store Display Url", "Network Id"');
+      .select('id, "Store Name", "Tracking Url", "Store Display Url", "Network ID"');
     
     if (storesError) {
       throw new Error(`Failed to fetch stores: ${storesError.message}`);

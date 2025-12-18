@@ -20,7 +20,7 @@ export default function EditCouponPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState<Partial<Coupon>>({});
+  const [formData, setFormData] = useState<Partial<Omit<Coupon, 'expiryDate'> & { expiryDate: string | Date | null }>>({});
   const [logoUrl, setLogoUrl] = useState('');
   const [extractedLogoUrl, setExtractedLogoUrl] = useState<string | null>(null);
   const [stores, setStores] = useState<Store[]>([]);
@@ -55,9 +55,26 @@ export default function EditCouponPage() {
       ]);
       if (couponData) {
         setCoupon(couponData);
+        // Convert expiryDate to string if it's a Timestamp or Date
+        let expiryDateString: string | null = null;
+        if (couponData.expiryDate) {
+          try {
+            if (couponData.expiryDate instanceof Date) {
+              expiryDateString = couponData.expiryDate.toISOString();
+            } else if (typeof (couponData.expiryDate as any).toDate === 'function') {
+              // Firestore Timestamp
+              expiryDateString = (couponData.expiryDate as any).toDate().toISOString();
+            } else if (typeof couponData.expiryDate === 'string') {
+              expiryDateString = couponData.expiryDate;
+            }
+          } catch (e) {
+            console.error('Error converting expiryDate:', e);
+          }
+        }
         setFormData({
           ...couponData,
           couponType: couponData.couponType || 'code', // Default to 'code' if not set
+          expiryDate: expiryDateString,
         });
         setSelectedStoreIds(couponData.storeIds || []);
         if (couponData.logoUrl) {
@@ -107,6 +124,15 @@ export default function EditCouponPage() {
       logoUrl: logoUrlToSave,
     };
     
+    // Explicitly handle expiryDate (include null values)
+    updates.expiryDate = formData.expiryDate || null;
+    
+    // Explicitly ensure url field is included (even if empty/null)
+    updates.url = formData.url || null;
+    
+    console.log('💾 Saving coupon with expiryDate:', updates.expiryDate);
+    console.log('🔗 Saving coupon with url:', updates.url);
+    
     // For deal type, don't include code field
     if (formData.couponType === 'deal') {
       delete updates.code;
@@ -119,7 +145,9 @@ export default function EditCouponPage() {
     
     const result = await updateCoupon(couponId, updates);
     if (result.success) {
-      router.push('/admin/coupons');
+      // Force refresh by adding cache-busting query param
+      router.push('/admin/coupons?refresh=' + Date.now());
+      router.refresh(); // Also trigger Next.js router refresh
     }
     setSaving(false);
   };
@@ -201,7 +229,7 @@ export default function EditCouponPage() {
                                 setLogoUrl(foundStore.logoUrl);
                                 handleLogoUrlChange(foundStore.logoUrl);
                               }
-                              setFormData({ ...formData, ...updates });
+                              setFormData({ ...formData, ...updates } as any);
                               setManualStoreId('');
                               // Keep dropdown open so user can see the selected store
                               setIsStoreDropdownOpen(true);
@@ -241,7 +269,7 @@ export default function EditCouponPage() {
                               setLogoUrl(foundStore.logoUrl);
                               handleLogoUrlChange(foundStore.logoUrl);
                             }
-                            setFormData({ ...formData, ...updates });
+                            setFormData({ ...formData, ...updates } as any);
                             setManualStoreId('');
                             // Keep dropdown open so user can see the selected store
                             setIsStoreDropdownOpen(true);
@@ -330,16 +358,16 @@ export default function EditCouponPage() {
                                         setLogoUrl(firstStore.logoUrl);
                                         handleLogoUrlChange(firstStore.logoUrl);
                                       }
-                                      setFormData({ ...formData, ...updates });
+                                      setFormData({ ...formData, ...updates } as any);
                                     }
                                   } else {
-                                    setFormData({ ...formData, storeName: '' });
+                                    setFormData({ ...formData, storeName: '' } as any);
                                   }
                                 }}
                                 className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                               />
                               <span className="ml-3 text-sm text-gray-700">
-                                {originalIndex + 1} - {store.name}
+                                {(store as any).storeId || store.id || (originalIndex + 1)} - {store.name}
                               </span>
                           </label>
                         );
@@ -380,7 +408,7 @@ export default function EditCouponPage() {
                                 setLogoUrl(firstStore.logoUrl);
                                 handleLogoUrlChange(firstStore.logoUrl);
                               }
-                              setFormData({ ...formData, ...updates });
+                              setFormData({ ...formData, ...updates } as any);
                             }
                           } else {
                             setFormData({ ...formData, storeName: '' });
@@ -492,7 +520,7 @@ export default function EditCouponPage() {
                 placeholder="Store/Brand Name (e.g., Nike)"
                 value={formData.storeName || ''}
                 onChange={(e) =>
-                  setFormData({ ...formData, storeName: e.target.value })
+                  setFormData({ ...formData, storeName: e.target.value } as any)
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 required
@@ -576,6 +604,52 @@ export default function EditCouponPage() {
             />
             <p className="mt-1 text-xs text-gray-500">
               When user clicks "Get Deal", they will be redirected to this URL and the coupon code will be revealed.
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="expiryDate" className="block text-sm font-semibold text-gray-700 mb-1">
+              Expiry Date (Optional)
+            </label>
+            <input
+              id="expiryDate"
+              name="expiryDate"
+              type="date"
+              value={
+                formData.expiryDate
+                  ? (() => {
+                      try {
+                        let date: Date;
+                        if (formData.expiryDate instanceof Date) {
+                          date = formData.expiryDate;
+                        } else if (formData.expiryDate && typeof (formData.expiryDate as any).toDate === 'function') {
+                          // Firestore Timestamp
+                          date = (formData.expiryDate as any).toDate();
+                        } else if (typeof formData.expiryDate === 'string') {
+                          date = new Date(formData.expiryDate);
+                        } else {
+                          date = new Date(formData.expiryDate as any);
+                        }
+                        return date.toISOString().slice(0, 10);
+                      } catch {
+                        return '';
+                      }
+                    })()
+                  : ''
+              }
+              onChange={(e) => {
+                const dateValue = e.target.value;
+                if (dateValue) {
+                  const date = new Date(dateValue);
+                  setFormData({ ...formData, expiryDate: date.toISOString() });
+                } else {
+                  setFormData({ ...formData, expiryDate: null });
+                }
+              }}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Optional: Set when this coupon expires. Leave empty if no expiry date.
             </p>
           </div>
 

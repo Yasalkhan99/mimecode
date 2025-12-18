@@ -278,6 +278,13 @@ export default function EventsPageContent() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     {t('upcomingEvent')}
+                    {(() => {
+                      const daysUntil = getDaysUntilEvent(latestEvent);
+                      if (daysUntil !== null && daysUntil >= 0) {
+                        return <span className="ml-1">• {daysUntil === 0 ? t('today') : daysUntil === 1 ? t('tomorrow') : `${daysUntil} ${t('days')}`}</span>;
+                      }
+                      return null;
+                    })()}
                   </motion.div>
                 )}
 
@@ -358,7 +365,7 @@ export default function EventsPageContent() {
                             />
                             {daysUntil !== null && daysUntil > 0 && (
                               <div className="absolute top-4 right-4 bg-[#ffe019] text-black px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-                                {daysUntil} days
+                                {daysUntil} {t('days')}
                               </div>
                             )}
                           </div>

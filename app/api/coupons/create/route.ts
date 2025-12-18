@@ -130,7 +130,12 @@ export async function POST(req: NextRequest) {
         console.log(`💾 Saving coupon with Store  Id: ${storeIdForField}`);
       }
     }
-    if (coupon.url) supabaseCoupon['Coupon Deep Link'] = coupon.url;
+    // Handle url field - save to Coupon URL column (NEW column)
+    // Always save url field, even if null or empty
+    if (coupon.url !== undefined) {
+      supabaseCoupon['Coupon URL'] = coupon.url === null || coupon.url === '' ? null : String(coupon.url).trim();
+      console.log('🔗 Saving Coupon URL:', supabaseCoupon['Coupon URL']);
+    }
     if (coupon.affiliateLink) supabaseCoupon['affiliate_link'] = coupon.affiliateLink;
     if (coupon.logoUrl) supabaseCoupon['logo_url'] = coupon.logoUrl;
     if (coupon.expiryDate) supabaseCoupon['Coupon Expiry'] = coupon.expiryDate;

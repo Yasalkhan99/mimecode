@@ -181,15 +181,15 @@ export default function NewsletterSubscription() {
 
             {/* Disclaimer Text */}
             <p className="text-[12px] text-black leading-relaxed">
-              By clicking unlock deals you confirm that you are 16 years of age or older and you agree to our{' '}
+              {t('byClickingUnlock')}{' '}
               <Link href="/terms-of-service" className="underline hover:text-gray-900">
-                Terms of Service
+                {t('termsOfService')}
               </Link>
-              {' '}and{' '}
+              {' '}{t('and')}{' '}
               <Link href="/privacy-policy" className="underline hover:text-gray-900">
-                Privacy Policy
+                {t('privacyPolicyText')}
               </Link>
-              . You may unsubscribe at any time.
+              . {t('youMayUnsubscribe')}
             </p>
 
             {message && (

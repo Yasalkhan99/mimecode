@@ -8,6 +8,11 @@ import { supabaseAdmin } from '@/lib/supabase';
 let storesCache: { data: any[] | null; timestamp: number } = { data: null, timestamp: 0 };
 const CACHE_TTL = 60 * 1000; // 60 seconds cache
 
+// Export function to clear cache (used by update route)
+export function clearStoresCache() {
+  storesCache = { data: null, timestamp: 0 };
+}
+
 // Helper function to extract domain from URL
 const extractDomain = (url: string | null | undefined): string | null => {
   if (!url) return null;
@@ -125,8 +130,14 @@ const convertToAPIFormat = (row: any) => {
   const uuidId = row.id || null;
   
   const rawLogo = row['Store Logo'] || row.logo_url || '';
-  // Try Tracking Url first (most reliable), then Store Display Url, then website_url
-  const rawWebsiteUrl = row['Tracking Url'] || row['Store Display Url'] || row.website_url || '';
+  // Get Tracking Url separately
+  const trackingUrl = row['Tracking Url'] || '';
+  // Get Tracking Link separately
+  const trackingLink = row['Tracking Link'] || '';
+  // Get website URL separately (prefer Store Display Url, then website_url)
+  const websiteUrl = row['Store Display Url'] || row.website_url || '';
+  // Use trackingUrl for logo extraction if available, otherwise use websiteUrl
+  const rawWebsiteUrl = trackingUrl || websiteUrl;
   
   // Determine logo URL strategy:
   // 1. If logo is a full URL (http/https/cloudinary), use it directly
@@ -161,10 +172,15 @@ const convertToAPIFormat = (row: any) => {
     id: uuidId || storeIdValue, // Use UUID if exists, otherwise use Store Id
     name: row['Store Name'] || row.name || '',
     slug: row.Slug || row.slug || '',
-    networkId: row['Network Id'] || row.network_id || '',
+    networkId: (row['Network ID'] || row['Network Id'] || row.network_id || '').toString().trim(),
     logoUrl: logoUrl, // Logo URL with smart fallback to website favicon
     description: row.description || row['Store Description'] || row['Store Summary'] || '',
-    websiteUrl: rawWebsiteUrl,
+    websiteUrl: websiteUrl,
+    trackingUrl: trackingUrl || null, // Separate tracking URL
+    trackingLink: trackingLink || null, // Separate tracking Link
+    countryCodes: Array.isArray(row['country_codes']) 
+      ? row['country_codes'].join(',') // Convert array to comma-separated string
+      : (row['country_codes'] || row.countryCodes || '').toString().trim() || null, // Country codes
     // Expose both normalized mainCategoryId and backward-compatible categoryId
     mainCategoryId,
     categoryId: mainCategoryId,
@@ -265,6 +281,7 @@ export async function GET(req: NextRequest) {
     const slug = searchParams.get('slug');
     const id = searchParams.get('id');
     const networkId = searchParams.get('networkId');
+    const countryCode = searchParams.get('countryCode'); // Filter by country code
 
     let query = supabaseAdmin.from('stores').select('*');
 
@@ -308,7 +325,7 @@ export async function GET(req: NextRequest) {
 
     // Get store(s) by network ID
     if (networkId) {
-      const { data, error } = await query.eq('Network Id', networkId);
+      const { data, error } = await query.eq('Network ID', networkId);
       if (error) throw error;
       
       let convertedStores = (data || []).map(convertToAPIFormat);
@@ -332,9 +349,18 @@ export async function GET(req: NextRequest) {
       query = query.eq('category_id', categoryId);
     }
 
-    // Check cache for full list (no filters)
+    // Filter by country code if provided
+    // country_codes is a TEXT[] array in Supabase, so we use cs (contains) operator
+    if (countryCode) {
+      query = query.contains('country_codes', [countryCode.toUpperCase()]);
+    }
+
+    // Check for cache-busting parameter
+    const bypassCache = searchParams.get('_t') !== null;
+    
+    // Check cache for full list (no filters) - skip if bypassCache is true or countryCode filter is applied
     const now = Date.now();
-    if (!categoryId && storesCache.data && (now - storesCache.timestamp) < CACHE_TTL) {
+    if (!bypassCache && !categoryId && !countryCode && storesCache.data && (now - storesCache.timestamp) < CACHE_TTL) {
       return NextResponse.json(
         { success: true, stores: storesCache.data },
         { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' } }
@@ -355,8 +381,8 @@ export async function GET(req: NextRequest) {
       return idB - idA;
     });
 
-    // Update cache for full list
-    if (!categoryId) {
+    // Update cache for full list (only if no filters applied)
+    if (!categoryId && !countryCode) {
       storesCache = { data: convertedStores, timestamp: now };
     }
 

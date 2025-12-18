@@ -3,16 +3,19 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Coupon } from '@/lib/services/couponService';
+import { Store } from '@/lib/services/storeService';
 
 interface CouponPopupProps {
   coupon: Coupon | null;
   isOpen: boolean;
   onClose: () => void;
   onContinue: () => void;
+  store?: Store | null;
 }
 
-export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: CouponPopupProps) {
+export default function CouponPopup({ coupon, isOpen, onClose, onContinue, store }: CouponPopupProps) {
   const [copied, setCopied] = useState(false);
+  const [storeData, setStoreData] = useState<any>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -24,6 +27,42 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
       document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
+
+  // Fetch store data for favicon if coupon logo is not available and store prop is not provided
+  useEffect(() => {
+    if (coupon && coupon.storeName && isOpen && !store) {
+      // Check if we already have a valid logo URL
+      const hasValidLogo = coupon.logoUrl && (
+        coupon.logoUrl.startsWith('http://') || 
+        coupon.logoUrl.startsWith('https://') || 
+        coupon.logoUrl.includes('cloudinary.com')
+      );
+      
+      // Only fetch store if we don't have a valid logo and store prop is not available
+      if (!hasValidLogo) {
+        // Try to fetch store by name to get trackingLink/trackingUrl for favicon
+        const fetchStore = async () => {
+          try {
+            const response = await fetch(`/api/stores/get?collection=stores-mimecode`);
+            if (response.ok) {
+              const data = await response.json();
+              if (data.success && data.stores) {
+                const foundStore = data.stores.find((s: any) => 
+                  s.name?.toLowerCase().trim() === coupon.storeName?.toLowerCase().trim()
+                );
+                if (foundStore) {
+                  setStoreData(foundStore);
+                }
+              }
+            }
+          } catch (error) {
+            // Silently fail
+          }
+        };
+        fetchStore();
+      }
+    }
+  }, [coupon, isOpen, store]);
 
   if (!isOpen || !coupon) return null;
 
@@ -88,9 +127,65 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
     return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
   };
 
-  // Get logo URL with fallback to coupon URL favicon
+  // Get logo URL - prioritize store's extracted favicon (logoUrl) first
   const getCouponLogoUrl = (): string | null => {
-    // If logo exists and is a full URL, use it
+    // Priority 1: Use store's extracted logoUrl (extracted favicon) - HIGHEST PRIORITY
+    if (store?.logoUrl) {
+      if (store.logoUrl.startsWith('http://') || store.logoUrl.startsWith('https://')) {
+        return store.logoUrl;
+      }
+      if (store.logoUrl.includes('cloudinary.com')) {
+        return store.logoUrl;
+      }
+    }
+    
+    // Priority 2: Use fetched storeData's logoUrl (extracted favicon)
+    if (storeData?.logoUrl) {
+      if (storeData.logoUrl.startsWith('http://') || storeData.logoUrl.startsWith('https://')) {
+        return storeData.logoUrl;
+      }
+      if (storeData.logoUrl.includes('cloudinary.com')) {
+        return storeData.logoUrl;
+      }
+    }
+    
+    // Priority 3: Generate favicon from store's trackingLink
+    if (store?.trackingLink) {
+      const favicon = getLogoFromWebsite(store.trackingLink);
+      if (favicon) return favicon;
+    }
+    
+    // Priority 4: Generate favicon from store's trackingUrl
+    if (store?.trackingUrl) {
+      const favicon = getLogoFromWebsite(store.trackingUrl);
+      if (favicon) return favicon;
+    }
+    
+    // Priority 5: Generate favicon from store's websiteUrl
+    if (store?.websiteUrl) {
+      const favicon = getLogoFromWebsite(store.websiteUrl);
+      if (favicon) return favicon;
+    }
+    
+    // Priority 6: Generate favicon from fetched storeData's trackingLink
+    if (storeData?.trackingLink) {
+      const favicon = getLogoFromWebsite(storeData.trackingLink);
+      if (favicon) return favicon;
+    }
+    
+    // Priority 7: Generate favicon from fetched storeData's trackingUrl
+    if (storeData?.trackingUrl) {
+      const favicon = getLogoFromWebsite(storeData.trackingUrl);
+      if (favicon) return favicon;
+    }
+    
+    // Priority 8: Generate favicon from fetched storeData's websiteUrl
+    if (storeData?.websiteUrl) {
+      const favicon = getLogoFromWebsite(storeData.websiteUrl);
+      if (favicon) return favicon;
+    }
+    
+    // Priority 9: Fallback to coupon logo URL
     if (coupon.logoUrl) {
       if (coupon.logoUrl.startsWith('http://') || coupon.logoUrl.startsWith('https://')) {
         return coupon.logoUrl;
@@ -100,7 +195,7 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
       }
     }
     
-    // Fallback: Try to get favicon from coupon URL
+    // Priority 10: Fallback to coupon URL favicon
     if (coupon.url) {
       return getLogoFromWebsite(coupon.url);
     }
@@ -247,21 +342,40 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                         return tmp.textContent || tmp.innerText || '';
                       };
                       
-                      // Get coupon title - prefer title, then description, then generate from discount
-                      if (coupon.title) {
-                        return stripHtml(coupon.title);
+                      // PRIORITY 1: Always show coupon title if it exists and is not empty
+                      // This is the main title like "Free Entire Cart Shipping"
+                      // Check both coupon.title and make sure it's a valid non-empty string
+                      const rawTitle = coupon.title;
+                      if (rawTitle !== null && rawTitle !== undefined && rawTitle !== '') {
+                        const title = stripHtml(String(rawTitle)).trim();
+                        // Show title if it's not empty and not "Use code:"
+                        if (title && title.length > 0 && title !== 'Use code:' && !title.startsWith('Use code:')) {
+                          return title;
+                        }
                       }
+                      
+                      // PRIORITY 2: Try description if title is not available
                       if (coupon.description) {
-                        return stripHtml(coupon.description);
+                        const description = stripHtml(coupon.description).trim();
+                        const codeUpper = coupon.code ? coupon.code.toUpperCase().trim() : '';
+                        if (description && 
+                            description !== 'Code copied to clipboard!' && 
+                            description.toUpperCase() !== codeUpper &&
+                            !description.toUpperCase().includes(codeUpper)) {
+                          return description;
                       }
-                      // Generate title from discount
+                      }
+                      
+                      // PRIORITY 3: Generate title from discount
                       if (coupon.discount && coupon.discount > 0) {
                         const discountText = coupon.discountType === 'percentage' 
                           ? `${coupon.discount}% Off`
                           : `$${coupon.discount} Off`;
                         return discountText;
                       }
-                      return coupon.code || 'Coupon';
+                      
+                      // PRIORITY 4: Last resort - show store name (but this should rarely happen)
+                      return coupon.storeName || 'Coupon';
                     })()}
                   </motion.h2>
                   <div className="mt-1.5 h-0.5 w-16 bg-[#FFE019] rounded-full mx-auto" />

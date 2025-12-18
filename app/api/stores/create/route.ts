@@ -41,9 +41,9 @@ export async function POST(req: NextRequest) {
       // Start from 1 if fetch fails
       storeId = '1';
     } else {
-      // Find the maximum numeric ID, but only consider IDs that are reasonable (not timestamps)
-      // Timestamp-based IDs are typically > 100000, so we ignore those
-      const MAX_REASONABLE_ID = 100000;
+      // Find the maximum numeric ID
+      // After migration, all Store IDs should be sequential (1, 2, 3...)
+      // So we find the max ID to continue the sequence
       let maxId = 0;
       
       if (existingStores && existingStores.length > 0) {
@@ -52,14 +52,15 @@ export async function POST(req: NextRequest) {
           if (id) {
             // Try to parse as number
             const numericId = parseInt(String(id), 10);
-            // Only consider IDs that are reasonable (not timestamp-based)
-            if (!isNaN(numericId) && numericId <= MAX_REASONABLE_ID && numericId > maxId) {
+            // Consider all numeric IDs (after migration, they should all be sequential)
+            if (!isNaN(numericId) && numericId > maxId) {
               maxId = numericId;
             }
           }
         }
       }
       // Generate next sequential ID starting from 1
+      // If no stores exist, start from 1, otherwise continue from max + 1
       storeId = String(maxId + 1);
     }
 
@@ -76,13 +77,60 @@ export async function POST(req: NextRequest) {
     // Add optional fields only if they have values
     if (store.logoUrl) supabaseStore['Store Logo'] = store.logoUrl;
     if (store.voucherText) supabaseStore['voucher_text'] = store.voucherText;
-    if (store.networkId) supabaseStore['Network Id'] = store.networkId;
+    // Save Network ID if provided - check for duplicates first
+    if (store.networkId !== undefined && store.networkId !== null && store.networkId !== '') {
+      const networkIdStr = String(store.networkId).trim();
+      if (networkIdStr && networkIdStr !== 'null' && networkIdStr !== 'undefined') {
+        // Check if Network ID already exists
+        const { data: existingStore, error: checkError } = await supabaseAdmin
+          .from('stores')
+          .select('"Store Id", "Store Name"')
+          .eq('Network ID', networkIdStr)
+          .maybeSingle();
+        
+        if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned (not an error)
+          console.error('Error checking Network ID:', checkError);
+        } else if (existingStore) {
+          return NextResponse.json(
+            { 
+              success: false, 
+              error: `Network ID "${networkIdStr}" already exists for store "${existingStore['Store Name']}" (ID: ${existingStore['Store Id']})` 
+            },
+            { status: 400 }
+          );
+        }
+        
+        supabaseStore['Network ID'] = networkIdStr;
+        console.log(`💾 Saving Network ID: "${networkIdStr}" for store: ${store.name}`);
+      }
+    }
     if (store.categoryId) supabaseStore['Parent Category Id'] = store.categoryId;
     if (store.merchantId) supabaseStore['Merchant Id'] = store.merchantId;
     if (store.websiteUrl) {
       supabaseStore['website_url'] = store.websiteUrl;
-      supabaseStore['Tracking Url'] = store.websiteUrl;
       supabaseStore['Store Display Url'] = store.websiteUrl;
+    }
+    // Save tracking URL separately if provided (even if empty string, to ensure field exists)
+    if (store.trackingUrl !== undefined && store.trackingUrl !== null) {
+      supabaseStore['Tracking Url'] = store.trackingUrl.trim() || null;
+    }
+    // Save tracking Link separately if provided
+    if (store.trackingLink !== undefined && store.trackingLink !== null) {
+      supabaseStore['Tracking Link'] = store.trackingLink.trim() || null;
+    }
+    // Save country codes if provided (convert string to array format for Supabase TEXT[])
+    if (store.countryCodes !== undefined && store.countryCodes !== null) {
+      const countryStr = store.countryCodes.trim();
+      if (countryStr) {
+        // Convert string to array - if comma-separated, split it; otherwise single value as array
+        const countryArray = countryStr.includes(',')
+          ? countryStr.split(',').map((c: string) => c.trim()).filter((c: string) => c)
+          : [countryStr];
+        supabaseStore['country_codes'] = countryArray;
+        console.log(`💾 Saving Country Codes: ${JSON.stringify(countryArray)} for store: ${store.name}`);
+      } else {
+        supabaseStore['country_codes'] = null;
+      }
     }
     if (store.layoutPosition !== null && store.layoutPosition !== undefined) {
       supabaseStore['layout_position'] = store.layoutPosition;

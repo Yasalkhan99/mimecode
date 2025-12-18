@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getActiveRegions, Region } from '@/lib/services/regionService';
 import { getStores, Store } from '@/lib/services/storeService';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -408,6 +409,7 @@ const getFlagImageUrl = (countryCode: string): string => {
 };
 
 export default function RegionSpecificOffers() {
+  const { t } = useTranslation();
   const [regions, setRegions] = useState<Region[]>([]);
   const [allStores, setAllStores] = useState<Store[]>([]);
   const [selectedRegion, setSelectedRegion] = useState<Region | null>(null);
@@ -540,7 +542,7 @@ export default function RegionSpecificOffers() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-6">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">
-              Region <span className="text-orange-500">Specific Offers</span>
+              {t('region')} <span className="text-orange-500">{t('specificOffers')}</span>
             </h2>
           </div>
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
@@ -571,7 +573,7 @@ export default function RegionSpecificOffers() {
           >
             <img
               src="/Group 1171275088.svg"
-              alt="Region Specific Offers"
+              alt={t('regionSpecificOffers')}
               className="h-16 sm:h-20 md:h-24 lg:h-28 w-auto"
             />
           </motion.div>
@@ -693,7 +695,7 @@ export default function RegionSpecificOffers() {
                   <div>
                     <h3 className="text-xl font-bold text-[#FFE019]">{selectedRegion.name}</h3>
                     <p className="text-sm text-gray-300">
-                      {filteredStores.length} {filteredStores.length === 1 ? 'Store' : 'Stores'} Available
+                      {filteredStores.length} {filteredStores.length === 1 ? t('store') : t('stores')} {t('available')}
                     </p>
                   </div>
                 </div>

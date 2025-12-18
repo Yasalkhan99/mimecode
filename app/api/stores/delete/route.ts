@@ -23,20 +23,40 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Delete from Supabase
-    // Note: The stores table uses "Store Id" column (with space), not "id"
-    const { error } = await supabaseAdmin
+    console.log('🗑️ Deleting store with ID:', id, 'Type:', typeof id);
+
+    // Delete from Supabase - try by row ID first, then by Store Id field
+    let error;
+    
+    // First try by Supabase row ID (UUID)
+    const resultById = await supabaseAdmin
       .from('stores')
       .delete()
-      .eq('Store Id', id);
+      .eq('id', id);
+    
+    error = resultById.error;
+    
+    // If not found by row ID, try by Store Id field (numeric)
+    if (error && error.code === 'PGRST116') {
+      console.log('⚠️ Not found by row ID, trying by Store Id field...');
+      const resultByStoreId = await supabaseAdmin
+        .from('stores')
+        .delete()
+        .eq('Store Id', id);
+      
+      error = resultByStoreId.error;
+    }
 
     if (error) {
-      console.error('Supabase delete store error:', error);
+      console.error('❌ Supabase delete store error:', error);
+      console.error('❌ Error details:', JSON.stringify(error, null, 2));
       return NextResponse.json(
-        { success: false, error: error.message || 'Failed to delete store' },
+        { success: false, error: error.message || 'Failed to delete store', details: error },
         { status: 500 }
       );
     }
+
+    console.log('✅ Store deleted successfully');
 
     return NextResponse.json({
       success: true,

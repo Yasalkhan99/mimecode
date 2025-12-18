@@ -1,6 +1,6 @@
 'use client';
 
-// This route handles language-prefixed store detail pages (e.g., /du/stores/slug, /es/stores/slug)
+// This route handles language-prefixed store detail pages (e.g., /de/stores/slug, /es/stores/slug)
 // It renders the same content as the store detail page
 
 import StoreDetailPage from '../../../stores/[id]/page';

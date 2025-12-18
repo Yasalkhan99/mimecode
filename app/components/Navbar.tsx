@@ -40,7 +40,7 @@ export default function Navbar() {
   const handleSignOut = async () => {
     try {
       await signOut(auth);
-      router.push('/');
+      router.push(getLocalizedPath('/'));
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -176,13 +176,13 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex items-center justify-between gap-4">
             {/* Logo */}
-            <Link href="/" className="flex-shrink-0">
+            <LocalizedLink href="/" className="flex-shrink-0">
               <img 
                 src="/Group 1171275050 (1).svg" 
                 alt="HB Mime Code Logo" 
                 className="h-10 sm:h-12 md:h-14 w-auto"
               />
-            </Link>
+            </LocalizedLink>
 
             {/* Search Bar - Center */}
             <div className="flex-1 max-w-2xl mx-4 hidden md:block">
@@ -207,9 +207,9 @@ export default function Navbar() {
                 {/* Search Results Dropdown */}
                 {showSearchResults && searchQuery && filteredStores.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-96 overflow-y-auto z-50 search-results-container">
-                    {filteredStores.map((store) => (
+                    {filteredStores.map((store, index) => (
                       <LocalizedLink
-                        key={store.id}
+                        key={`search-store-${index}-${store.id}`}
                         href={`/stores/${store.slug || store.id}`}
                         onClick={() => {
                           setShowSearchResults(false);
@@ -291,7 +291,7 @@ export default function Navbar() {
           <div className="flex items-center justify-center gap-6 py-3">
             {/* Navigation Links - Desktop */}
             <div className="hidden md:flex items-center gap-6">
-              <Link 
+              <LocalizedLink 
                 href="/" 
                 className={`px-4 py-2 font-semibold text-sm transition-colors ${
                   isActive('/') 
@@ -300,7 +300,7 @@ export default function Navbar() {
                 }`}
               >
                 {t('home')}
-              </Link>
+              </LocalizedLink>
               <div 
                 className="relative stores-dropdown-container"
                 onMouseEnter={() => setStoresDropdownOpen(true)}
@@ -388,9 +388,9 @@ export default function Navbar() {
                               All Stores 
                               {/* ({stores.length}) */}
                             </div>
-                            {stores.slice(0, 30).map((store) => (
+                            {stores.slice(0, 30).map((store, index) => (
                               <LocalizedLink
-                                key={store.id}
+                                key={`dropdown-store-${index}-${store.id}`}
                                 href={`/stores/${store.slug || store.id}`}
                                 className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 text-sm"
                                 onClick={() => setStoresDropdownOpen(false)}
@@ -423,9 +423,9 @@ export default function Navbar() {
                             {stores
                               .filter(store => store.categoryId === hoveredCategoryId)
                               .slice(0, 30)
-                              .map((store) => (
+                              .map((store, index) => (
                                 <LocalizedLink
-                                  key={store.id}
+                                  key={`category-store-${index}-${store.id}`}
                                   href={`/stores/${store.slug || store.id}`}
                                   className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 text-sm"
                                   onClick={() => setStoresDropdownOpen(false)}
@@ -506,9 +506,9 @@ export default function Navbar() {
           {/* Mobile Search Results */}
           {showSearchResults && searchQuery && filteredStores.length > 0 && (
             <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-96 overflow-y-auto z-50 search-results-container">
-              {filteredStores.map((store) => (
+              {filteredStores.map((store, index) => (
                 <LocalizedLink
-                  key={store.id}
+                  key={`mobile-search-store-${index}-${store.id}`}
                   href={`/stores/${store.slug || store.id}`}
                   onClick={() => {
                     setShowSearchResults(false);
@@ -553,7 +553,7 @@ export default function Navbar() {
             {/* Navigation Links - Scrollable */}
             <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto scrollbar-hide flex-1 min-w-0">
               <div className="flex items-center gap-2 sm:gap-3 min-w-max">
-                <Link 
+                <LocalizedLink 
                   href="/" 
                   className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${
                     isActive('/') 
@@ -562,7 +562,7 @@ export default function Navbar() {
                   }`}
                 >
                   {t('home')}
-                </Link>
+                </LocalizedLink>
                 <LocalizedLink 
                   href="/categories" 
                   className={`font-semibold py-3 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${

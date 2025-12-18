@@ -5,10 +5,12 @@ import { getPopularCoupons, getLatestCoupons, Coupon } from '@/lib/services/coup
 import { getStores, Store } from '@/lib/services/storeService';
 import { addToFavorites, removeFromFavorites, isFavorite } from '@/lib/services/favoritesService';
 import { addNotification } from '@/lib/services/notificationsService';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 import Link from 'next/link';
 import CouponPopup from './CouponPopup';
 
 export default function PopularCoupons() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'latest' | 'popular'>('latest');
   const [coupons, setCoupons] = useState<(Coupon | null)[]>(Array(8).fill(null));
   const [stores, setStores] = useState<Store[]>([]);
@@ -66,9 +68,9 @@ export default function PopularCoupons() {
     }
     // Default to type-based text
     if ((coupon.couponType || 'deal') === 'code' && coupon.code) {
-      return 'Get Code';
+      return t('getCode');
     }
-    return 'Get Deal';
+    return t('getDeal');
   };
 
   // Get last 2 digits for hover display
@@ -123,10 +125,21 @@ export default function PopularCoupons() {
     
     // Get store for this coupon
     const store = getStoreForCoupon(coupon);
-    const storeTrackingUrl = store?.websiteUrl || (store as any)?.['Tracking Url'] || (store as any)?.['Store Display Url'] || null;
     
-    // Get URL to open
-    let urlToOpen = storeTrackingUrl || coupon.url || coupon.affiliateLink || null;
+    // Get URL to open - prioritize coupon.url (primary), then store trackingLink, then trackingUrl
+    // Check coupon.url FIRST - if it exists and is not empty, use it
+    let urlToOpen = null;
+    const couponUrl = coupon.url;
+    if (couponUrl && typeof couponUrl === 'string' && couponUrl.trim() !== '') {
+      urlToOpen = couponUrl.trim();
+    } else if (store?.trackingLink && store.trackingLink.trim()) {
+      urlToOpen = store.trackingLink.trim();
+    } else if (store?.trackingUrl && store.trackingUrl.trim()) {
+      urlToOpen = store.trackingUrl.trim();
+    } else {
+      const storeTrackingUrl = store?.websiteUrl || (store as any)?.['Tracking Url'] || (store as any)?.['Store Display Url'] || null;
+      urlToOpen = storeTrackingUrl || coupon.affiliateLink || null;
+    }
     if (urlToOpen && !urlToOpen.startsWith('http')) {
       urlToOpen = `https://${urlToOpen}`;
     }
@@ -141,9 +154,10 @@ export default function PopularCoupons() {
     // Get the correct logo URL - SAME LOGIC as card display
     let correctLogoUrl: string | null = null;
     
-    // Priority 1: Store tracking URL favicon
-    if (storeTrackingUrl) {
-      const domain = extractDomainForLogo(storeTrackingUrl);
+    // Priority 1: Store tracking Link/Tracking URL favicon (use same priority as urlToOpen)
+    const storeTrackingUrlForLogo = store?.trackingLink || store?.trackingUrl || store?.websiteUrl || (store as any)?.['Tracking Url'] || (store as any)?.['Store Display Url'] || null;
+    if (storeTrackingUrlForLogo) {
+      const domain = extractDomainForLogo(storeTrackingUrlForLogo);
       if (domain) {
         correctLogoUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
       }
