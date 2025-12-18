@@ -7,7 +7,7 @@ export const languages = [
   { code: 'en', name: 'English', flag: '🇬🇧', slug: 'en', countryCode: 'US' }, // English - show USA stores
   { code: 'es', name: 'Español', flag: '🇪🇸', slug: 'es', countryCode: 'ES' },
   { code: 'fr', name: 'Français', flag: '🇫🇷', slug: 'fr', countryCode: 'FR' },
-  { code: 'de', name: 'Deutsch', flag: '🇩🇪', slug: 'de', countryCode: 'DE' },
+  { code: 'de', name: 'Deutsch', flag: '🇩🇪', slug: 'du', countryCode: 'DE' },
   { code: 'it', name: 'Italiano', flag: '🇮🇹', slug: 'it', countryCode: 'IT' },
   { code: 'pt', name: 'Português', flag: '🇵🇹', slug: 'pt', countryCode: 'PT' },
   { code: 'nl', name: 'Nederlands', flag: '🇳🇱', slug: 'nl', countryCode: 'NL' },
