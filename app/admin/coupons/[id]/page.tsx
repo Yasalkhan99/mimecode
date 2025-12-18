@@ -209,18 +209,12 @@ export default function EditCouponPage() {
                         e.preventDefault();
                         const storeId = manualStoreId.trim();
                         if (storeId) {
-                          // Try to find store by Store ID (numeric) or by name (text)
-                          const inputNum = parseInt(storeId, 10);
+                          // Try to find store by ID (check both string match and numeric match)
                           const foundStore = stores.find(store => {
-                            if (!isNaN(inputNum)) {
-                              // Match by actual Store ID only
-                              const actualStoreId = (store as any).storeId;
-                              const storeIdNum = actualStoreId ? parseInt(String(actualStoreId), 10) : 0;
-                              return !isNaN(storeIdNum) && storeIdNum === inputNum;
-                            } else {
-                              // Match by store name
-                              return store.name?.toLowerCase().includes(storeId.toLowerCase());
-                            }
+                            const storeIdNum = parseInt(String(store.id || '0'), 10);
+                            const inputIdNum = parseInt(storeId, 10);
+                            return store.id === storeId || 
+                                   (storeIdNum > 0 && storeIdNum === inputIdNum && inputIdNum <= 100000);
                           });
                           
                           if (foundStore && foundStore.id) {
@@ -258,18 +252,11 @@ export default function EditCouponPage() {
                       const currentValue = manualStoreId.trim();
                       setTimeout(() => {
                         if (currentValue) {
-                          // Try to find store by Store ID (numeric) or by name (text)
-                          const inputNum = parseInt(currentValue, 10);
                           const foundStore = stores.find(store => {
-                            if (!isNaN(inputNum)) {
-                              // Match by actual Store ID only
-                              const actualStoreId = (store as any).storeId;
-                              const storeIdNum = actualStoreId ? parseInt(String(actualStoreId), 10) : 0;
-                              return !isNaN(storeIdNum) && storeIdNum === inputNum;
-                            } else {
-                              // Match by store name
-                              return store.name?.toLowerCase().includes(currentValue.toLowerCase());
-                            }
+                            const storeIdNum = parseInt(String(store.id || '0'), 10);
+                            const inputIdNum = parseInt(currentValue, 10);
+                            return store.id === currentValue || 
+                                   (storeIdNum > 0 && storeIdNum === inputIdNum && inputIdNum <= 100000);
                           });
                           
                           if (foundStore && foundStore.id && !selectedStoreIds.includes(foundStore.id)) {
@@ -325,24 +312,23 @@ export default function EditCouponPage() {
                   <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                     <div className="p-2">
                       {stores
-                        .filter((store) => {
+                        .filter((store, index) => {
                           // Filter stores based on manualStoreId input
                           if (!manualStoreId.trim()) {
                             return true; // Show all stores if no input
                           }
                           const inputNum = parseInt(manualStoreId.trim(), 10);
                           if (isNaN(inputNum)) {
-                            // If not a number, search by store name
-                            const searchLower = manualStoreId.trim().toLowerCase();
-                            return store.name?.toLowerCase().includes(searchLower) || false;
+                            return true; // Show all if not a number
                           }
-                          // Match ONLY by actual Store ID (not by index)
-                          const storeId = (store as any).storeId;
-                          const storeIdNum = storeId ? parseInt(String(storeId), 10) : 0;
-                          // Only match if Store ID matches exactly
-                          return !isNaN(storeIdNum) && storeIdNum === inputNum;
+                          // Match by index (1-based) or by actual store ID
+                          const storeIdNum = parseInt(String(store.id || '0'), 10);
+                          return (index + 1 === inputNum) || 
+                                 (storeIdNum > 0 && storeIdNum === inputNum && inputNum <= 100000);
                         })
                         .map((store) => {
+                          // Find original index for display
+                          const originalIndex = stores.findIndex(s => s.id === store.id);
                           const isSelected = selectedStoreIds.includes(store.id || '');
                           return (
                             <label
@@ -381,7 +367,7 @@ export default function EditCouponPage() {
                                 className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                               />
                               <span className="ml-3 text-sm text-gray-700">
-                                {(store as any).storeId || store.id || '-'} - {store.name}
+                                {(store as any).storeId || store.id || (originalIndex + 1)} - {store.name}
                               </span>
                           </label>
                         );

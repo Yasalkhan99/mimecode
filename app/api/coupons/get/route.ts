@@ -145,41 +145,6 @@ const convertToAPIFormat = (couponData: any, docId: string, storeData?: any) => 
     categoryId: data.category_id || data.categoryId || null,
     createdAt: data.created_at || data.createdAt || data['Created Date'] || null,
     updatedAt: data.updated_at || data.updatedAt || data['Modify Date'] || null,
-    // Handle country_codes - Supabase TEXT[] arrays come as JavaScript arrays like ["FR"] or ["DE"]
-    countryCodes: (() => {
-      if (!data['country_codes']) return null;
-      
-      if (Array.isArray(data['country_codes'])) {
-        // Supabase TEXT[] array comes as JavaScript array like ["FR"] or ["DE", "FR"]
-        const codes = data['country_codes'].map(c => String(c).trim().toUpperCase()).filter(c => c);
-        return codes.length > 0 ? codes.join(',') : null;
-      } else {
-        // Fallback: handle string representation
-        const str = String(data['country_codes']).trim();
-        if (!str) return null;
-        
-        // Try to parse as JSON array string first
-        if (str.startsWith('[') && str.endsWith(']')) {
-          try {
-            const parsed = JSON.parse(str);
-            if (Array.isArray(parsed)) {
-              const codes = parsed.map(c => String(c).trim().toUpperCase()).filter(c => c);
-              return codes.length > 0 ? codes.join(',') : null;
-            } else {
-              return String(parsed).trim().toUpperCase() || null;
-            }
-          } catch {
-            // If JSON parse fails, remove brackets and treat as comma-separated
-            const codes = str.replace(/[\[\]"]/g, '').split(',').map(c => c.trim().toUpperCase()).filter(c => c);
-            return codes.length > 0 ? codes.join(',') : null;
-          }
-        } else {
-          // Comma-separated string
-          const codes = str.split(',').map(c => c.trim().toUpperCase()).filter(c => c);
-          return codes.length > 0 ? codes.join(',') : null;
-        }
-      }
-    })(),
   };
 };
 
@@ -194,7 +159,6 @@ export async function GET(req: NextRequest) {
     const categoryId = searchParams.get('categoryId');
     const storeId = searchParams.get('storeId');
     const activeOnly = searchParams.get('activeOnly') === 'true';
-    const countryCode = searchParams.get('countryCode'); // Filter by country code
 
     // Check for cache bypass parameter
     const bypassCache = searchParams.get('_t') !== null; // If _t parameter exists, bypass cache
@@ -266,8 +230,6 @@ export async function GET(req: NextRequest) {
     let isUuid = false;
     
     if (storeId) {
-      console.log(`[API Coupons GET] 📥 Received storeId parameter: ${storeId}`);
-      
       // Handle both UUID and numeric Store Id
       // First, try to get the numeric Store Id if storeId is a UUID
       numericStoreId = storeId;
@@ -275,8 +237,6 @@ export async function GET(req: NextRequest) {
       // Check if storeId looks like a UUID (contains hyphens)
       if (storeId.includes('-')) {
         isUuid = true;
-        console.log(`[API Coupons GET] 🔍 StoreId is UUID format, fetching numeric Store Id...`);
-        
         // It's likely a UUID, fetch the store to get its numeric Store Id
         const { data: storeData, error: storeError } = await supabaseAdmin
           .from(storesTableName)
@@ -285,41 +245,34 @@ export async function GET(req: NextRequest) {
           .single();
         
         if (storeError) {
-          console.warn(`[API Coupons GET] ⚠️ Could not fetch store to get numeric Store Id:`, storeError);
+          console.warn('⚠️ Could not fetch store to get numeric Store Id:', storeError);
         }
         
         if (storeData && storeData['Store Id']) {
           numericStoreId = String(storeData['Store Id']);
-          console.log(`[API Coupons GET] ✅ Converted UUID ${storeId} to numeric Store Id: ${numericStoreId}`);
+          console.log(`✅ Converted UUID ${storeId} to numeric Store Id: ${numericStoreId}`);
         } else {
-          console.warn(`[API Coupons GET] ⚠️ Store with UUID ${storeId} not found or has no numeric Store Id`);
+          console.warn(`⚠️ Store with UUID ${storeId} not found or has no numeric Store Id`);
         }
-      } else {
-        console.log(`[API Coupons GET] 🔍 StoreId appears to be numeric: ${storeId}`);
       }
       
-      console.log(`[API Coupons GET] 🔍 Querying coupons with Store Id: ${numericStoreId} (original: ${storeId}, isUuid: ${isUuid})`);
+      console.log(`🔍 Querying coupons with Store Id: ${numericStoreId} (original: ${storeId}, isUuid: ${isUuid})`);
       
       // Query by numeric Store Id (with two spaces) - primary query
       // Also check store_ids array for UUID matches if original was UUID
       if (isUuid && numericStoreId) {
         // Try multiple approaches: numeric Store Id, UUID in Store Id field, or UUID in store_ids array
         // Use OR to check all possibilities
-        console.log(`[API Coupons GET] 🔍 Using OR query: Store  Id.eq.${numericStoreId},Store  Id.eq.${storeId},store_ids.cs.{${storeId}}`);
         query = query.or(`Store  Id.eq.${numericStoreId},Store  Id.eq.${storeId},store_ids.cs.{${storeId}}`);
       } else if (numericStoreId) {
         // Try both numeric Store Id and original storeId (in case it's already numeric)
-        console.log(`[API Coupons GET] 🔍 Using OR query: Store  Id.eq.${numericStoreId},Store  Id.eq.${storeId}`);
         query = query.or(`Store  Id.eq.${numericStoreId},Store  Id.eq.${storeId}`);
       }
-    } else {
-      console.log(`[API Coupons GET] ℹ️ No storeId parameter provided, fetching all coupons`);
     }
     if (categoryId) query = query.or(`category_id.eq.${categoryId},categoryId.eq.${categoryId}`);
     
-    console.log('[API Coupons GET] 📊 Fetching coupons from Supabase with query...');
+    console.log('📊 Fetching coupons from Supabase...');
     let { data: coupons, error: couponsError } = await query;
-    console.log(`[API Coupons GET] 📊 Query result: ${coupons?.length || 0} coupons found, error:`, couponsError);
     
     // If no coupons found, try fallback: fetch all and filter manually (better matching)
     if (storeId && (!coupons || coupons.length === 0)) {
@@ -526,14 +479,6 @@ export async function GET(req: NextRequest) {
     if (activeOnly) {
       convertedCoupons = convertedCoupons.filter((coupon: any) => coupon.isActive !== false);
       console.log(`📊 After activeOnly filter: ${convertedCoupons.length} (removed ${beforeActiveFilter - convertedCoupons.length})`);
-    }
-
-    // NOTE: We do NOT filter coupons by country code
-    // Coupons are shown based on store association only
-    // This ensures coupons uploaded in admin panel show on all language-specific store pages
-    // Country code filtering is only applied to stores, not coupons
-    if (countryCode) {
-      console.log(`[API Coupons GET] ℹ️ Country code ${countryCode} provided, but coupons are NOT filtered by country code (shown based on store association only)`);
     }
 
     // Filter out expired coupons - but be lenient for Excel imports

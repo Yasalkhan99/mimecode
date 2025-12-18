@@ -41,7 +41,7 @@ export default function StoreDetailPage() {
   const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
-  const { getLocalizedPath, getCountryCode } = useLanguage();
+  const { getLocalizedPath } = useLanguage();
   const idOrSlug = params.id as string;
 
   const [store, setStore] = useState<Store | null>(null);
@@ -183,26 +183,11 @@ export default function StoreDetailPage() {
           
           // Fetch coupons for this store
           if (storeData.id) {
-            // Get country code from current language (but don't filter coupons by it)
-            const countryCode = getCountryCode();
-            console.log('[Store Detail Page] Fetching coupons for store:', storeData.id, 'store name:', storeData.name, 'country code:', countryCode);
-            
             const [storeCoupons, faqsData, storesData] = await Promise.all([
-              getCouponsByStoreId(storeData.id, countryCode),
+              getCouponsByStoreId(storeData.id),
               getActiveStoreFAQs(storeData.id),
               getStores()
             ]);
-            
-            console.log('[Store Detail Page] Fetched coupons count:', storeCoupons.length);
-            if (storeCoupons.length > 0) {
-              console.log('[Store Detail Page] Sample coupon:', {
-                id: storeCoupons[0].id,
-                code: storeCoupons[0].code,
-                storeName: storeCoupons[0].storeName,
-                storeIds: storeCoupons[0].storeIds
-              });
-            }
-            
             // Show all coupons (active and inactive) - Filter expired ones only
             const now = new Date();
             const validCoupons = storeCoupons.filter(coupon => {

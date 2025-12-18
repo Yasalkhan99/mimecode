@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Navbar from "./components/Navbar";
 import ContactSupportModal from "./components/ContactSupportModal";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import LanguageSelector from "./components/LanguageSelector";
 import { useTranslation } from '@/lib/hooks/useTranslation';
@@ -45,7 +45,6 @@ const Footer = dynamic(() => import('./components/Footer'), {
 
 export default function Home() {
   const { t } = useTranslation();
-  const pathname = usePathname();
   const { getCountryCode } = useLanguage(); // Get country code from language context
   // const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -327,8 +326,6 @@ export default function Home() {
         setLatestNews(newsData.slice(0, 4));
         setCategories(categoriesData.slice(0, 6));
         setFaqs(faqsData);
-        console.log('[Home Page] Categories loaded:', categoriesData.length, 'Setting:', categoriesData.slice(0, 6).length);
-        console.log('[Home Page] LanguageSelector should be visible');
         // console.log('FAQs loaded:', faqsData.length, faqsData);
       } catch (error) {
         // Silently handle errors
@@ -367,7 +364,7 @@ export default function Home() {
       clearTimeout(bannerTimeoutId);
       clearTimeout(couponTimeoutId);
     };
-  }, [pathname, getCountryCode]); // Re-fetch when pathname (language) or country code changes
+  }, [getCountryCode]); // Dependency on getCountryCode
 
   // Fetch 8 coupons from coupons-mimecode collection
   useEffect(() => {
@@ -1165,18 +1162,18 @@ export default function Home() {
       if (store?.logoUrl && store.logoUrl.trim()) {
         // Use the already-extracted favicon - this is what admin/stores shows
         logoUrl = store.logoUrl.trim();
-        if (process.env.NODE_ENV === 'development') {
+          if (process.env.NODE_ENV === 'development') {
           console.log(`[Latest Coupons] ✅ Using store logoUrl for "${storeName}":`, logoUrl);
-        }
+          }
       } else {
         // If store.logoUrl is not available, log it
         // DO NOT generate Google favicon URLs - favicon should be extracted in admin/stores
-        if (process.env.NODE_ENV === 'development') {
+          if (process.env.NODE_ENV === 'development') {
           console.log(`[Latest Coupons] ⚠️ Store "${storeName}" has no logoUrl - should be extracted in admin/stores`);
         }
         // Only use coupon.logoUrl as last resort if store doesn't exist
         if (!store && coupon.logoUrl && (coupon.logoUrl.startsWith('http://') || coupon.logoUrl.startsWith('https://') || coupon.logoUrl.includes('cloudinary.com'))) {
-          logoUrl = coupon.logoUrl;
+        logoUrl = coupon.logoUrl;
         }
       }
 
@@ -1283,10 +1280,10 @@ export default function Home() {
         // The logoUrl should already be extracted and stored in the database
         if (process.env.NODE_ENV === 'development') {
           console.log(`[Featured Deals] ⚠️ Store "${storeName}" has no logoUrl - should be extracted in admin/stores`);
-        }
+      }
         // Only use coupon.logoUrl as last resort if store doesn't exist
         if (!store && coupon.logoUrl && (coupon.logoUrl.startsWith('http://') || coupon.logoUrl.startsWith('https://') || coupon.logoUrl.includes('cloudinary.com'))) {
-          logoUrl = coupon.logoUrl;
+        logoUrl = coupon.logoUrl;
         }
       }
 
@@ -1337,9 +1334,9 @@ export default function Home() {
         // Otherwise, allow the deal to be shown
         if (allStores.length > 0 && !store && !coupon.storeName) {
           // Skip only if stores are loaded but coupon has no store info at all
-          continue;
-        }
-        
+        continue;
+      }
+
         result.push(coupon);
         usedCouponIds.add(coupon.id);
         if (store && store.id) {

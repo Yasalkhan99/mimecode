@@ -4,10 +4,10 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { usePathname, useRouter } from 'next/navigation';
 
 export const languages = [
-  { code: 'en', name: 'English', flag: '🇬🇧', slug: 'en', countryCode: 'US' }, // English - show USA stores
+  { code: 'en', name: 'English', flag: '🇬🇧', slug: 'en', countryCode: null }, // English - no country filter
   { code: 'es', name: 'Español', flag: '🇪🇸', slug: 'es', countryCode: 'ES' },
   { code: 'fr', name: 'Français', flag: '🇫🇷', slug: 'fr', countryCode: 'FR' },
-  { code: 'de', name: 'Deutsch', flag: '🇩🇪', slug: 'du', countryCode: 'DE' },
+  { code: 'de', name: 'Deutsch', flag: '🇩🇪', slug: 'de', countryCode: 'DE' },
   { code: 'it', name: 'Italiano', flag: '🇮🇹', slug: 'it', countryCode: 'IT' },
   { code: 'pt', name: 'Português', flag: '🇵🇹', slug: 'pt', countryCode: 'PT' },
   { code: 'nl', name: 'Nederlands', flag: '🇳🇱', slug: 'nl', countryCode: 'NL' },
@@ -18,9 +18,7 @@ export const languages = [
 
 // Helper function to get country code from language code or slug
 export function getCountryCodeFromLanguage(langCodeOrSlug: string): string | null {
-  // Normalize 'de' to 'du' for German (both are valid)
-  const normalized = langCodeOrSlug === 'de' ? 'du' : langCodeOrSlug;
-  const language = languages.find(lang => lang.code === normalized || lang.slug === normalized || lang.code === langCodeOrSlug || lang.slug === langCodeOrSlug);
+  const language = languages.find(lang => lang.code === langCodeOrSlug || lang.slug === langCodeOrSlug);
   return language?.countryCode || null;
 }
 
@@ -44,11 +42,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     const pathSegments = pathname.split('/').filter(Boolean);
     const firstSegment = pathSegments[0];
     
-    // Normalize 'de' to 'du' for German (both are valid)
-    const normalizedSegment = firstSegment === 'de' ? 'du' : firstSegment;
-    
     // Check if first segment is a language code
-    const language = languages.find(lang => lang.slug === normalizedSegment);
+    const language = languages.find(lang => lang.slug === firstSegment);
     if (language) {
       setCurrentLanguage(language);
     } else {
@@ -84,11 +79,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     const pathSegments = path.split('/').filter(Boolean);
     const firstSegment = pathSegments[0];
     
-    // Normalize 'de' to 'du' for German (both are valid)
-    const normalizedSegment = firstSegment === 'de' ? 'du' : firstSegment;
-    
     // Check if first segment is a language code
-    const isLanguage = languages.some(lang => lang.slug === normalizedSegment || lang.slug === firstSegment);
+    const isLanguage = languages.some(lang => lang.slug === firstSegment);
     
     if (isLanguage) {
       // Remove language prefix

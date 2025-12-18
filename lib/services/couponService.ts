@@ -447,20 +447,12 @@ export async function getCouponsByStoreName(storeName: string): Promise<Coupon[]
 }
 
 // Get coupons by store ID
-export async function getCouponsByStoreId(storeId: string, countryCode?: string | null): Promise<Coupon[]> {
+export async function getCouponsByStoreId(storeId: string): Promise<Coupon[]> {
   try {
     // Try server-side API first (bypasses security rules)
     // Add cache-busting timestamp to ensure fresh data
     try {
-      const params = new URLSearchParams();
-      params.append('collection', coupons);
-      params.append('storeId', storeId);
-      params.append('_t', String(Date.now()));
-      if (countryCode) {
-        params.append('countryCode', countryCode);
-      }
-      
-      const res = await fetch(`/api/coupons/get?${params.toString()}`, {
+      const res = await fetch(`/api/coupons/get?collection=${encodeURIComponent(coupons)}&storeId=${encodeURIComponent(storeId)}&_t=${Date.now()}`, {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',

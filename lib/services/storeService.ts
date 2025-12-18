@@ -50,12 +50,9 @@ export async function getStores(countryCode?: string | null): Promise<Store[]> {
       // Build query parameters
       const params = new URLSearchParams();
       params.append('collection', stores);
-      params.append('_t', String(Date.now())); // Always bypass cache
+      params.append('_t', String(Date.now()));
       if (countryCode) {
         params.append('countryCode', countryCode);
-        console.log('[storeService] getStores called with countryCode:', countryCode);
-      } else {
-        console.log('[storeService] getStores called without countryCode (will return all stores)');
       }
       
       const res = await fetch(`/api/stores/get?${params.toString()}`);

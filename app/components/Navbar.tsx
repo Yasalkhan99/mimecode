@@ -20,7 +20,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
-  const { getLocalizedPath, getCountryCode } = useLanguage();
+  const { getLocalizedPath } = useLanguage();
   const { t } = useTranslation();
   const [searchCategoryOpen, setSearchCategoryOpen] = useState(false);
   const [storesDropdownOpen, setStoresDropdownOpen] = useState(false);
@@ -40,7 +40,7 @@ export default function Navbar() {
   const handleSignOut = async () => {
     try {
       await signOut(auth);
-      router.push('/');
+      router.push(getLocalizedPath('/'));
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -56,17 +56,12 @@ export default function Navbar() {
           setEventsSlug(pageSettings.eventsSlug || 'events');
         }
         
-        // Get country code from current language to filter stores
-        const countryCode = getCountryCode();
-        console.log('[Navbar] Fetching stores with country code:', countryCode);
-        
         // Fetch other data in parallel
         const [categoriesData, storesData, eventsData] = await Promise.all([
           getCategories(),
-          getStores(countryCode), // Pass country code to filter stores
+          getStores(),
           getEvents()
         ]);
-        console.log('[Navbar] Fetched stores count:', storesData.length, 'with country code:', countryCode);
         setCategories(categoriesData);
         setStores(storesData);
         setHasEvents(eventsData.length > 0);
@@ -93,7 +88,7 @@ export default function Navbar() {
       window.removeEventListener('notificationUpdated', handleNotificationUpdate);
       window.removeEventListener('favoritesUpdated', handleFavoritesUpdate);
     };
-  }, [pathname, getCountryCode]); // Re-fetch when pathname (language) or country code changes
+  }, []);
 
   const updateCounts = () => {
     setFavoritesCount(getFavoritesCount());
