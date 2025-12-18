@@ -6,6 +6,7 @@ import LocalizedLink from '@/app/components/LocalizedLink';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { useTranslation } from '@/lib/hooks/useTranslation';
+import { TranslationKey } from '@/lib/translations';
 // import { getBannerByLayoutPosition, getBannersWithLayout, Banner } from '@/lib/services/bannerService';
 import { getStores, Store } from '@/lib/services/storeService';
 import { getCategories, Category } from '@/lib/services/categoryService';
@@ -39,8 +40,8 @@ const getStoreRating = (storeId: string | undefined): { rating: number; reviews:
 };
 
 // Helper function to translate category names
-const getCategoryTranslation = (categoryName: string, t: (key: string) => string): string => {
-  const categoryMap: { [key: string]: string } = {
+const getCategoryTranslation = (categoryName: string, t: (key: TranslationKey) => string): string => {
+  const categoryMap: { [key: string]: TranslationKey } = {
     'Flowers': 'categoryFlowers',
     'Holiday': 'categoryHoliday',
     'GIF Gift': 'categoryGifGift',
