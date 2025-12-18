@@ -30,6 +30,7 @@ export default function UserStoresPage() {
   });
   const [extractingUrl, setExtractingUrl] = useState('');
   const [extracting, setExtracting] = useState(false);
+  console.log("stores: ", stores);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -43,7 +44,7 @@ export default function UserStoresPage() {
     }
   }, [user]);
 
-  const loadData = async () => {
+  const loadData = async (preserveOptimisticStores = false) => {
     try {
       setLoading(true);
       const [allStores, allCategories] = await Promise.all([
@@ -52,8 +53,23 @@ export default function UserStoresPage() {
       ]);
       
       // Filter stores by userId
-      const userStores = allStores.filter(store => store.userId === user?.uid);
-      setStores(userStores);
+      let userStores = allStores.filter(store => store.userId === user?.uid);
+      
+      // If preserving optimistic stores, merge with existing stores that have userId
+      if (preserveOptimisticStores) {
+        setStores(prevStores => {
+          // Get optimistic stores (those with userId matching current user)
+          const optimisticStores = prevStores.filter(store => 
+            store.userId === user?.uid && 
+            !userStores.some(s => s.id === store.id) // Not already in fetched stores
+          );
+          // Merge: fetched stores + optimistic stores not yet in database
+          return [...userStores, ...optimisticStores];
+        });
+      } else {
+        setStores(userStores);
+      }
+      
       setCategories(allCategories);
     } catch (error) {
       console.error('Error loading data:', error);
@@ -120,12 +136,39 @@ export default function UserStoresPage() {
       };
 
       if (editingStore && editingStore.id) {
-        await updateStore(editingStore.id, storeData);
+        const result = await updateStore(editingStore.id, storeData);
+        if (!result.success) {
+          alert('Failed to update store. Please try again.');
+          return;
+        }
+        
+        // Update the store in state immediately
+        setStores(prevStores => 
+          prevStores.map(store => 
+            store.id === editingStore.id 
+              ? { ...store, ...storeData, id: editingStore.id }
+              : store
+          )
+        );
       } else {
-        await createStore(storeData as Omit<Store, 'id'>);
+        const result = await createStore(storeData as Omit<Store, 'id'>);
+        if (!result.success) {
+          alert('Failed to create store. Please try again.');
+          return;
+        }
+        
+        // Create a new store object with the returned ID and add it to state immediately
+        const newStore: Store = {
+          ...storeData,
+          id: result.id || String(Date.now()), // Use returned ID or fallback
+          description: storeData.description || '',
+        };
+        
+        // Add the new store to state immediately so it appears right away
+        setStores(prevStores => [...prevStores, newStore]);
       }
 
-      // Reset form and reload data
+      // Reset form
       setFormData({
         name: '',
         slug: '',
@@ -137,7 +180,10 @@ export default function UserStoresPage() {
       });
       setShowForm(false);
       setEditingStore(null);
-      loadData();
+      
+      // Reload data in the background, but preserve optimistically added stores
+      // This ensures the new store stays visible even if it's not in the database yet
+      loadData(true);
     } catch (error) {
       console.error('Error saving store:', error);
       alert('Failed to save store. Please try again.');
@@ -402,8 +448,8 @@ export default function UserStoresPage() {
                   {store.logoUrl && (
                     <div className="mb-4 h-24 relative">
                       <Image
-                        src={store.logoUrl}
-                        alt={store.name}
+                        src={store?.logoUrl || ''}
+                        alt={store?.name}
                         fill
                         className="object-contain"
                       />

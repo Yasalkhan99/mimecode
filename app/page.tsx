@@ -1465,8 +1465,8 @@ export default function Home() {
 
       {/* Hero Banner Section - Retail Store Style */}
       {/* Always reserve space to prevent layout shift */}
-      <Exclusive01 className="w-[180px] max-md:w-[80px] max-xl:w-[100px] absolute top-[35%] left-0" />
-      <Exclusive02 className="w-[180px] max-md:w-[80px] max-xl:w-[100px] absolute top-[35%] right-0 " />
+      <Exclusive01 className="w-[180px] max-md:w-[80px] max-xl:w-[100px] absolute top-[43%] left-0" />
+      <Exclusive02 className="w-[180px] max-md:w-[80px] max-xl:w-[100px] absolute top-[43%] right-0 " />
       <section className="relative w-full bg-white py-2 sm:py-4 md:py-6">
         {/* Container with padding and max-width */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8">
