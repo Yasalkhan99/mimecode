@@ -41,9 +41,9 @@ export async function POST(req: NextRequest) {
       // Start from 1 if fetch fails
       storeId = '1';
     } else {
-      // Find the maximum numeric ID, but only consider IDs that are reasonable (not timestamps)
-      // Timestamp-based IDs are typically > 100000, so we ignore those
-      const MAX_REASONABLE_ID = 100000;
+      // Find the maximum numeric ID
+      // After migration, all Store IDs should be sequential (1, 2, 3...)
+      // So we find the max ID to continue the sequence
       let maxId = 0;
       
       if (existingStores && existingStores.length > 0) {
@@ -52,14 +52,15 @@ export async function POST(req: NextRequest) {
           if (id) {
             // Try to parse as number
             const numericId = parseInt(String(id), 10);
-            // Only consider IDs that are reasonable (not timestamp-based)
-            if (!isNaN(numericId) && numericId <= MAX_REASONABLE_ID && numericId > maxId) {
+            // Consider all numeric IDs (after migration, they should all be sequential)
+            if (!isNaN(numericId) && numericId > maxId) {
               maxId = numericId;
             }
           }
         }
       }
       // Generate next sequential ID starting from 1
+      // If no stores exist, start from 1, otherwise continue from max + 1
       storeId = String(maxId + 1);
     }
 

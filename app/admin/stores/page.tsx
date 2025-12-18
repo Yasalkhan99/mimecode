@@ -1440,7 +1440,7 @@ export default function StoresPage() {
                   <tr key={store.id} className="border-b hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div className="font-mono text-sm text-gray-800 font-medium truncate" title={store.id}>
-                        {startIndex + index + 1}
+                        {(store as any).storeId || store.id || '-'}
                       </div>
                     </td>
                     <td className="px-6 py-4">
