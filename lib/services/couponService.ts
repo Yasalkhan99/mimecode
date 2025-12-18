@@ -189,8 +189,15 @@ export async function createCoupon(coupon: Omit<Coupon, 'id'>, logoFile?: File) 
 export async function getCoupons(): Promise<Coupon[]> {
   try {
     // Try server-side API first (bypasses security rules)
+    // Add cache-busting timestamp to ensure fresh data
     try {
-      const res = await fetch(`/api/coupons/get?collection=${encodeURIComponent(coupons)}`);
+      const res = await fetch(`/api/coupons/get?collection=${encodeURIComponent(coupons)}&_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        }
+      });
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.coupons) {
@@ -443,8 +450,15 @@ export async function getCouponsByStoreName(storeName: string): Promise<Coupon[]
 export async function getCouponsByStoreId(storeId: string): Promise<Coupon[]> {
   try {
     // Try server-side API first (bypasses security rules)
+    // Add cache-busting timestamp to ensure fresh data
     try {
-      const res = await fetch(`/api/coupons/get?collection=${encodeURIComponent(coupons)}&storeId=${encodeURIComponent(storeId)}`);
+      const res = await fetch(`/api/coupons/get?collection=${encodeURIComponent(coupons)}&storeId=${encodeURIComponent(storeId)}&_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        }
+      });
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.coupons) {

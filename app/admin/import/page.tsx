@@ -406,11 +406,11 @@ export default function ImportPage() {
               if (Object.keys(updatePayload).length > 0) {
                 console.log(`🔄 Updating store "${storeName}" with fields:`, Object.keys(updatePayload));
                 const result = await updateStore(existingStoreId, updatePayload);
-                if (!result.success) {
-                  throw new Error(result.error || 'Failed to update store');
-                }
+              if (!result.success) {
+                throw new Error(result.error || 'Failed to update store');
+              }
                 console.log(`✅ Updated existing store: ${storeName} (ID: ${existingStoreId})`);
-              } else {
+            } else {
                 console.log(`ℹ️ No updates needed for store: ${storeName}`);
               }
             } else {

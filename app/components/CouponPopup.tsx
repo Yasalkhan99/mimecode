@@ -363,7 +363,7 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue, store
                             description.toUpperCase() !== codeUpper &&
                             !description.toUpperCase().includes(codeUpper)) {
                           return description;
-                        }
+                      }
                       }
                       
                       // PRIORITY 3: Generate title from discount

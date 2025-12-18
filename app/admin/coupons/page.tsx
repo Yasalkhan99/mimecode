@@ -800,6 +800,13 @@ export default function CouponsPage() {
           const newCoupon = await getCouponById(result.id);
           if (newCoupon) {
             setCoupons(prevCoupons => {
+              // Check if coupon already exists (avoid duplicates)
+              const exists = prevCoupons.some(c => c.id === newCoupon.id);
+              if (exists) {
+                // Update existing coupon instead of adding duplicate
+                return prevCoupons.map(c => c.id === newCoupon.id ? newCoupon : c);
+              }
+              // Add new coupon if it doesn't exist
               const updated = [...prevCoupons, newCoupon];
               // Sort to maintain order
               return updated.sort((a, b) => {
@@ -2322,7 +2329,7 @@ export default function CouponsPage() {
                   const paginatedCoupons = filteredCoupons.slice(startIndex, endIndex);
                   
                   return paginatedCoupons.map((coupon, index) => (
-                  <tr key={coupon.id} className="border-b hover:bg-gray-50">
+                  <tr key={`coupon-${coupon.id}-${index}`} className="border-b hover:bg-gray-50">
                     <td className="px-3 py-4">
                       <div className="font-mono text-xs text-gray-800 font-medium max-w-[120px] truncate" title={coupon.id}>
                         {startIndex + index + 1}

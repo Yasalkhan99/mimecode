@@ -207,9 +207,9 @@ export default function Navbar() {
                 {/* Search Results Dropdown */}
                 {showSearchResults && searchQuery && filteredStores.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-96 overflow-y-auto z-50 search-results-container">
-                    {filteredStores.map((store) => (
+                    {filteredStores.map((store, index) => (
                       <LocalizedLink
-                        key={store.id}
+                        key={`search-store-${index}-${store.id}`}
                         href={`/stores/${store.slug || store.id}`}
                         onClick={() => {
                           setShowSearchResults(false);
@@ -388,9 +388,9 @@ export default function Navbar() {
                               All Stores 
                               {/* ({stores.length}) */}
                             </div>
-                            {stores.slice(0, 30).map((store) => (
+                            {stores.slice(0, 30).map((store, index) => (
                               <LocalizedLink
-                                key={store.id}
+                                key={`dropdown-store-${index}-${store.id}`}
                                 href={`/stores/${store.slug || store.id}`}
                                 className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 text-sm"
                                 onClick={() => setStoresDropdownOpen(false)}
@@ -423,9 +423,9 @@ export default function Navbar() {
                             {stores
                               .filter(store => store.categoryId === hoveredCategoryId)
                               .slice(0, 30)
-                              .map((store) => (
+                              .map((store, index) => (
                                 <LocalizedLink
-                                  key={store.id}
+                                  key={`category-store-${index}-${store.id}`}
                                   href={`/stores/${store.slug || store.id}`}
                                   className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 text-sm"
                                   onClick={() => setStoresDropdownOpen(false)}
@@ -506,9 +506,9 @@ export default function Navbar() {
           {/* Mobile Search Results */}
           {showSearchResults && searchQuery && filteredStores.length > 0 && (
             <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-96 overflow-y-auto z-50 search-results-container">
-              {filteredStores.map((store) => (
+              {filteredStores.map((store, index) => (
                 <LocalizedLink
-                  key={store.id}
+                  key={`mobile-search-store-${index}-${store.id}`}
                   href={`/stores/${store.slug || store.id}`}
                   onClick={() => {
                     setShowSearchResults(false);

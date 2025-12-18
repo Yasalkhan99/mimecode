@@ -127,7 +127,11 @@ export default function EditCouponPage() {
     // Explicitly handle expiryDate (include null values)
     updates.expiryDate = formData.expiryDate || null;
     
+    // Explicitly ensure url field is included (even if empty/null)
+    updates.url = formData.url || null;
+    
     console.log('💾 Saving coupon with expiryDate:', updates.expiryDate);
+    console.log('🔗 Saving coupon with url:', updates.url);
     
     // For deal type, don't include code field
     if (formData.couponType === 'deal') {

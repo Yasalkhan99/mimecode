@@ -22,7 +22,15 @@ const convertToAPIFormat = (doc: any, docId: string, storeData?: any) => {
   const data = doc.data ? doc.data() : doc;
   
   // Get coupon URL with fallback to store's Tracking Url or Store Display Url
-  let couponUrl = data['Coupon Deep Link'] || data.url || null;
+  // CRITICAL: Check Coupon URL first, and only use it if it's not null/empty
+  let couponUrl = null;
+  if (data['Coupon URL'] && data['Coupon URL'] !== null && String(data['Coupon URL']).trim() !== '') {
+    couponUrl = data['Coupon URL'];
+  } else if (data['Coupon Deep Link'] && data['Coupon Deep Link'] !== null && String(data['Coupon Deep Link']).trim() !== '') {
+    couponUrl = data['Coupon Deep Link'];
+  } else if (data.url && data.url !== null && String(data.url).trim() !== '') {
+    couponUrl = data.url;
+  }
   
   // If no coupon URL, try store's Tracking Url or Store Display Url
   if (!couponUrl && storeData) {

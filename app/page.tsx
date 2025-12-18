@@ -681,14 +681,33 @@ export default function Home() {
     // Get store for this coupon to access trackingLink/trackingUrl
     const store = getStoreForCoupon(coupon);
     
-    // CRITICAL: Prioritize store trackingLink, then trackingUrl, then coupon URL
+    // CRITICAL: Prioritize coupon.url (primary), then store trackingLink, then trackingUrl
+    // Check coupon.url FIRST - if it exists and is not empty, use it
     let rawUrl = null;
-    if (store?.trackingLink && store.trackingLink.trim()) {
+    const couponUrl = coupon.url;
+    
+    // Debug logging
+    console.log('[handleGetDeal] Coupon data:', {
+      couponId: coupon.id,
+      couponUrl: couponUrl,
+      couponUrlType: typeof couponUrl,
+      couponUrlLength: couponUrl ? String(couponUrl).length : 0,
+      storeTrackingLink: store?.trackingLink,
+      storeTrackingUrl: store?.trackingUrl
+    });
+    
+    if (couponUrl && typeof couponUrl === 'string' && couponUrl.trim() !== '') {
+      rawUrl = couponUrl.trim();
+      console.log('[handleGetDeal] ✅ Using coupon.url (Coupon URL column):', rawUrl);
+    } else if (store?.trackingLink && store.trackingLink.trim()) {
       rawUrl = store.trackingLink.trim();
+      console.log('[handleGetDeal] ⚠️ Using store.trackingLink (fallback):', rawUrl, 'coupon.url was:', couponUrl);
     } else if (store?.trackingUrl && store.trackingUrl.trim()) {
       rawUrl = store.trackingUrl.trim();
+      console.log('[handleGetDeal] ⚠️ Using store.trackingUrl (fallback):', rawUrl, 'coupon.url was:', couponUrl);
     } else {
-      rawUrl = coupon.url || coupon.affiliateLink || null;
+      rawUrl = coupon.affiliateLink || null;
+      console.log('[handleGetDeal] ⚠️ Using affiliateLink or null (last fallback):', rawUrl, 'coupon.url was:', couponUrl);
     }
 
     // CRITICAL: Different behavior for CODE vs DEAL
@@ -1720,7 +1739,7 @@ export default function Home() {
                     
                     return (
                       <motion.div
-                        key={`mimecode-coupon-${coupon.id || couponIndex}-copy-${copyIndex}`}
+                        key={`mimecode-coupon-${index}-${coupon.id || couponIndex}-copy-${copyIndex}`}
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
@@ -1900,7 +1919,7 @@ export default function Home() {
                       const layoutNumber = actualIndex + 1;
                       return (
                         <div
-                          key={`featured-deal-empty-copy-${Math.floor(index / displayLatestDeals.length)}-idx-${index}`}
+                          key={`featured-deal-empty-${index}-copy-${Math.floor(index / displayLatestDeals.length)}`}
                           className="bg-gray-50 rounded-lg p-4 sm:p-5 border-2 border-dashed flex flex-col items-center justify-center min-h-[250px] border-gray-200 w-[200px] sm:w-[220px] flex-shrink-0"
                         >
                           <div className="text-gray-400 text-center">
@@ -1974,7 +1993,7 @@ export default function Home() {
 
                       return (
                         <motion.div
-                          key={`featured-store-${store.id || store.name || 'unknown'}-copy-${Math.floor(index / displayLatestDeals.length)}-idx-${index}`}
+                          key={`featured-store-${index}-${store.id || store.name || 'unknown'}-copy-${Math.floor(index / displayLatestDeals.length)}`}
                           initial={{ opacity: 0, y: 20 }}
                           whileInView={{ opacity: 1, y: 0 }}
                           viewport={{ once: true }}
@@ -2120,7 +2139,7 @@ export default function Home() {
 
                     return (
                       <motion.div
-                        key={`featured-deal-${coupon.id || 'no-id'}-copy-${Math.floor(index / displayLatestDeals.length)}-idx-${index}`}
+                        key={`featured-deal-${index}-${coupon.id || 'no-id'}-copy-${Math.floor(index / displayLatestDeals.length)}`}
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}

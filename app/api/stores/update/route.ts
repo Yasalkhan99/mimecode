@@ -59,8 +59,8 @@ export async function POST(req: NextRequest) {
     // Use exact column name "Network ID" (with capital ID) as in Supabase
     if (updates.networkId !== undefined) {
       if (updates.networkId !== null && updates.networkId !== '') {
-        const networkIdStr = String(updates.networkId).trim();
-        if (networkIdStr && networkIdStr !== 'null' && networkIdStr !== 'undefined') {
+      const networkIdStr = String(updates.networkId).trim();
+      if (networkIdStr && networkIdStr !== 'null' && networkIdStr !== 'undefined') {
           // Check if Network ID already exists for a different store
           const { data: existingStore, error: checkError } = await supabaseAdmin
             .from('stores')
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
           }
           
           supabaseUpdates['Network ID'] = networkIdStr;
-          console.log(`💾 Updating Network ID: "${networkIdStr}" for store ID: ${id}`);
+        console.log(`💾 Updating Network ID: "${networkIdStr}" for store ID: ${id}`);
         }
       } else {
         // If explicitly set to null or empty, clear the field

@@ -198,15 +198,19 @@ function CouponsContent() {
     // Get store for this coupon
     const store = getStoreForCoupon(coupon);
     
-    // Get URL to open - prioritize store trackingLink, then trackingUrl, then other URLs
+    // Get URL to open - prioritize coupon.url (primary), then store trackingLink, then trackingUrl
+    // Check coupon.url FIRST - if it exists and is not empty, use it
     let urlToOpen = null;
-    if (store?.trackingLink && store.trackingLink.trim()) {
+    const couponUrl = coupon.url;
+    if (couponUrl && typeof couponUrl === 'string' && couponUrl.trim() !== '') {
+      urlToOpen = couponUrl.trim();
+    } else if (store?.trackingLink && store.trackingLink.trim()) {
       urlToOpen = store.trackingLink.trim();
     } else if (store?.trackingUrl && store.trackingUrl.trim()) {
       urlToOpen = store.trackingUrl.trim();
     } else {
       const storeTrackingUrl = store?.websiteUrl || (store as any)?.['Tracking Url'] || (store as any)?.['Store Display Url'] || null;
-      urlToOpen = storeTrackingUrl || coupon.url || coupon.affiliateLink || null;
+      urlToOpen = storeTrackingUrl || coupon.affiliateLink || null;
     }
     if (urlToOpen && !urlToOpen.startsWith('http')) {
       urlToOpen = `https://${urlToOpen}`;

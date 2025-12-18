@@ -83,6 +83,36 @@ export default function CategoryDetailPage() {
     return null;
   };
 
+  // Get store for this coupon
+  const getStoreForCoupon = (coupon: Coupon): Store | null => {
+    if (!coupon.storeIds || coupon.storeIds.length === 0) return null;
+    
+    for (const storeId of coupon.storeIds) {
+      const match = stores.find(s => s.id === storeId);
+      if (match) return match;
+    }
+    
+    return null;
+  };
+
+  // Get URL with priority: coupon.url (primary), then store.trackingLink, then store.trackingUrl
+  const getUrlToOpen = (coupon: Coupon): string | null => {
+    // Check coupon.url FIRST - if it exists and is not empty, use it
+    const couponUrl = coupon.url;
+    if (couponUrl && typeof couponUrl === 'string' && couponUrl.trim() !== '') {
+      return couponUrl.trim();
+    }
+    
+    const store = getStoreForCoupon(coupon);
+    if (store?.trackingLink && store.trackingLink.trim()) {
+      return store.trackingLink.trim();
+    }
+    if (store?.trackingUrl && store.trackingUrl.trim()) {
+      return store.trackingUrl.trim();
+    }
+    
+    return coupon.affiliateLink || null;
+  };
 
   const handleGetDeal = (coupon: Coupon, e?: React.MouseEvent) => {
     if (e) {
@@ -105,17 +135,23 @@ export default function CategoryDetailPage() {
     setSelectedCoupon(coupon);
     setShowPopup(true);
     
+    // Get URL with priority: coupon.url (primary), then store.trackingLink, then store.trackingUrl
+    const urlToOpen = getUrlToOpen(coupon);
+    
     // Automatically open URL in new tab after a short delay (to ensure popup is visible first)
-    if (coupon.url && coupon.url.trim()) {
+    if (urlToOpen) {
       setTimeout(() => {
-        window.open(coupon.url, '_blank', 'noopener,noreferrer');
+        window.open(urlToOpen, '_blank', 'noopener,noreferrer');
       }, 500);
     }
   };
 
   const handlePopupContinue = () => {
-    if (selectedCoupon?.url) {
-      window.open(selectedCoupon.url, '_blank', 'noopener,noreferrer');
+    if (selectedCoupon) {
+      const urlToOpen = getUrlToOpen(selectedCoupon);
+      if (urlToOpen) {
+        window.open(urlToOpen, '_blank', 'noopener,noreferrer');
+      }
     }
     setShowPopup(false);
     setSelectedCoupon(null);

@@ -384,9 +384,15 @@ export async function deleteStore(id: string) {
     }
 
     if (!res.ok) {
-      console.error('Server delete failed', { status: res.status, body: json });
+      const errorMessage = json.error || json.text || json.message || `Failed to delete store (Status: ${res.status})`;
+      console.error('Server delete failed', { 
+        status: res.status, 
+        statusText: res.statusText,
+        body: json,
+        rawText: resText 
+      });
       // No fallback - API is required for Supabase
-      return { success: false, error: json.error || json.text || 'Failed to delete store' };
+      return { success: false, error: errorMessage };
     }
 
     return { success: true };

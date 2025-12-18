@@ -152,7 +152,7 @@ export default function EditStorePage() {
       window.location.href = '/admin/stores?refresh=' + Date.now();
     } else {
       alert(`Failed to update store: ${result.error || 'Unknown error'}`);
-      setSaving(false);
+    setSaving(false);
     }
   };
 

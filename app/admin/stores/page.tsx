@@ -1483,16 +1483,16 @@ export default function StoresPage() {
                         return linkToShow ? (
                           <a
                             href={linkToShow}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 hover:underline truncate block text-sm max-w-xs"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 hover:underline truncate block text-sm max-w-xs"
                             title={linkToShow}
-                          >
+                        >
                             {linkToShow.length > 40 
                               ? `${linkToShow.substring(0, 40)}...` 
                               : linkToShow}
-                          </a>
-                        ) : (
+                        </a>
+                      ) : (
                           <span className="text-gray-400 text-sm" title="No tracking link available">-</span>
                         );
                       })()}
