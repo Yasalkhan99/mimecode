@@ -83,6 +83,7 @@ export default function EditStorePage() {
 
   useEffect(() => {
     const fetchData = async () => {
+      // Add cache-busting timestamp to ensure fresh data
       const [storeData, categoriesData, regionsData] = await Promise.all([
         getStoreById(storeId),
         getCategories(),
@@ -90,7 +91,12 @@ export default function EditStorePage() {
       ]);
       if (storeData) {
         setStore(storeData);
-        setFormData(storeData);
+        // Ensure trackingLink is properly set (handle null/undefined)
+        const formDataWithTrackingLink = {
+          ...storeData,
+          trackingLink: storeData.trackingLink || storeData.trackingUrl || '',
+        };
+        setFormData(formDataWithTrackingLink);
         // Check if slug matches auto-generated slug from name
         const autoSlug = generateSlug(storeData.name || '');
         setAutoGenerateSlug(storeData.slug === autoSlug);
@@ -146,13 +152,18 @@ export default function EditStorePage() {
       logoUrl: logoUrlToSave,
     };
 
+    console.log('📤 Sending updates:', updates);
+    console.log('📝 Description in updates:', updates.description);
+    
     const result = await updateStore(storeId, updates);
     if (result.success) {
+      // Add small delay to ensure server cache is cleared
+      await new Promise(resolve => setTimeout(resolve, 200));
       // Force full page reload to ensure stores list is updated
       window.location.href = '/admin/stores?refresh=' + Date.now();
     } else {
       alert(`Failed to update store: ${result.error || 'Unknown error'}`);
-    setSaving(false);
+      setSaving(false);
     }
   };
 
@@ -310,9 +321,15 @@ export default function EditStorePage() {
           </a>
         </div>
 
-        <form onSubmit={handleSave} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+        <form onSubmit={handleSave} className="space-y-6">
+          {/* Two Column Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left Column: Store Details & Info */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-bold text-gray-800 border-b pb-2">Store Details & Information</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
               <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-1">
                 Store Name
               </label>
@@ -333,593 +350,482 @@ export default function EditStorePage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 required
               />
-            </div>
+                </div>
 
-            <div>
-              <label htmlFor="subStoreName" className="block text-sm font-semibold text-gray-700 mb-1">
-                Sub Store Name (Displayed on store page)
-              </label>
-              <input
-                id="subStoreName"
-                name="subStoreName"
-                type="text"
-                value={formData.subStoreName || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, subStoreName: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                This name will be displayed on the store page when visiting the store
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label htmlFor="slug" className="block text-sm font-semibold text-gray-700">
-                  Slug (URL-friendly name)
-                </label>
-                <label className="flex items-center gap-2 text-xs text-gray-600">
+                <div>
+                  <label htmlFor="subStoreName" className="block text-sm font-semibold text-gray-700 mb-1">
+                    Sub Store Name (Displayed on store page)
+                  </label>
                   <input
-                    type="checkbox"
-                    checked={autoGenerateSlug}
-                    onChange={(e) => {
-                      const isAuto = e.target.checked;
-                      setAutoGenerateSlug(isAuto);
-                      // If enabling auto-generate, update slug from name
-                      if (isAuto && formData.name) {
-                        setFormData({ ...formData, slug: generateSlug(formData.name) });
+                    id="subStoreName"
+                    name="subStoreName"
+                    type="text"
+                    value={formData.subStoreName || ''}
+                    onChange={(e) =>
+                      setFormData({ ...formData, subStoreName: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    This name will be displayed on the store page when visiting the store
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label htmlFor="slug" className="block text-sm font-semibold text-gray-700">
+                      Slug (URL-friendly name)
+                    </label>
+                    <label className="flex items-center gap-2 text-xs text-gray-600">
+                      <input
+                        type="checkbox"
+                        checked={autoGenerateSlug}
+                        onChange={(e) => {
+                          const isAuto = e.target.checked;
+                          setAutoGenerateSlug(isAuto);
+                          // If enabling auto-generate, update slug from name
+                          if (isAuto && formData.name) {
+                            setFormData({ ...formData, slug: generateSlug(formData.name) });
+                          }
+                        }}
+                        className="w-4 h-4"
+                      />
+                      <span>Auto-generate from name</span>
+                    </label>
+                  </div>
+                  <input
+                    id="slug"
+                    name="slug"
+                    type="text"
+                    placeholder={autoGenerateSlug ? "Auto-generated from name" : "Enter custom slug (e.g., nike-store)"}
+                    value={formData.slug || ''}
+                    onChange={async (e) => {
+                      // If auto-generate is enabled, don't allow manual editing
+                      if (autoGenerateSlug) return;
+
+                      const slug = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+                      setFormData({ ...formData, slug });
+                      if (slug) {
+                        await validateSlug(slug);
+                      } else {
+                        setSlugError('');
                       }
                     }}
-                    className="w-4 h-4"
+                    disabled={autoGenerateSlug}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${slugError ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                      } ${autoGenerateSlug ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                    required
                   />
-                  <span>Auto-generate from name</span>
-                </label>
-              </div>
-              <input
-                id="slug"
-                name="slug"
-                type="text"
-                placeholder={autoGenerateSlug ? "Auto-generated from name" : "Enter custom slug (e.g., nike-store)"}
-                value={formData.slug || ''}
-                onChange={async (e) => {
-                  // If auto-generate is enabled, don't allow manual editing
-                  if (autoGenerateSlug) return;
-
-                  const slug = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
-                  setFormData({ ...formData, slug });
-                  if (slug) {
-                    await validateSlug(slug);
-                  } else {
-                    setSlugError('');
-                  }
-                }}
-                disabled={autoGenerateSlug}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${slugError ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-                  } ${autoGenerateSlug ? 'bg-gray-50 cursor-not-allowed' : ''}`}
-                required
-              />
-              {slugError && (
-                <p className="mt-1 text-xs text-red-600">{slugError}</p>
-              )}
-              <p className="mt-1 text-xs text-gray-500">
-                URL will be: /stores/{formData.slug || 'slug'}
-                {autoGenerateSlug && <span className="text-blue-600 ml-2">(Auto-generated)</span>}
-              </p>
-            </div>
-          </div>
-
-
-          <div>
-            <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-1">
-              Description <span className="text-gray-500 font-normal">(Optional)</span>
-            </label>
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description || ''}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-              rows={4}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="voucherText" className="block text-sm font-semibold text-gray-700 mb-1">
-              Voucher Text
-            </label>
-            <input
-              id="voucherText"
-              name="voucherText"
-              type="text"
-              placeholder="e.g., Upto 58% Voucher, Get 20% Off, etc."
-              value={formData.voucherText || ''}
-              onChange={(e) =>
-                setFormData({ ...formData, voucherText: e.target.value })
-              }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-            <p className="mt-1 text-xs text-gray-500">
-              Voucher text that will be displayed on the store card
-            </p>
-          </div>
-
-          {/* Detailed Store Info Fields */}
-          <div className="border-t border-gray-300 pt-6 mt-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-4">Detailed Store Information</h3>
-
-            <div>
-              <label htmlFor="websiteUrl" className="block text-sm font-semibold text-gray-700 mb-1">
-                Website URL
-              </label>
-              <input
-                id="websiteUrl"
-                name="websiteUrl"
-                type="url"
-                placeholder="https://example.com"
-                value={formData.websiteUrl || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, websiteUrl: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="aboutText" className="block text-sm font-semibold text-gray-700 mb-1">
-                About Text (Detailed)
-              </label>
-              <textarea
-                id="aboutText"
-                name="aboutText"
-                value={formData.aboutText || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, aboutText: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                rows={6}
-                placeholder="Detailed about section for Store Info tab..."
-              />
-            </div>
-
-            <div>
-              <label htmlFor="whyTrustUs" className="block text-sm font-semibold text-gray-700 mb-1">
-                Why Trust Us Section
-              </label>
-              <textarea
-                id="whyTrustUs"
-                name="whyTrustUs"
-                value={formData.whyTrustUs || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, whyTrustUs: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                rows={6}
-                placeholder="Why should customers trust this store? Enter custom content here..."
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                This will appear in the sidebar "Why Trust Us?" section. Leave blank to use default content.
-              </p>
-            </div>
-
-            <div>
-              <label htmlFor="moreInformation" className="block text-sm font-semibold text-gray-700 mb-1">
-                More Information Section
-              </label>
-              <textarea
-                id="moreInformation"
-                name="moreInformation"
-                value={formData.moreInformation || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, moreInformation: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                rows={8}
-                placeholder="Enter detailed information about the store, coupons, how to use them, etc. You can use HTML tags for formatting."
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                This will appear in the "More Information On [Store Name] Coupons" section. Supports HTML formatting. Leave blank to use default content.
-              </p>
-            </div>
-
-            <div>
-              <label htmlFor="seoTitle" className="block text-sm font-semibold text-gray-700 mb-1">
-                SEO Page Title
-              </label>
-              <input
-                id="seoTitle"
-                name="seoTitle"
-                type="text"
-                value={formData.seoTitle || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, seoTitle: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                placeholder="Best Nike Shoes Coupons & Deals 2024 - Save Up to 70%"
-                maxLength={60}
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Optimized title for search engines (shown in browser tab). Max 60 characters. Leave blank to use default: "[Store Name] Coupons & Deals - MimeCode"
-              </p>
-            </div>
-
-            <div>
-              <label htmlFor="seoDescription" className="block text-sm font-semibold text-gray-700 mb-1">
-                SEO Meta Description
-              </label>
-              <textarea
-                id="seoDescription"
-                name="seoDescription"
-                value={formData.seoDescription || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, seoDescription: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                rows={3}
-                placeholder="Get the latest Nike coupons, promo codes & deals. Save up to 70% on shoes, clothing & accessories. Verified daily!"
-                maxLength={160}
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Description shown in search results. Max 160 characters. Should include keywords and call-to-action.
-              </p>
-            </div>
-
-            <div>
-              <label htmlFor="features" className="block text-sm font-semibold text-gray-700 mb-1">
-                Features (One per line)
-              </label>
-              <textarea
-                id="features"
-                name="features"
-                value={formData.features ? formData.features.join('\n') : ''}
-                onChange={(e) => {
-                  const features = e.target.value.split('\n').filter(f => f.trim() !== '');
-                  setFormData({ ...formData, features });
-                }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                rows={4}
-                placeholder="Free Shipping&#10;24/7 Support&#10;Easy Returns"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Enter one feature per line
-              </p>
-            </div>
-
-            <div>
-              <label htmlFor="shippingInfo" className="block text-sm font-semibold text-gray-700 mb-1">
-                Shipping Information
-              </label>
-              <textarea
-                id="shippingInfo"
-                name="shippingInfo"
-                value={formData.shippingInfo || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, shippingInfo: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                rows={4}
-                placeholder="Shipping information..."
-              />
-            </div>
-
-            <div>
-              <label htmlFor="returnPolicy" className="block text-sm font-semibold text-gray-700 mb-1">
-                Return Policy
-              </label>
-              <textarea
-                id="returnPolicy"
-                name="returnPolicy"
-                value={formData.returnPolicy || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, returnPolicy: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                rows={4}
-                placeholder="Return policy information..."
-              />
-            </div>
-
-            <div>
-              <label htmlFor="contactInfo" className="block text-sm font-semibold text-gray-700 mb-1">
-                Contact Information
-              </label>
-              <textarea
-                id="contactInfo"
-                name="contactInfo"
-                value={formData.contactInfo || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, contactInfo: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                rows={3}
-                placeholder="Contact information..."
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label htmlFor="establishedYear" className="block text-sm font-semibold text-gray-700 mb-1">
-                  Established Year
-                </label>
-                <input
-                  id="establishedYear"
-                  name="establishedYear"
-                  type="number"
-                  min="1900"
-                  max="2099"
-                  placeholder="2020"
-                  value={formData.establishedYear || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, establishedYear: e.target.value ? parseInt(e.target.value) : undefined })
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="headquarters" className="block text-sm font-semibold text-gray-700 mb-1">
-                  Headquarters
-                </label>
-                <input
-                  id="headquarters"
-                  name="headquarters"
-                  type="text"
-                  placeholder="New York, USA"
-                  value={formData.headquarters || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, headquarters: e.target.value })
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="trustScore" className="block text-sm font-semibold text-gray-700 mb-1">
-                  Trust Score (0-100)
-                </label>
-                <input
-                  id="trustScore"
-                  name="trustScore"
-                  type="number"
-                  min="0"
-                  max="100"
-                  placeholder="85"
-                  value={formData.trustScore || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, trustScore: e.target.value ? parseInt(e.target.value) : undefined })
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="rating" className="block text-sm font-semibold text-gray-700 mb-1">
-                  Rating (0.0 - 5.0)
-                </label>
-                <input
-                  id="rating"
-                  name="rating"
-                  type="number"
-                  min="0"
-                  max="5"
-                  step="0.1"
-                  placeholder="4.5"
-                  value={formData.rating || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, rating: e.target.value ? parseFloat(e.target.value) : undefined })
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Store rating displayed as stars (e.g., 4.5 = 4.5 stars)
-                </p>
-              </div>
-
-              <div>
-                <label htmlFor="reviewCount" className="block text-sm font-semibold text-gray-700 mb-1">
-                  Review Count
-                </label>
-                <input
-                  id="reviewCount"
-                  name="reviewCount"
-                  type="number"
-                  min="0"
-                  placeholder="123"
-                  value={formData.reviewCount || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, reviewCount: e.target.value ? parseInt(e.target.value) : undefined })
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Number of reviews (e.g., "123 reviews")
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="networkId" className="block text-sm font-semibold text-gray-700 mb-1">
-              Network ID (Region)
-            </label>
-            <input
-              id="networkId"
-              name="networkId"
-              type="number"
-              value={formData.networkId || ''}
-              onChange={(e) =>
-                setFormData({ ...formData, networkId: e.target.value || undefined })
-              }
-              placeholder="Enter numeric Network ID (e.g., 1, 2, 100)"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-            <p className="mt-1 text-xs text-gray-500">
-              Enter the numeric Network ID for this store. <a href="/admin/regions" target="_blank" className="text-blue-600 hover:underline">Manage regions</a>
-            </p>
-          </div>
-
-          <div>
-            <label htmlFor="affiliateFallbackUrl" className="block text-sm font-semibold text-gray-700 mb-1">
-              Affiliate Fallback URL
-            </label>
-            <input
-              id="affiliateFallbackUrl"
-              name="affiliateFallbackUrl"
-              type="url"
-              placeholder="https://example.com/affiliate-link"
-              value={formData.affiliateFallbackUrl || ''}
-              onChange={(e) =>
-                setFormData({ ...formData, affiliateFallbackUrl: e.target.value })
-              }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-            <p className="mt-1 text-xs text-gray-500">
-              This URL will be used when a coupon has no code or deal URL. Used for affiliate redirections.
-            </p>
-          </div>
-
-          <div>
-            <label htmlFor="categoryId" className="block text-sm font-semibold text-gray-700 mb-1">
-              Category
-            </label>
-            <select
-              id="categoryId"
-              name="categoryId"
-              value={formData.categoryId || ''}
-              onChange={(e) => {
-                const categoryId = e.target.value || null;
-                setFormData({ ...formData, categoryId });
-              }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-            >
-              <option value="">No Category</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-xs text-gray-500">
-              Assign this store to a category
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Logo Upload Method
-            </label>
-            <div className="flex gap-4 mb-3">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="logoUploadMethod"
-                  value="url"
-                  checked={logoUploadMethod === 'url'}
-                  onChange={(e) => {
-                    setLogoUploadMethod('url');
-                    setLogoFile(null);
-                  }}
-                  className="mr-2"
-                />
-                URL / Extract from Website
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="logoUploadMethod"
-                  value="file"
-                  checked={logoUploadMethod === 'file'}
-                  onChange={(e) => {
-                    setLogoUploadMethod('file');
-                    setLogoUrl('');
-                  }}
-                  className="mr-2"
-                />
-                Upload File (Max 1 MB)
-              </label>
-            </div>
-
-            {logoUploadMethod === 'url' ? (
-              <>
-                <label htmlFor="logoUrl" className="block text-sm font-semibold text-gray-700 mb-1">
-                  Logo URL (Cloudinary URL, direct image URL, or website URL to extract logo)
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    id="logoUrl"
-                    name="logoUrl"
-                    type="url"
-                    value={logoUrl}
-                    onChange={(e) => handleLogoUrlChange(e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                    placeholder="https://res.cloudinary.com/... or https://example.com/logo.png or https://example.com"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleExtractLogoFromUrl}
-                    disabled={extractingLogo || !logoUrl.trim()}
-                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                  >
-                    {extractingLogo ? 'Extracting...' : 'Extract Logo'}
-                  </button>
+                  {slugError && (
+                    <p className="mt-1 text-xs text-red-600">{slugError}</p>
+                  )}
+                  <p className="mt-1 text-xs text-gray-500">
+                    URL will be: /stores/{formData.slug || 'slug'}
+                    {autoGenerateSlug && <span className="text-blue-600 ml-2">(Auto-generated)</span>}
+                  </p>
                 </div>
-                <p className="mt-1 text-xs text-gray-500">
-                  Enter a direct image URL, Cloudinary URL, or a website URL to automatically extract the logo
-                </p>
-              </>
-            ) : (
-              <>
-                <label htmlFor="logoFile" className="block text-sm font-semibold text-gray-700 mb-1">
-                  Upload Logo File
+              </div>
+
+              <div>
+                <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-1">
+                  Description <span className="text-gray-500 font-normal">(Optional)</span>
                 </label>
-                <input
-                  id="logoFile"
-                  name="logoFile"
-                  type="file"
-                  accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp,image/gif"
-                  onChange={handleLogoFileChange}
-                  disabled={uploadingLogo}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                <textarea
+                  id="description"
+                  name="description"
+                  value={formData.description || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  rows={4}
                 />
-                {uploadingLogo && (
-                  <div className="mt-2 flex items-center gap-2 text-sm text-blue-600">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                    <span>Uploading to Cloudinary...</span>
+              </div>
+
+              <div>
+                <label htmlFor="categoryId" className="block text-sm font-semibold text-gray-700 mb-1">
+                  Category
+                </label>
+                <select
+                  id="categoryId"
+                  name="categoryId"
+                  value={formData.categoryId || ''}
+                  onChange={(e) => {
+                    const categoryId = e.target.value || null;
+                    setFormData({ ...formData, categoryId });
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                >
+                  <option value="">No Category</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  Assign this store to a category
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Logo Upload Method
+                </label>
+                <div className="flex gap-4 mb-3">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="logoUploadMethod"
+                      value="url"
+                      checked={logoUploadMethod === 'url'}
+                      onChange={(e) => {
+                        setLogoUploadMethod('url');
+                        setLogoFile(null);
+                      }}
+                      className="mr-2"
+                    />
+                    URL / Extract from Website
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="logoUploadMethod"
+                      value="file"
+                      checked={logoUploadMethod === 'file'}
+                      onChange={(e) => {
+                        setLogoUploadMethod('file');
+                        setLogoUrl('');
+                      }}
+                      className="mr-2"
+                    />
+                    Upload File (Max 1 MB)
+                  </label>
+                </div>
+
+                {logoUploadMethod === 'url' ? (
+                  <>
+                    <label htmlFor="logoUrl" className="block text-sm font-semibold text-gray-700 mb-1">
+                      Logo URL
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        id="logoUrl"
+                        name="logoUrl"
+                        type="url"
+                        value={logoUrl}
+                        onChange={(e) => handleLogoUrlChange(e.target.value)}
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                        placeholder="https://res.cloudinary.com/... or https://example.com/logo.png"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleExtractLogoFromUrl}
+                        disabled={extractingLogo || !logoUrl.trim()}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap text-sm"
+                      >
+                        {extractingLogo ? 'Extracting...' : 'Extract'}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <label htmlFor="logoFile" className="block text-sm font-semibold text-gray-700 mb-1">
+                      Upload Logo File
+                    </label>
+                    <input
+                      id="logoFile"
+                      name="logoFile"
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp,image/gif"
+                      onChange={handleLogoFileChange}
+                      disabled={uploadingLogo}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                    {uploadingLogo && (
+                      <div className="mt-2 flex items-center gap-2 text-sm text-blue-600">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                        <span>Uploading...</span>
+                      </div>
+                    )}
+                  </>
+                )}
+                {logoUrl && (
+                  <div className="mt-3">
+                    <p className="text-xs font-semibold text-gray-700 mb-2">Logo Preview:</p>
+                    <img 
+                      src={extractedLogoUrl || logoUrl} 
+                      alt="Logo preview" 
+                      className="max-h-20 max-w-full object-contain"
+                    />
                   </div>
                 )}
-                <p className="mt-1 text-xs text-gray-500">
-                  Select an image file (PNG, JPG, SVG, WebP, or GIF). Maximum file size: 1 MB. The file will be uploaded to Cloudinary and the URL will be automatically filled.
-                </p>
-              </>
-            )}
-
-            {extractedLogoUrl && extractedLogoUrl !== logoUrl && (
-              <div className="mt-2 p-2 bg-blue-50 rounded text-sm text-blue-700">
-                <strong>Extracted Original URL:</strong>
-                <div className="mt-1 break-all text-xs">{extractedLogoUrl}</div>
               </div>
-            )}
-            {logoUrl && (
-              <div className="mt-3">
-                <p className="text-xs font-semibold text-gray-700 mb-2">Logo Preview:</p>
-                <div className="flex items-center justify-start py-2">
-                  <img 
-                    src={extractedLogoUrl || logoUrl} 
-                    alt="Logo preview" 
-                    className="max-h-24 max-w-full object-contain"
+
+              {/* Detailed Store Info Fields */}
+              <div className="border-t border-gray-300 pt-4 mt-4">
+                <h4 className="text-md font-bold text-gray-800 mb-3">Detailed Store Information</h4>
+
+                <div>
+                  <label htmlFor="websiteUrl" className="block text-sm font-semibold text-gray-700 mb-1">
+                    Website URL
+                  </label>
+                  <input
+                    id="websiteUrl"
+                    name="websiteUrl"
+                    type="url"
+                    placeholder="https://example.com"
+                    value={formData.websiteUrl || ''}
+                    onChange={(e) =>
+                      setFormData({ ...formData, websiteUrl: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="aboutText" className="block text-sm font-semibold text-gray-700 mb-1">
+                    About Text (Detailed)
+                  </label>
+                  <textarea
+                    id="aboutText"
+                    name="aboutText"
+                    value={formData.aboutText || ''}
+                    onChange={(e) =>
+                      setFormData({ ...formData, aboutText: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    rows={6}
+                    placeholder="Detailed about section for Store Info tab..."
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="whyTrustUs" className="block text-sm font-semibold text-gray-700 mb-1">
+                    Why Trust Us Section
+                  </label>
+                  <textarea
+                    id="whyTrustUs"
+                    name="whyTrustUs"
+                    value={formData.whyTrustUs || ''}
+                    onChange={(e) =>
+                      setFormData({ ...formData, whyTrustUs: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    rows={6}
+                    placeholder="Why should customers trust this store? Enter custom content here..."
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    This will appear in the sidebar "Why Trust Us?" section. Leave blank to use default content.
+                  </p>
+                </div>
+
+                <div>
+                  <label htmlFor="moreInformation" className="block text-sm font-semibold text-gray-700 mb-1">
+                    More Information Section
+                  </label>
+                  <textarea
+                    id="moreInformation"
+                    name="moreInformation"
+                    value={formData.moreInformation || ''}
+                    onChange={(e) =>
+                      setFormData({ ...formData, moreInformation: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    rows={8}
+                    placeholder="Enter detailed information about the store, coupons, how to use them, etc. You can use HTML tags for formatting."
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    This will appear in the "More Information On [Store Name] Coupons" section. Supports HTML formatting. Leave blank to use default content.
+                  </p>
+                </div>
+
+                <div>
+                  <label htmlFor="seoTitle" className="block text-sm font-semibold text-gray-700 mb-1">
+                    SEO Page Title
+                  </label>
+                  <input
+                    id="seoTitle"
+                    name="seoTitle"
+                    type="text"
+                    value={formData.seoTitle || ''}
+                    onChange={(e) =>
+                      setFormData({ ...formData, seoTitle: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    placeholder="Best Nike Shoes Coupons & Deals 2024 - Save Up to 70%"
+                    maxLength={60}
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Optimized title for search engines (shown in browser tab). Max 60 characters. Leave blank to use default: "[Store Name] Coupons & Deals - MimeCode"
+                  </p>
+                </div>
+
+                <div>
+                  <label htmlFor="seoDescription" className="block text-sm font-semibold text-gray-700 mb-1">
+                    SEO Meta Description
+                  </label>
+                  <textarea
+                    id="seoDescription"
+                    name="seoDescription"
+                    value={formData.seoDescription || ''}
+                    onChange={(e) =>
+                      setFormData({ ...formData, seoDescription: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    rows={3}
+                    placeholder="Get the latest Nike coupons, promo codes & deals. Save up to 70% on shoes, clothing & accessories. Verified daily!"
+                    maxLength={160}
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Description shown in search results. Max 160 characters. Should include keywords and call-to-action.
+                  </p>
+                </div>
+
+                <div>
+                  <label htmlFor="features" className="block text-sm font-semibold text-gray-700 mb-1">
+                    Features (One per line)
+                  </label>
+                  <textarea
+                    id="features"
+                    name="features"
+                    value={formData.features ? formData.features.join('\n') : ''}
+                    onChange={(e) => {
+                      const features = e.target.value.split('\n').filter(f => f.trim() !== '');
+                      setFormData({ ...formData, features });
+                    }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    rows={4}
+                    placeholder="Free Shipping&#10;24/7 Support&#10;Easy Returns"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Enter one feature per line
+                  </p>
+                </div>
+
+                <div>
+                  <label htmlFor="shippingInfo" className="block text-sm font-semibold text-gray-700 mb-1">
+                    Shipping Information
+                  </label>
+                  <textarea
+                    id="shippingInfo"
+                    name="shippingInfo"
+                    value={formData.shippingInfo || ''}
+                    onChange={(e) =>
+                      setFormData({ ...formData, shippingInfo: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    rows={4}
+                    placeholder="Shipping information..."
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="returnPolicy" className="block text-sm font-semibold text-gray-700 mb-1">
+                    Return Policy
+                  </label>
+                  <textarea
+                    id="returnPolicy"
+                    name="returnPolicy"
+                    value={formData.returnPolicy || ''}
+                    onChange={(e) =>
+                      setFormData({ ...formData, returnPolicy: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    rows={4}
+                    placeholder="Return policy information..."
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="contactInfo" className="block text-sm font-semibold text-gray-700 mb-1">
+                    Contact Information
+                  </label>
+                  <textarea
+                    id="contactInfo"
+                    name="contactInfo"
+                    value={formData.contactInfo || ''}
+                    onChange={(e) =>
+                      setFormData({ ...formData, contactInfo: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    rows={3}
+                    placeholder="Contact information..."
                   />
                 </div>
               </div>
-            )}
+            </div>
+
+            {/* Right Column: Technical & Affiliate Info */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-bold text-gray-800 border-b pb-2">Technical & Affiliate Information</h3>
+              
+              <div>
+                <label htmlFor="networkId" className="block text-sm font-semibold text-gray-700 mb-1">
+                  Network ID (Region)
+                </label>
+                <input
+                  id="networkId"
+                  name="networkId"
+                  type="number"
+                  value={formData.networkId || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, networkId: e.target.value || undefined })
+                  }
+                  placeholder="Enter numeric Network ID (e.g., 1, 2, 100)"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Enter the numeric Network ID for this store. <a href="/admin/regions" target="_blank" className="text-blue-600 hover:underline">Manage regions</a>
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="merchantId" className="block text-sm font-semibold text-gray-700 mb-1">
+                  Merchant ID
+                </label>
+                <input
+                  id="merchantId"
+                  name="merchantId"
+                  type="text"
+                  placeholder="Enter Merchant ID"
+                  value={formData.merchantId || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, merchantId: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Enter the Merchant ID for this store (e.g., from affiliate network)
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="trackingLink" className="block text-sm font-semibold text-gray-700 mb-1">
+                  Tracking Link
+                </label>
+                <input
+                  id="trackingLink"
+                  name="trackingLink"
+                  type="url"
+                  placeholder="https://example.com/tracking-link"
+                  value={formData.trackingLink || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, trackingLink: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Tracking/affiliate link for this store. Used for redirecting users to the store.
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Trending & Layout Position - Full Width */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
             <div className="flex items-center">
               <input
                 id="isTrending"
@@ -969,25 +875,19 @@ export default function EditStorePage() {
                   </option>
                 ))}
               </select>
+              {!formData.isTrending && !formData.layoutPosition && (
+                <p className="mt-1 text-xs text-gray-400">Enable "Mark as Trending" or select a layout position</p>
+              )}
             </div>
           </div>
 
-          <div className="flex gap-4 pt-4">
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-50"
-            >
-              {saving ? 'Saving...' : 'Save Changes'}
-            </button>
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg hover:bg-gray-300 transition font-semibold"
-            >
-              Cancel
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={saving}
+            className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed mt-6"
+          >
+            {saving ? 'Saving...' : 'Save Changes'}
+          </button>
         </form>
 
         {/* Store FAQ Management Section */}

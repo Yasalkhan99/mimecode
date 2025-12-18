@@ -131,9 +131,9 @@ const convertToAPIFormat = (row: any) => {
   
   const rawLogo = row['Store Logo'] || row.logo_url || '';
   // Get Tracking Url separately
-  const trackingUrl = row['Tracking Url'] || '';
-  // Get Tracking Link separately
-  const trackingLink = row['Tracking Link'] || '';
+  const trackingUrl = row['Tracking Url'] || row['Tracking Url'] || row.tracking_url || '';
+  // Get Tracking Link separately - try multiple column name variations
+  const trackingLink = row['Tracking Link'] || row['TrackingLink'] || row.tracking_link || row.trackingLink || '';
   // Get website URL separately (prefer Store Display Url, then website_url)
   const websiteUrl = row['Store Display Url'] || row.website_url || '';
   // Use trackingUrl for logo extraction if available, otherwise use websiteUrl
@@ -177,7 +177,7 @@ const convertToAPIFormat = (row: any) => {
     description: row.description || row['Store Description'] || row['Store Summary'] || '',
     websiteUrl: websiteUrl,
     trackingUrl: trackingUrl || null, // Separate tracking URL
-    trackingLink: trackingLink || null, // Separate tracking Link
+    trackingLink: trackingLink && trackingLink.trim() ? trackingLink.trim() : null, // Separate tracking Link
     countryCodes: Array.isArray(row['country_codes']) 
       ? row['country_codes'].join(',') // Convert array to comma-separated string
       : (row['country_codes'] || row.countryCodes || '').toString().trim() || null, // Country codes

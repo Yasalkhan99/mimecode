@@ -28,9 +28,9 @@ export default function StoresPage() {
     slug: '',
     description: '',
     logoUrl: '',
-    voucherText: '',
     networkId: '',
-    affiliateFallbackUrl: '',
+    merchantId: '',
+    trackingLink: '',
     isTrending: false,
     layoutPosition: null,
     categoryId: null,
@@ -96,7 +96,7 @@ export default function StoresPage() {
       return;
     }
 
-    // Export all known store fields including Affiliate Fallback URL
+    // Export all known store fields
     const headers = [
       // 'Store UUID',
       'Store ID',
@@ -390,9 +390,9 @@ export default function StoresPage() {
       slug: formData.slug || '',
       description: formData.description || '',
       logoUrl: logoUrlToSave,
-      voucherText: formData.voucherText || undefined,
       networkId: formData.networkId || undefined,
-      affiliateFallbackUrl: formData.affiliateFallbackUrl || undefined,
+      merchantId: formData.merchantId || undefined,
+      trackingLink: formData.trackingLink || undefined,
       isTrending: formData.isTrending || false,
       layoutPosition: layoutPositionToSave,
       categoryId: formData.categoryId || null,
@@ -401,16 +401,17 @@ export default function StoresPage() {
     const result = await createStore(storeData);
     
     if (result.success) {
-      fetchStores();
+      // Force refresh with delay to ensure cache is cleared
+      await fetchStores(true);
       setShowForm(false);
       setFormData({
         name: '',
         slug: '',
         description: '',
         logoUrl: '',
-        voucherText: '',
         networkId: '',
-        affiliateFallbackUrl: '',
+        merchantId: '',
+        trackingLink: '',
         isTrending: false,
         layoutPosition: null,
         categoryId: null,
@@ -853,8 +854,14 @@ export default function StoresPage() {
             </p>
           </div>
 
-          <form onSubmit={handleCreate} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onSubmit={handleCreate} className="space-y-6">
+            {/* Two Column Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left Column: Store Details & Info */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold text-gray-800 border-b pb-2">Store Details & Information</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="name" className="block text-gray-700 text-sm font-semibold mb-2">
                   Store Name
@@ -1072,7 +1079,7 @@ export default function StoresPage() {
             </div>
 
             <div>
-              <label htmlFor="description" className="sr-only">Description</label>
+              <label htmlFor="description" className="block text-gray-700 text-sm font-semibold mb-2">Description</label>
               <textarea
                 id="description"
                 name="description"
@@ -1085,66 +1092,6 @@ export default function StoresPage() {
                 rows={3}
                 required
               />
-            </div>
-
-            {/* <div>
-              <label htmlFor="voucherText" className="block text-gray-700 text-sm font-semibold mb-2">
-                Voucher Text
-              </label>
-              <input
-                id="voucherText"
-                name="voucherText"
-                type="text"
-                placeholder="e.g., Upto 58% Voucher, Get 20% Off, etc."
-                value={formData.voucherText || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, voucherText: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Voucher text that will be displayed on the store card (e.g., "Upto 58% Voucher")
-              </p>
-            </div> */}
-
-            <div>
-              <label htmlFor="networkId" className="block text-gray-700 text-sm font-semibold mb-2">
-                Network ID (Region)
-              </label>
-              <input
-                id="networkId"
-                name="networkId"
-                type="number"
-                value={formData.networkId || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, networkId: e.target.value || undefined })
-                }
-                placeholder="Enter numeric Network ID (e.g., 1, 2, 100)"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Enter the numeric Network ID for this store. <Link href="/admin/regions" className="text-blue-600 hover:underline">Manage regions</Link>
-              </p>
-            </div>
-
-            <div>
-              <label htmlFor="affiliateFallbackUrl" className="block text-gray-700 text-sm font-semibold mb-2">
-                Affiliate Fallback URL
-              </label>
-              <input
-                id="affiliateFallbackUrl"
-                name="affiliateFallbackUrl"
-                type="url"
-                placeholder="https://example.com/affiliate-link"
-                value={formData.affiliateFallbackUrl || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, affiliateFallbackUrl: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                This URL will be used when a coupon has no code or deal URL. Used for affiliate redirections.
-              </p>
             </div>
 
             <div>
@@ -1258,52 +1205,6 @@ export default function StoresPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="rating" className="block text-gray-700 text-sm font-semibold mb-2">
-                  Rating (0.0 - 5.0)
-                </label>
-                <input
-                  id="rating"
-                  name="rating"
-                  type="number"
-                  min="0"
-                  max="5"
-                  step="0.1"
-                  placeholder="4.5"
-                  value={formData.rating || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, rating: e.target.value ? parseFloat(e.target.value) : undefined })
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Store rating displayed as stars (e.g., 4.5 = 4.5 stars)
-                </p>
-              </div>
-
-              <div>
-                <label htmlFor="reviewCount" className="block text-gray-700 text-sm font-semibold mb-2">
-                  Review Count
-                </label>
-                <input
-                  id="reviewCount"
-                  name="reviewCount"
-                  type="number"
-                  min="0"
-                  placeholder="123"
-                  value={formData.reviewCount || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, reviewCount: e.target.value ? parseInt(e.target.value) : undefined })
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Number of reviews (e.g., "123 reviews")
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center">
                 <input
                   id="isTrending"
@@ -1369,13 +1270,80 @@ export default function StoresPage() {
                 )}
               </div>
             </div>
+            </div>
 
-            <button
-              type="submit"
-              className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold"
-            >
-              Create Store
-            </button>
+            {/* Right Column: Technical & Affiliate Info */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-bold text-gray-800 border-b pb-2">Technical & Affiliate Information</h3>
+              
+              <div>
+                <label htmlFor="networkId" className="block text-gray-700 text-sm font-semibold mb-2">
+                  Network ID (Region)
+                </label>
+                <input
+                  id="networkId"
+                  name="networkId"
+                  type="number"
+                  value={formData.networkId || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, networkId: e.target.value || undefined })
+                  }
+                  placeholder="Enter numeric Network ID (e.g., 1, 2, 100)"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Enter the numeric Network ID for this store. <Link href="/admin/regions" className="text-blue-600 hover:underline">Manage regions</Link>
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="merchantId" className="block text-gray-700 text-sm font-semibold mb-2">
+                  Merchant ID
+                </label>
+                <input
+                  id="merchantId"
+                  name="merchantId"
+                  type="text"
+                  placeholder="Enter Merchant ID"
+                  value={formData.merchantId || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, merchantId: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Enter the Merchant ID for this store (e.g., from affiliate network)
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="trackingLink" className="block text-gray-700 text-sm font-semibold mb-2">
+                  Tracking Link
+                </label>
+                <input
+                  id="trackingLink"
+                  name="trackingLink"
+                  type="url"
+                  placeholder="https://example.com/tracking-link"
+                  value={formData.trackingLink || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, trackingLink: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Tracking/affiliate link for this store. Used for redirecting users to the store.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold mt-6"
+          >
+            Create Store
+          </button>
           </form>
         </div>
       )}

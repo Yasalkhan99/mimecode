@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
     }
 
     console.log('Updating store:', id, 'with updates:', Object.keys(updates));
+    console.log('📝 Description value:', updates.description);
 
     // Convert camelCase field names to Supabase column names
     const supabaseUpdates: any = {
@@ -31,7 +32,12 @@ export async function POST(req: NextRequest) {
     // Map common fields
     if (updates.name !== undefined) supabaseUpdates['Store Name'] = updates.name;
     if (updates.slug !== undefined) supabaseUpdates['Slug'] = updates.slug;
-    if (updates.description !== undefined) supabaseUpdates['description'] = updates.description;
+    if (updates.description !== undefined) {
+      // Update both description columns for compatibility
+      supabaseUpdates['description'] = updates.description;
+      supabaseUpdates['Store Description'] = updates.description;
+      console.log('💾 Updating description:', updates.description);
+    }
     if (updates.logoUrl !== undefined) supabaseUpdates['Store Logo'] = updates.logoUrl;
     if (updates.websiteUrl !== undefined) {
       supabaseUpdates['website_url'] = updates.websiteUrl;
@@ -168,9 +174,16 @@ export async function POST(req: NextRequest) {
 
     console.log('Store updated successfully:', id);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
     });
+
+    // Add cache-busting headers
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+
+    return response;
   } catch (error: any) {
     console.error('Supabase update store error:', error);
 

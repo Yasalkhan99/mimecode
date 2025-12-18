@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { clearStoresCache } from '../get/route';
 
 export async function POST(req: NextRequest) {
   try {
@@ -70,6 +71,7 @@ export async function POST(req: NextRequest) {
       'Store Name': store.name,
       'Slug': store.slug,
       'description': store.description || '',
+      'Store Description': store.description || '', // Also set Store Description for compatibility
       'Created Date': new Date().toISOString(),
       'Modify Date': new Date().toISOString(),
     };
@@ -184,10 +186,20 @@ export async function POST(req: NextRequest) {
 
     console.log('Store created successfully with ID:', storeId);
 
-    return NextResponse.json({
+    // Clear stores cache to ensure fresh data on next fetch
+    clearStoresCache();
+
+    const response = NextResponse.json({
       success: true,
       id: storeId,
     });
+
+    // Add cache-busting headers
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+
+    return response;
   } catch (error: any) {
     console.error('Create store error:', error);
 

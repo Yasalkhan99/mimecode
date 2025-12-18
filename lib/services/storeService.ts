@@ -55,7 +55,14 @@ export async function getStores(countryCode?: string | null): Promise<Store[]> {
         params.append('countryCode', countryCode);
       }
       
-      const res = await fetch(`/api/stores/get?${params.toString()}`);
+      const res = await fetch(`/api/stores/get?${params.toString()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      });
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.stores) {
@@ -149,7 +156,14 @@ export async function getStoreById(id: string): Promise<Store | null> {
   try {
     // Try server-side API first (bypasses security rules)
     try {
-      const res = await fetch(`/api/stores/get?collection=${encodeURIComponent(stores)}&id=${encodeURIComponent(id)}`);
+      const res = await fetch(`/api/stores/get?collection=${encodeURIComponent(stores)}&id=${encodeURIComponent(id)}&_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      });
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.store) {
