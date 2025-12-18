@@ -20,6 +20,7 @@ export interface Store {
   websiteUrl?: string; // Store's official website URL
   trackingUrl?: string; // Tracking/affiliate URL for the store
   trackingLink?: string; // Tracking Link for the store (separate from Tracking Url)
+  countryCodes?: string; // Country codes for the store
   aboutText?: string; // Detailed about section for Store Info tab
   features?: string[]; // List of store features (e.g., ["Free Shipping", "24/7 Support"])
   shippingInfo?: string; // Shipping information
@@ -42,11 +43,19 @@ export interface Store {
 // Default to 'stores-mimecode' for this new project
 const stores = process.env.NEXT_PUBLIC_STORES_COLLECTION || 'stores-mimecode';
 
-export async function getStores(): Promise<Store[]> {
+export async function getStores(countryCode?: string | null): Promise<Store[]> {
   try {
     // Try server-side API first (bypasses security rules)
     try {
-      const res = await fetch(`/api/stores/get?collection=${encodeURIComponent(stores)}`);
+      // Build query parameters
+      const params = new URLSearchParams();
+      params.append('collection', stores);
+      params.append('_t', String(Date.now()));
+      if (countryCode) {
+        params.append('countryCode', countryCode);
+      }
+      
+      const res = await fetch(`/api/stores/get?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.stores) {

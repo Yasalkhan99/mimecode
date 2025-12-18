@@ -497,7 +497,7 @@ export default function StoreDetailPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Commission Disclosure */}
         <p className="text-xs sm:text-sm text-gray-500 mb-4">
-          When you buy through links on our site, we may earn a commission.
+          {t('commissionDisclosure')}
         </p>
 
         {/* Store Header Section */}
@@ -526,7 +526,7 @@ export default function StoreDetailPage() {
               {t('trustedPartnerSince')} {getTrustedPartnerYear()}
             </p>
             <p className="text-sm sm:text-base text-gray-600">
-              {coupons.length} Coupons Validated by Our Experts on {getCurrentDate()}
+              {coupons.length} {t('couponsValidatedByExperts')} {getCurrentDate()}
             </p>
           </div>
         </div>
@@ -542,7 +542,7 @@ export default function StoreDetailPage() {
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              Coupons
+              {t('coupons')}
             </button>
             <button
               onClick={() => scrollToSection('store-info-section')}
@@ -552,7 +552,7 @@ export default function StoreDetailPage() {
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              Store Info
+              {t('storeInfo')}
             </button>
             <button
               onClick={() => scrollToSection('faqs-section')}
@@ -562,7 +562,7 @@ export default function StoreDetailPage() {
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              FAQs
+              {t('faqs')}
             </button>
           </div>
         </div>
@@ -599,7 +599,7 @@ export default function StoreDetailPage() {
                   rel="noopener noreferrer"
                   className="block w-full bg-[#FFE019] hover:bg-black text-black hover:text-[#FFE019] border-2 border-black font-bold text-center py-3 px-4 rounded-lg transition-all duration-300"
                 >
-                  Visit Store
+                  {t('visitStore')}
                 </a>
               )}
 
@@ -646,7 +646,7 @@ export default function StoreDetailPage() {
                         })}
                       </div>
                       <p className="text-sm text-gray-600">
-                        {displayReviews} review{displayReviews !== 1 ? 's' : ''}
+                        {displayReviews} {displayReviews !== 1 ? t('reviews') : t('review')}
                       </p>
                     </>
                   );
@@ -655,7 +655,7 @@ export default function StoreDetailPage() {
 
               {/* User Feedback Box */}
               <div className="bg-gray-800 text-white p-4 rounded-lg">
-                <p className="text-sm mb-3">Enjoying {store.name} offers on our website?</p>
+                <p className="text-sm mb-3">{t('enjoyingStoreOffers').replace('{storeName}', store.name)}</p>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setUserFeedback('yes')}
@@ -663,7 +663,7 @@ export default function StoreDetailPage() {
                       userFeedback === 'yes' ? 'bg-green-600' : 'bg-white text-gray-900 hover:bg-gray-100'
                     }`}
                   >
-                    Yes
+                    {t('yes')}
                   </button>
                   <button
                     onClick={() => setUserFeedback('no')}
@@ -671,7 +671,7 @@ export default function StoreDetailPage() {
                       userFeedback === 'no' ? 'bg-red-600' : 'bg-white text-gray-900 hover:bg-gray-100'
                     }`}
                   >
-                    No
+                    {t('no')}
                   </button>
                 </div>
               </div>
@@ -679,15 +679,15 @@ export default function StoreDetailPage() {
               {/* Store Stats */}
               <div className="bg-white border border-gray-200 rounded-lg p-4">
                 <p className="text-sm font-semibold text-gray-900 mb-2">
-                  Get latest {store.name} Coupons and Deals here!
+                  {t('getLatestStoreCouponsAndDeals').replace('{storeName}', store.name)}
                 </p>
                 <p className="text-xs text-gray-600 mb-3">{t('verifiedAndUpdated')}</p>
                 <div className="space-y-2">
                   <p className="text-sm text-gray-700">
-                    Active Coupons: <span className="font-bold">{codeCoupons.length}</span>
+                    {t('activeCoupons')}: <span className="font-bold">{codeCoupons.length}</span>
                   </p>
                   <p className="text-sm text-gray-700">
-                    Active Deals: <span className="font-bold">{dealCoupons.length}</span>
+                    {t('activeDeals')}: <span className="font-bold">{dealCoupons.length}</span>
                   </p>
                 </div>
               </div>
@@ -718,7 +718,7 @@ export default function StoreDetailPage() {
               {/* Related Stores Section */}
               {relatedStores.length > 0 && (
                 <div className="bg-white border border-gray-200 rounded-lg p-4">
-                  <h3 className="text-lg font-bold text-gray-900 mb-3">Related Stores</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-3">{t('relatedStores')}</h3>
                   <div className="grid grid-cols-3 gap-3">
                     {relatedStores.map((relatedStore) => (
                       <LocalizedLink
@@ -774,7 +774,7 @@ export default function StoreDetailPage() {
                       : 'border-transparent text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  All
+                  {t('all')}
                 </button>
                 <button
                   onClick={() => setFilterTab('coupons')}
@@ -784,7 +784,7 @@ export default function StoreDetailPage() {
                       : 'border-transparent text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  Coupons({codeCoupons.length})
+                  {t('coupons')}({codeCoupons.length})
                 </button>
                 <button
                   onClick={() => setFilterTab('deals')}
@@ -794,7 +794,7 @@ export default function StoreDetailPage() {
                       : 'border-transparent text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  Deals({dealCoupons.length})
+                  {t('deals')}({dealCoupons.length})
                 </button>
               </div>
             </div>
@@ -803,12 +803,18 @@ export default function StoreDetailPage() {
             <div id="coupons-section" className="w-full scroll-mt-24">
             {filteredCoupons.length === 0 ? (
               <div className="text-center py-12 bg-gray-50 rounded-xl">
-                <p className="text-gray-500 text-lg">No {filterTab === 'all' ? 'coupons' : filterTab} available for this store right now.</p>
+                <p className="text-gray-500 text-lg">
+                  {filterTab === 'all' 
+                    ? t('noCouponsAvailableForStore') 
+                    : filterTab === 'coupons' 
+                      ? t('noCouponsAvailableForStore') 
+                      : t('noDealsAvailableForStore')}
+                </p>
                 <LocalizedLink
                   href="/stores"
                   className="inline-block mt-4 px-6 py-3 bg-black hover:bg-[#FFE019] text-[#FFE019] hover:text-black border-2 border-[#FFE019] rounded-lg transition-all duration-300 font-semibold"
                 >
-                  Browse Other Stores
+                  {t('browseOtherStores')}
                 </LocalizedLink>
               </div>
             ) : (
@@ -1034,14 +1040,25 @@ export default function StoreDetailPage() {
             {/* Discover More Tags */}
             {store && (
               <div className="mt-8 flex flex-wrap gap-2">
-                <span className="text-sm font-semibold text-gray-700 mr-2">Discover more:</span>
-                {['online stores', 'shopping', store.name, 'Online shopping', 'shopping online', 'coupons', 'deals', 'discounts', 'savings'].map((tag, index) => (
-                  <button
+                <span className="text-sm font-semibold text-gray-700 mr-2">{t('discoverMore')}:</span>
+                {[
+                  { key: 'onlineStores', searchTerm: 'online stores' },
+                  { key: 'shopping', searchTerm: 'shopping' },
+                  { key: 'storeName', searchTerm: store.name, isStoreName: true },
+                  { key: 'onlineShopping', searchTerm: 'online shopping' },
+                  { key: 'shoppingOnline', searchTerm: 'shopping online' },
+                  { key: 'coupons', searchTerm: 'coupons' },
+                  { key: 'deals', searchTerm: 'deals' },
+                  { key: 'discounts', searchTerm: 'discounts' },
+                  { key: 'savings', searchTerm: 'savings' }
+                ].map((tag, index) => (
+                  <LocalizedLink
                     key={index}
+                    href={`/search?q=${encodeURIComponent(tag.searchTerm)}`}
                     className="text-xs sm:text-sm text-gray-600 hover:text-[#16a34a] hover:underline transition-colors"
                   >
-                    {tag}
-                  </button>
+                    {tag.isStoreName ? tag.searchTerm : t(tag.key as any)}
+                  </LocalizedLink>
                 ))}
               </div>
             )}
@@ -1085,7 +1102,7 @@ export default function StoreDetailPage() {
 
             {/* FAQs Section */}
             <div id="faqs-section" className="mt-12">
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">FAQs</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">{t('faqs')}</h2>
               {storeFaqs.length > 0 ? (
                 <div className="space-y-4">
                   {storeFaqs.map((faq, index) => (
@@ -1104,12 +1121,12 @@ export default function StoreDetailPage() {
                 </div>
               ) : (
                 <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                  <p className="text-gray-600 text-lg mb-4">No FAQs available for this store at the moment.</p>
+                  <p className="text-gray-600 text-lg mb-4">{t('noFaqsAvailableForStore')}</p>
                   <Link
                     href="/faqs"
                     className="inline-block px-6 py-3 bg-black hover:bg-[#FFE019] text-[#FFE019] hover:text-black border-2 border-[#FFE019] rounded-lg transition-all duration-300 font-semibold"
                   >
-                    View General FAQs
+                    {t('viewGeneralFaqs')}
                   </Link>
                 </div>
               )}

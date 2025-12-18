@@ -281,7 +281,7 @@ export default function Events() {
                     {(() => {
                       const days = getDaysUntil(latestEvent.startDate);
                       if (days !== null && days >= 0) {
-                        return <span className="ml-1">• {days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : `${days} days`}</span>;
+                        return <span className="ml-1">• {days === 0 ? t('today') : days === 1 ? t('tomorrow') : `${days} ${t('days')}`}</span>;
                       }
                       return null;
                     })()}
@@ -374,7 +374,7 @@ export default function Events() {
                       {(() => {
                         const days = getDaysUntil(latestEvent.startDate);
                         if (days !== null && days >= 0) {
-                          return <span className="ml-1">• {days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : `${days} days`}</span>;
+                          return <span className="ml-1">• {days === 0 ? t('today') : days === 1 ? t('tomorrow') : `${days} ${t('days')}`}</span>;
                         }
                         return null;
                       })()}
@@ -550,7 +550,7 @@ export default function Events() {
               className="text-center mb-8"
             >
               <span className="inline-block text-[#000] font-bold text-sm tracking-wider mb-4 px-4 py-2 bg-[#ffe019] rounded-full">
-                Explore More
+                {t('exploreMore')}
               </span>
               <h2 className="text-4xl font-bold text-gray-900 flex items-center justify-center gap-2 mb-4">
                 {t('otherEvents')}

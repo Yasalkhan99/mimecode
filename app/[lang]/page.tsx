@@ -10,7 +10,7 @@ import { getPageSettings } from '@/lib/services/pageSettingsService';
 import Home from '../page';
 import EventsPage from '../events/page';
 
-const languageSlugs = ['en', 'es', 'fr', 'du', 'it', 'pt', 'nl', 'ru', 'zh', 'ja'];
+const languageSlugs = ['en', 'es', 'fr', 'du', 'de', 'it', 'pt', 'nl', 'ru', 'zh', 'ja']; // 'de' is alias for 'du' (German)
 
 export default function LangHomePage() {
   const params = useParams();
@@ -20,6 +20,9 @@ export default function LangHomePage() {
 
   useEffect(() => {
     const checkPageType = async () => {
+      // Normalize 'de' to 'du' for German (both are valid)
+      const normalizedLang = lang === 'de' ? 'du' : lang;
+      
       // Check if it's a language code
       if (languageSlugs.includes(lang)) {
         setPageType('home');

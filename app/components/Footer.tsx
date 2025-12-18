@@ -111,14 +111,14 @@ export default function Footer() {
             <div>
               <h3 className="text-lg font-semibold mb-4 text-white">{t('topCategories')}</h3>
               <ul className="space-y-2.5">
-                <li><LocalizedLink href="/categories/office-stationery" className="text-sm text-gray-300 hover:text-white transition-colors">Office & Stationery</LocalizedLink></li>
-                <li><LocalizedLink href="/categories/pet-supplies" className="text-sm text-gray-300 hover:text-white transition-colors">Pet Supplies</LocalizedLink></li>
-                <li><LocalizedLink href="/categories/jewelry-watches" className="text-sm text-gray-300 hover:text-white transition-colors">Jewelry & Watches</LocalizedLink></li>
-                <li><LocalizedLink href="/categories/travel-hotels" className="text-sm text-gray-300 hover:text-white transition-colors">Travel & Hotels</LocalizedLink></li>
-                <li><LocalizedLink href="/categories/automotive" className="text-sm text-gray-300 hover:text-white transition-colors">Automotive</LocalizedLink></li>
-                <li><LocalizedLink href="/categories/toys-kids" className="text-sm text-gray-300 hover:text-white transition-colors">Toys & Kids</LocalizedLink></li>
-                <li><LocalizedLink href="/categories/books-media" className="text-sm text-gray-300 hover:text-white transition-colors">Books & Media</LocalizedLink></li>
-                <li><LocalizedLink href="/categories/food-grocery" className="text-sm text-gray-300 hover:text-white transition-colors">Food & Grocery</LocalizedLink></li>
+                <li><LocalizedLink href="/categories/office-stationery" className="text-sm text-gray-300 hover:text-white transition-colors">{t('officeStationery')}</LocalizedLink></li>
+                <li><LocalizedLink href="/categories/pet-supplies" className="text-sm text-gray-300 hover:text-white transition-colors">{t('petSupplies')}</LocalizedLink></li>
+                <li><LocalizedLink href="/categories/jewelry-watches" className="text-sm text-gray-300 hover:text-white transition-colors">{t('jewelryWatches')}</LocalizedLink></li>
+                <li><LocalizedLink href="/categories/travel-hotels" className="text-sm text-gray-300 hover:text-white transition-colors">{t('travelHotels')}</LocalizedLink></li>
+                <li><LocalizedLink href="/categories/automotive" className="text-sm text-gray-300 hover:text-white transition-colors">{t('automotive')}</LocalizedLink></li>
+                <li><LocalizedLink href="/categories/toys-kids" className="text-sm text-gray-300 hover:text-white transition-colors">{t('toysKids')}</LocalizedLink></li>
+                <li><LocalizedLink href="/categories/books-media" className="text-sm text-gray-300 hover:text-white transition-colors">{t('booksMedia')}</LocalizedLink></li>
+                <li><LocalizedLink href="/categories/food-grocery" className="text-sm text-gray-300 hover:text-white transition-colors">{t('foodGrocery')}</LocalizedLink></li>
               </ul>
             </div>
 

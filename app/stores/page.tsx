@@ -38,9 +38,36 @@ const getStoreRating = (storeId: string | undefined): { rating: number; reviews:
   return { rating: Math.round(rating * 10) / 10, reviews };
 };
 
+// Helper function to translate category names
+const getCategoryTranslation = (categoryName: string, t: (key: string) => string): string => {
+  const categoryMap: { [key: string]: string } = {
+    'Flowers': 'categoryFlowers',
+    'Holiday': 'categoryHoliday',
+    'GIF Gift': 'categoryGifGift',
+    'Software': 'categorySoftware',
+    'Glasses': 'categoryGlasses',
+    'Footwear': 'categoryFootwear',
+    'Office & Stationery': 'officeStationery',
+    'Pet Supplies': 'petSupplies',
+    'Jewelry & Watches': 'jewelryWatches',
+    'Travel & Hotels': 'travelHotels',
+    'Automotive': 'automotive',
+    'Toys & Kids': 'toysKids',
+    'Books & Media': 'booksMedia',
+    'Food & Grocery': 'foodGrocery',
+  };
+  
+  const translationKey = categoryMap[categoryName];
+  if (translationKey && t(translationKey) !== translationKey) {
+    return t(translationKey);
+  }
+  return categoryName; // Fallback to original name if no translation found
+};
+
 export default function StoresPage() {
   const { t } = useTranslation();
   const router = useRouter();
+  const { getCountryCode } = useLanguage(); // Get country code from language context
   // const [banner10, setBanner10] = useState<Banner | null>(null);
   // const [banners, setBanners] = useState<Banner[]>([]);
   // const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
@@ -77,10 +104,13 @@ export default function StoresPage() {
     const fetchData = async () => {
       setLoading(true);
       try {
+        // Get country code from current language
+        const countryCode = getCountryCode();
+        
         const [storesData, categoriesData] = await Promise.all([
           // getBannerByLayoutPosition(10),
           // getBannersWithLayout(),
-          getStores(),
+          getStores(countryCode), // Pass country code to filter stores
           getCategories()
         ]);
         // setBanner10(bannerData);
@@ -100,7 +130,7 @@ export default function StoresPage() {
     return () => {
       window.removeEventListener('resize', checkMobile);
     };
-  }, []);
+  }, [getCountryCode]); // Dependency on getCountryCode
 
   useEffect(() => {
     // Filter stores by search query first
@@ -1132,7 +1162,7 @@ export default function StoresPage() {
                             />
                           )}
                           <span className="text-sm text-gray-700 group-hover:text-black transition-colors flex-1">
-                            {category.name}
+                            {getCategoryTranslation(category.name, t)}
                           </span>
                           <svg className="w-4 h-4 text-gray-400 group-hover:text-black transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

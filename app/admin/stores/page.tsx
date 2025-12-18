@@ -109,6 +109,7 @@ export default function StoresPage() {
       'Tracking Link',
       'Voucher Text',
       'Network ID',
+      'Country',
       'Affiliate Fallback URL',
       'Category ID',
       'Layout Position',
@@ -145,6 +146,7 @@ export default function StoresPage() {
         escapeCsv(store.trackingLink || store.trackingUrl || ''),
         escapeCsv(store.voucherText),
         escapeCsv(store.networkId),
+        escapeCsv(store.countryCodes || ''),
         escapeCsv((store as any).affiliateFallbackUrl || (store as any).affiliateFallbackURL),
         escapeCsv(store.categoryId),
         escapeCsv(store.layoutPosition),
@@ -295,6 +297,34 @@ export default function StoresPage() {
       // Filter will be applied automatically via useEffect when stores state updates
     };
     load();
+  }, []);
+
+  // Refresh stores when returning from edit page (check for refresh query param)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const checkAndRefresh = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const refreshParam = urlParams.get('refresh');
+      
+      if (refreshParam) {
+        // Refresh stores list immediately with cache bypass
+        fetchStores();
+        // Clean up URL by removing refresh parameter
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+      }
+    };
+    
+    // Check immediately
+    checkAndRefresh();
+    
+    // Also listen for popstate events (back/forward navigation)
+    window.addEventListener('popstate', checkAndRefresh);
+    
+    return () => {
+      window.removeEventListener('popstate', checkAndRefresh);
+    };
   }, []);
 
   // Load API key from environment on mount (if available via API)
@@ -1387,6 +1417,9 @@ export default function StoresPage() {
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-28">
                     Network ID
                   </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-24">
+                    Country
+                  </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-48">
                     Tracking Link
                   </th>
@@ -1436,6 +1469,9 @@ export default function StoresPage() {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-800 font-mono text-center">
                       {store.networkId || '-'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-800 text-center">
+                      {store.countryCodes || '-'}
                     </td>
                     <td className="px-6 py-4">
                       {(() => {

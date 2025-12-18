@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { clearStoresCache } from '../get/route';
 
 export async function POST(req: NextRequest) {
   try {
@@ -60,6 +61,26 @@ export async function POST(req: NextRequest) {
       if (updates.networkId !== null && updates.networkId !== '') {
         const networkIdStr = String(updates.networkId).trim();
         if (networkIdStr && networkIdStr !== 'null' && networkIdStr !== 'undefined') {
+          // Check if Network ID already exists for a different store
+          const { data: existingStore, error: checkError } = await supabaseAdmin
+            .from('stores')
+            .select('"Store Id", "Store Name"')
+            .eq('Network ID', networkIdStr)
+            .neq('Store Id', id) // Exclude current store
+            .maybeSingle();
+          
+          if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned (not an error)
+            console.error('Error checking Network ID:', checkError);
+          } else if (existingStore) {
+            return NextResponse.json(
+              { 
+                success: false, 
+                error: `Network ID "${networkIdStr}" already exists for store "${existingStore['Store Name']}" (ID: ${existingStore['Store Id']})` 
+              },
+              { status: 400 }
+            );
+          }
+          
           supabaseUpdates['Network ID'] = networkIdStr;
           console.log(`💾 Updating Network ID: "${networkIdStr}" for store ID: ${id}`);
         }
@@ -93,6 +114,23 @@ export async function POST(req: NextRequest) {
     if (updates.seoTitle !== undefined) supabaseUpdates['seo_title'] = updates.seoTitle;
     if (updates.seoDescription !== undefined) supabaseUpdates['seo_description'] = updates.seoDescription;
     if (updates.merchantId !== undefined) supabaseUpdates['Merchant Id'] = updates.merchantId;
+    // Update country codes if provided (even if null, to clear the field)
+    // Convert string to array format for Supabase TEXT[]
+    if (updates.countryCodes !== undefined) {
+      if (updates.countryCodes && updates.countryCodes.trim()) {
+        const countryStr = updates.countryCodes.trim();
+        // Convert string to array - if comma-separated, split it; otherwise single value as array
+        const countryArray = countryStr.includes(',') 
+          ? countryStr.split(',').map((c: string) => c.trim()).filter((c: string) => c)
+          : [countryStr];
+        supabaseUpdates['country_codes'] = countryArray;
+        console.log(`💾 Updating Country Codes: ${JSON.stringify(countryArray)} for store ID: ${id}`);
+      } else {
+        // If explicitly set to null or empty, clear the field
+        supabaseUpdates['country_codes'] = null;
+        console.log(`💾 Clearing Country Codes (setting to null) for store ID: ${id}`);
+      }
+    }
 
     console.log('Supabase updates:', supabaseUpdates);
 
@@ -124,6 +162,9 @@ export async function POST(req: NextRequest) {
         { status: 404 }
       );
     }
+
+    // Clear stores cache to ensure fresh data on next fetch
+    clearStoresCache();
 
     console.log('Store updated successfully:', id);
 

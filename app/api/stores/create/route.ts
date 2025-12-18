@@ -76,10 +76,29 @@ export async function POST(req: NextRequest) {
     // Add optional fields only if they have values
     if (store.logoUrl) supabaseStore['Store Logo'] = store.logoUrl;
     if (store.voucherText) supabaseStore['voucher_text'] = store.voucherText;
-    // Save Network ID if provided
+    // Save Network ID if provided - check for duplicates first
     if (store.networkId !== undefined && store.networkId !== null && store.networkId !== '') {
       const networkIdStr = String(store.networkId).trim();
       if (networkIdStr && networkIdStr !== 'null' && networkIdStr !== 'undefined') {
+        // Check if Network ID already exists
+        const { data: existingStore, error: checkError } = await supabaseAdmin
+          .from('stores')
+          .select('"Store Id", "Store Name"')
+          .eq('Network ID', networkIdStr)
+          .maybeSingle();
+        
+        if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned (not an error)
+          console.error('Error checking Network ID:', checkError);
+        } else if (existingStore) {
+          return NextResponse.json(
+            { 
+              success: false, 
+              error: `Network ID "${networkIdStr}" already exists for store "${existingStore['Store Name']}" (ID: ${existingStore['Store Id']})` 
+            },
+            { status: 400 }
+          );
+        }
+        
         supabaseStore['Network ID'] = networkIdStr;
         console.log(`💾 Saving Network ID: "${networkIdStr}" for store: ${store.name}`);
       }
@@ -97,6 +116,20 @@ export async function POST(req: NextRequest) {
     // Save tracking Link separately if provided
     if (store.trackingLink !== undefined && store.trackingLink !== null) {
       supabaseStore['Tracking Link'] = store.trackingLink.trim() || null;
+    }
+    // Save country codes if provided (convert string to array format for Supabase TEXT[])
+    if (store.countryCodes !== undefined && store.countryCodes !== null) {
+      const countryStr = store.countryCodes.trim();
+      if (countryStr) {
+        // Convert string to array - if comma-separated, split it; otherwise single value as array
+        const countryArray = countryStr.includes(',')
+          ? countryStr.split(',').map((c: string) => c.trim()).filter((c: string) => c)
+          : [countryStr];
+        supabaseStore['country_codes'] = countryArray;
+        console.log(`💾 Saving Country Codes: ${JSON.stringify(countryArray)} for store: ${store.name}`);
+      } else {
+        supabaseStore['country_codes'] = null;
+      }
     }
     if (store.layoutPosition !== null && store.layoutPosition !== undefined) {
       supabaseStore['layout_position'] = store.layoutPosition;

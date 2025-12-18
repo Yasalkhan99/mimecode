@@ -5,10 +5,12 @@ import { getPopularCoupons, getLatestCoupons, Coupon } from '@/lib/services/coup
 import { getStores, Store } from '@/lib/services/storeService';
 import { addToFavorites, removeFromFavorites, isFavorite } from '@/lib/services/favoritesService';
 import { addNotification } from '@/lib/services/notificationsService';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 import Link from 'next/link';
 import CouponPopup from './CouponPopup';
 
 export default function PopularCoupons() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'latest' | 'popular'>('latest');
   const [coupons, setCoupons] = useState<(Coupon | null)[]>(Array(8).fill(null));
   const [stores, setStores] = useState<Store[]>([]);
@@ -66,9 +68,9 @@ export default function PopularCoupons() {
     }
     // Default to type-based text
     if ((coupon.couponType || 'deal') === 'code' && coupon.code) {
-      return 'Get Code';
+      return t('getCode');
     }
-    return 'Get Deal';
+    return t('getDeal');
   };
 
   // Get last 2 digits for hover display

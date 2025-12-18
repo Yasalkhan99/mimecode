@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { getBannerByLayoutPosition, Banner } from '@/lib/services/bannerService';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 
 export default function SpotlightBanner() {
+  const { t } = useTranslation();
   const [banner, setBanner] = useState<Banner | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -61,8 +63,8 @@ export default function SpotlightBanner() {
         <div className="flex flex-col md:flex-row gap-4 sm:gap-6 md:gap-8 items-center">
           <div className="w-full md:w-1/2 space-y-4 sm:space-y-6">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold whitespace-nowrap">
-              <span className="text-white">Spotlight on</span>{' '}
-              <span className="text-[#FFE019]">Top Coupons</span>
+              <span className="text-white">{t('spotlightOn')}</span>{' '}
+              <span className="text-[#FFE019]">{t('topCoupons')}</span>
             </h2>
 
             <div className="border-2 border-dashed border-[#FFE019]/40 rounded-lg p-4 sm:p-6 bg-gradient-to-br from-[#FFE019]/10 to-black relative">
@@ -73,10 +75,10 @@ export default function SpotlightBanner() {
               </div>
               <div className="ml-8">
                 <h3 className="text-lg sm:text-xl font-bold text-white mb-2">
-                  The Ultimate Guide to Smart Shopping with <span className="text-[#FFE019]">MimeCode</span>
+                  {t('ultimateGuideToSmartShopping')} <span className="text-[#FFE019]">MimeCode</span>
                 </h3>
                 <p className="text-sm sm:text-base text-gray-300 leading-relaxed">
-                  In a time when the digital marketplace overflows with money-saving opportunities, MimeCode stands out as the ultimate destination for smart shoppers.
+                  {t('spotlightDescription1')}
                 </p>
               </div>
             </div>
@@ -89,10 +91,10 @@ export default function SpotlightBanner() {
               </div>
               <div className="ml-8">
                 <h3 className="text-lg sm:text-xl font-bold text-white mb-2">
-                  The Ultimate Guide to Smart Shopping with <span className="text-[#FFE019]">MimeCode</span>
+                  {t('ultimateGuideToSmartShopping')} <span className="text-[#FFE019]">MimeCode</span>
                 </h3>
                 <p className="text-sm sm:text-base text-gray-300 leading-relaxed">
-                  MimeCode is more than just another name in the crowded world of online shopping — it's a haven for those who love the excitement of finding premium products without the heavy price tag.
+                  {t('spotlightDescription2')}
                 </p>
               </div>
             </div>
@@ -103,7 +105,7 @@ export default function SpotlightBanner() {
               <div className="aspect-[618/568] max-h-[300px] sm:max-h-[400px] md:max-h-[568px] flex items-center justify-center">
                 <img
                   src={banner.imageUrl}
-                  alt={banner.title || 'Spotlight Banner'}
+                  alt={banner.title || t('spotlightBanner')}
                   className="w-full h-full object-contain rounded-lg"
                   onError={(e) => {
                     console.error('Spotlight banner image failed to load:', banner.imageUrl);

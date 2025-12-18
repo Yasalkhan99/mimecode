@@ -25,6 +25,7 @@ interface ExcelStore {
   'Established Year'?: number;
   'Headquarters'?: string;
   'Trust Score'?: number;
+  'Country'?: string;
   [key: string]: any;
 }
 
@@ -276,6 +277,16 @@ export default function ImportPage() {
               console.log(`✅ Adding Network ID "${networkId}" to store payload for "${storeName}"`);
             }
 
+            // Get Country from Excel
+            const countryRaw = row['Country'] ?? row['country'] ?? row.country ?? '';
+            const country = countryRaw !== null && countryRaw !== undefined && countryRaw !== '' 
+              ? String(countryRaw).trim() 
+              : undefined;
+            if (country) {
+              storePayload.countryCodes = country;
+              console.log(`🌍 Adding Country "${country}" to store payload for "${storeName}"`);
+            }
+
             // Helper function to find existing store by name, slug, or merchant ID
             const findExistingStore = async (): Promise<string | null> => {
               try {
@@ -369,6 +380,18 @@ export default function ImportPage() {
                   updatePayload.networkId = null;
                   console.log(`📝 Clearing Network ID (setting to null) for store "${storeName}"`);
                 }
+              }
+              
+              // Always update country if provided in Excel (even if empty, to ensure field exists)
+              // Check if Country column exists in Excel row
+              const hasCountryColumn = 'Country' in row || 'country' in row;
+              if (hasCountryColumn) {
+                const countryRaw = row['Country'] ?? row['country'] ?? '';
+                const country = countryRaw !== null && countryRaw !== undefined && countryRaw !== '' 
+                  ? String(countryRaw).trim() 
+                  : null;
+                updatePayload.countryCodes = country;
+                console.log(`📝 Adding Country to update: "${country || 'null'}" for store "${storeName}"`);
               }
               
               // Update other fields if provided
