@@ -756,7 +756,10 @@ export default function CouponsPage() {
     
     // Always include storeIds (even if empty array) to ensure it's saved
     // Filter out any undefined/null values
-    const validStoreIds = selectedStoreIds.filter(id => id && id.trim() !== '');
+    // Convert to string and trim - handle both string and number types
+    const validStoreIds = selectedStoreIds
+      .map(id => String(id || ''))
+      .filter(id => id.trim() !== '');
     couponData.storeIds = validStoreIds.length > 0 ? validStoreIds : [];
     
     // Debug log
@@ -1531,8 +1534,9 @@ export default function CouponsPage() {
                             });
                             
                             if (foundStore && foundStore.id) {
-                              if (!selectedStoreIds.includes(foundStore.id)) {
-                                const newSelected = [...selectedStoreIds, foundStore.id];
+                              const storeIdStr = String(foundStore.id);
+                              if (!selectedStoreIds.includes(storeIdStr)) {
+                                const newSelected = [...selectedStoreIds, storeIdStr];
                                 setSelectedStoreIds(newSelected);
                                 
                                 // Auto-populate storeName and logoUrl
@@ -1573,8 +1577,8 @@ export default function CouponsPage() {
                                      (storeIdNum > 0 && storeIdNum === inputIdNum && inputIdNum <= 100000);
                             });
                             
-                            if (foundStore && foundStore.id && !selectedStoreIds.includes(foundStore.id)) {
-                              const newSelected = [...selectedStoreIds, foundStore.id];
+                            if (foundStore && foundStore.id && !selectedStoreIds.includes(String(foundStore.id))) {
+                              const newSelected = [...selectedStoreIds, String(foundStore.id)];
                               setSelectedStoreIds(newSelected);
                               
                               const updates: Partial<Coupon> = { storeName: foundStore.name };
@@ -1588,7 +1592,7 @@ export default function CouponsPage() {
                               setManualStoreId('');
                               // Keep dropdown open so user can see the selected store
                               setIsStoreDropdownOpen(true);
-                            } else if (foundStore && foundStore.id && selectedStoreIds.includes(foundStore.id)) {
+                            } else if (foundStore && foundStore.id && selectedStoreIds.includes(String(foundStore.id))) {
                               // Store already selected
                               setManualStoreId('');
                               setIsStoreDropdownOpen(true);
@@ -1644,7 +1648,7 @@ export default function CouponsPage() {
                           .map((store) => {
                             // Find original index for display
                             const originalIndex = stores.findIndex(s => s.id === store.id);
-                            const isSelected = selectedStoreIds.includes(store.id || '');
+                            const isSelected = selectedStoreIds.includes(String(store.id || ''));
                             return (
                               <label
                                 key={store.id}
@@ -1660,15 +1664,16 @@ export default function CouponsPage() {
                                     }
                                     
                                     let newSelected: string[];
+                                    const storeIdStr = String(store.id);
                                     if (e.target.checked) {
                                       // Only add if not already selected
-                                      if (!selectedStoreIds.includes(store.id)) {
-                                        newSelected = [...selectedStoreIds, store.id];
+                                      if (!selectedStoreIds.includes(storeIdStr)) {
+                                        newSelected = [...selectedStoreIds, storeIdStr];
                                       } else {
                                         newSelected = selectedStoreIds;
                                       }
                                     } else {
-                                      newSelected = selectedStoreIds.filter(id => id !== store.id);
+                                      newSelected = selectedStoreIds.filter(id => id !== storeIdStr);
                                     }
                                     
                                     console.log('🛒 Store selection changed:', {
