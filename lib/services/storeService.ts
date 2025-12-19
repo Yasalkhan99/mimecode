@@ -52,6 +52,7 @@ export async function getStores(countryCode?: string | null): Promise<Store[]> {
       params.append('collection', stores);
       params.append('_t', String(Date.now()));
       if (countryCode) {
+        // Support comma-separated country codes (e.g., "US,GB")
         params.append('countryCode', countryCode);
       }
       

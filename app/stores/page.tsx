@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import LocalizedLink from '@/app/components/LocalizedLink';
 import { useRouter } from 'next/navigation';
@@ -106,12 +106,39 @@ export default function StoresPage() {
       setLoading(true);
       try {
         // Get country code from current language
-        const countryCode = getCountryCode();
+        let countryCode = getCountryCode();
+        let countryCodes: string[] | undefined = undefined;
+        
+        // Check if we're on a language-specific route (e.g., /de/stores)
+        const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+        const pathSegments = pathname.split('/').filter(Boolean);
+        const firstSegment = pathSegments[0];
+        const hasLanguageRoute = firstSegment && ['de', 'es', 'fr', 'it', 'pt', 'nl', 'ru', 'zh', 'ja'].includes(firstSegment);
+        
+        // For .com domain (not .com.de, .com.uk, etc.), show US and UK stores
+        // BUT: Only apply this if NOT on a language-specific route
+        // If on language route (e.g., /de/stores), use that language's country code
+        if (typeof window !== 'undefined' && !hasLanguageRoute) {
+          const hostname = window.location.hostname;
+          const isDotComDomain = hostname && (
+            hostname === 'localhost' || 
+            hostname === '127.0.0.1' ||
+            (hostname.endsWith('.com') && !hostname.match(/\.com\.(de|uk|au|in|ca|pl|it|es|fr|nl|at|th|sa|ae|nz|hk|tw|kr|co|pe|cl|eg|gr|pt|be|ch|se|no|dk|fi|ie|ru|il|br|mx|jp|cn|sg|my|id|ph|vn|tr|za|ar)$/i))
+          );
+          if (isDotComDomain) {
+            // Show both US and UK stores on .com domain
+            countryCodes = ['US', 'UK'];
+            console.log('🌍 .com domain detected, filtering stores for US and UK');
+          }
+        } else if (hasLanguageRoute && countryCode) {
+          // Use country code from language route (e.g., DE for /de/stores)
+          console.log(`🌍 Language route detected (${firstSegment}), filtering stores for ${countryCode}`);
+        }
         
         const [storesData, categoriesData] = await Promise.all([
           // getBannerByLayoutPosition(10),
           // getBannersWithLayout(),
-          getStores(countryCode), // Pass country code to filter stores
+          getStores(countryCodes ? countryCodes.join(',') : countryCode || undefined), // Pass country codes to filter stores
           getCategories()
         ]);
         // setBanner10(bannerData);
@@ -265,11 +292,62 @@ export default function StoresPage() {
     // Search just filters the grid, no navigation needed
   };
 
-  // Filter stores for search dropdown - only show stores starting with the search query
+  // Helper function to get current country codes based on route/domain
+  const getCurrentCountryCodes = useMemo(() => {
+    if (typeof window === 'undefined') return null;
+    
+    const pathname = window.location.pathname;
+    const pathSegments = pathname.split('/').filter(Boolean);
+    const firstSegment = pathSegments[0];
+    const hasLanguageRoute = firstSegment && ['de', 'es', 'fr', 'it', 'pt', 'nl', 'ru', 'zh', 'ja'].includes(firstSegment);
+    
+    if (hasLanguageRoute) {
+      // Get country code from language route
+      const countryCode = getCountryCode();
+      return countryCode ? [countryCode.toUpperCase()] : null;
+    } else {
+      // Check if .com domain
+      const hostname = window.location.hostname;
+      const isDotComDomain = hostname && (
+        hostname === 'localhost' || 
+        hostname === '127.0.0.1' ||
+        (hostname.endsWith('.com') && !hostname.match(/\.com\.(de|uk|au|in|ca|pl|it|es|fr|nl|at|th|sa|ae|nz|hk|tw|kr|co|pe|cl|eg|gr|pt|be|ch|se|no|dk|fi|ie|ru|il|br|mx|jp|cn|sg|my|id|ph|vn|tr|za|ar)$/i))
+      );
+      if (isDotComDomain) {
+        return ['US', 'GB', 'UK']; // US and UK for .com domain (GB is UK in database)
+      }
+    }
+    return null;
+  }, [getCountryCode]);
+
+  // Filter stores for search dropdown - only show stores starting with the search query AND matching country code
   const searchFilteredStores = stores.filter((store: Store) => {
     if (!searchQuery.trim()) return false;
     const query = searchQuery.toLowerCase().trim();
-    return store.name.toLowerCase().startsWith(query);
+    const nameMatches = store.name.toLowerCase().startsWith(query);
+    
+    // If country codes filter is active, check if store matches
+    if (getCurrentCountryCodes && getCurrentCountryCodes.length > 0) {
+      const storeCountryCodes = (store as any).countryCodes || (store as any).country_codes;
+      if (!storeCountryCodes) return false; // Exclude stores without country codes if filter is active
+      
+      // Parse country codes (can be string or comma-separated or array)
+      let storeCodes: string[] = [];
+      if (typeof storeCountryCodes === 'string') {
+        storeCodes = storeCountryCodes.split(',').map((c: string) => c.trim().toUpperCase());
+      } else if (Array.isArray(storeCountryCodes)) {
+        storeCodes = storeCountryCodes.map((c: any) => String(c).trim().toUpperCase());
+      }
+      
+      // Check if store has any of the required country codes
+      const hasMatchingCountryCode = getCurrentCountryCodes.some((requiredCode: string) => 
+        storeCodes.includes(requiredCode.toUpperCase())
+      );
+      
+      return nameMatches && hasMatchingCountryCode;
+    }
+    
+    return nameMatches;
   }).slice(0, 10); // Limit to 10 results
 
   // Close search dropdown when clicking outside

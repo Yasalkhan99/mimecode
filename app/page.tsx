@@ -193,9 +193,20 @@ export default function Home() {
     // CRITICAL: Fetch coupons IMMEDIATELY and separately (like banners)
     const fetchCoupons = async () => {
       try {
+        // Get country code from current language
+        const countryCode = getCountryCode();
+        
+        // For .com domain (not .com.de, .com.uk, etc.), only show USA coupons
+        const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+        const isDotComDomain = hostname && (
+          hostname === 'localhost' || 
+          hostname.endsWith('.com') && !hostname.match(/\.com\.(de|uk|au|in|ca|pl|it|es|fr|nl|at|th|sa|ae|nz|hk|tw|kr|co|pe|cl|eg|gr|pt|be|ch|se|no|dk|fi|ie|ru|il|br|mx|jp|cn|sg|my|id|ph|vn|tr|za|ar)$/i)
+        );
+        const finalCountryCode: string | undefined = isDotComDomain ? 'US' : (countryCode || undefined);
+        
         // Increased timeout to 3 seconds - give API more time to respond
         const couponsData = await Promise.race([
-          getCoupons(),
+          getCoupons(finalCountryCode),
           new Promise<Coupon[]>((resolve) =>
             setTimeout(() => resolve([]), 3000)
           )

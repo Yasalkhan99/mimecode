@@ -145,6 +145,7 @@ const convertToAPIFormat = (couponData: any, docId: string, storeData?: any) => 
     categoryId: data.category_id || data.categoryId || null,
     createdAt: data.created_at || data.createdAt || data['Created Date'] || null,
     updatedAt: data.updated_at || data.updatedAt || data['Modify Date'] || null,
+    country_codes: data.country_codes || data.countryCodes || [],
   };
 };
 
@@ -159,12 +160,13 @@ export async function GET(req: NextRequest) {
     const categoryId = searchParams.get('categoryId');
     const storeId = searchParams.get('storeId');
     const activeOnly = searchParams.get('activeOnly') === 'true';
+    const countryCode = searchParams.get('countryCode'); // Get country code parameter
 
     // Check for cache bypass parameter
     const bypassCache = searchParams.get('_t') !== null; // If _t parameter exists, bypass cache
 
     // Create cache key from params
-    const cacheKey = `${id || ''}-${categoryId || ''}-${storeId || ''}-${activeOnly}`;
+    const cacheKey = `${id || ''}-${categoryId || ''}-${storeId || ''}-${activeOnly}-${countryCode || ''}`;
     const now = Date.now();
 
     // Check cache for list queries (not single item) - skip if bypassCache is true
@@ -182,10 +184,10 @@ export async function GET(req: NextRequest) {
     // Get coupon by ID (no cache)
     if (id) {
       // Try by Supabase row ID first, then by Coupon Id field
-      // Explicitly select Coupon URL column to ensure it's included
+      // Explicitly select Coupon URL column and country_codes to ensure it's included
       let { data: couponData, error: couponError } = await supabaseAdmin
         .from(tableName)
-        .select('*, "Coupon URL", "Coupon Deep Link"')
+        .select('*, "Coupon URL", "Coupon Deep Link", country_codes')
         .eq('id', id)
         .single();
       
@@ -193,7 +195,7 @@ export async function GET(req: NextRequest) {
       if (couponError || !couponData) {
         const { data: couponByCustomId, error: errorByCustomId } = await supabaseAdmin
           .from(tableName)
-          .select('*, "Coupon URL", "Coupon Deep Link"')
+          .select('*, "Coupon URL", "Coupon Deep Link", country_codes')
           .eq('Coupon Id', id)
           .single();
         if (!errorByCustomId && couponByCustomId) {
@@ -223,8 +225,8 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Get all coupons with filters - explicitly include Coupon URL column
-    let query = supabaseAdmin.from(tableName).select('*, "Coupon URL", "Coupon Deep Link"');
+    // Get all coupons with filters - explicitly include Coupon URL column and country_codes
+    let query = supabaseAdmin.from(tableName).select('*, "Coupon URL", "Coupon Deep Link", country_codes');
     
     let numericStoreId: string | null = null;
     let isUuid = false;
@@ -277,8 +279,8 @@ export async function GET(req: NextRequest) {
     // If no coupons found, try fallback: fetch all and filter manually (better matching)
     if (storeId && (!coupons || coupons.length === 0)) {
       console.log(`⚠️ No coupons found with primary query for storeId: ${storeId}, trying fallback: fetch all and filter manually...`);
-      // Explicitly include Coupon URL column
-      let fallbackQuery = supabaseAdmin.from(tableName).select('*, "Coupon URL", "Coupon Deep Link"');
+      // Explicitly include Coupon URL column and country_codes
+      let fallbackQuery = supabaseAdmin.from(tableName).select('*, "Coupon URL", "Coupon Deep Link", country_codes');
       if (categoryId) fallbackQuery = fallbackQuery.or(`category_id.eq.${categoryId},categoryId.eq.${categoryId}`);
       
       const { data: allCoupons, error: fallbackError } = await fallbackQuery;
@@ -472,6 +474,31 @@ export async function GET(req: NextRequest) {
         couponType: convertedCoupons[0].couponType,
         url: convertedCoupons[0].url
       });
+    }
+
+    // Apply country code filtering (if provided)
+    if (countryCode) {
+      const beforeCountryFilter = convertedCoupons.length;
+      convertedCoupons = convertedCoupons.filter((coupon: any) => {
+        // Check if coupon has country_codes field
+        const couponCountryCodes = coupon.country_codes || coupon.countryCodes || [];
+        
+        // If coupon has no country codes specified, include it (for backward compatibility)
+        if (!couponCountryCodes || couponCountryCodes.length === 0) {
+          return true;
+        }
+        
+        // Check if the requested country code is in the coupon's country codes
+        // Support both uppercase and lowercase
+        const normalizedCountryCode = countryCode.toUpperCase();
+        const hasCountryCode = Array.isArray(couponCountryCodes) && 
+          couponCountryCodes.some((code: string) => 
+            String(code).toUpperCase() === normalizedCountryCode
+          );
+        
+        return hasCountryCode;
+      });
+      console.log(`🌍 Country code filter (${countryCode}): ${beforeCountryFilter} -> ${convertedCoupons.length} coupons`);
     }
 
     // Apply activeOnly filtering

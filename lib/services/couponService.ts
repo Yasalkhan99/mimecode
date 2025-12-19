@@ -185,13 +185,15 @@ export async function createCoupon(coupon: Omit<Coupon, 'id'>, logoFile?: File) 
   }
 }
 
-// Get all coupons
-export async function getCoupons(): Promise<Coupon[]> {
+// Get all coupons (optionally filtered by country code)
+export async function getCoupons(countryCode?: string): Promise<Coupon[]> {
   try {
     // Try server-side API first (bypasses security rules)
     // Add cache-busting timestamp to ensure fresh data
+    // Add country code parameter if provided
+    const countryParam = countryCode ? `&countryCode=${encodeURIComponent(countryCode)}` : '';
     try {
-      const res = await fetch(`/api/coupons/get?collection=${encodeURIComponent(coupons)}&_t=${Date.now()}`, {
+      const res = await fetch(`/api/coupons/get?collection=${encodeURIComponent(coupons)}&_t=${Date.now()}${countryParam}`, {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',

@@ -15,12 +15,13 @@ import { getEvents } from "@/lib/services/eventService";
 import { getPageSettings } from "@/lib/services/pageSettingsService";
 import { useLanguage } from "@/lib/contexts/LanguageContext";
 import { useTranslation } from "@/lib/hooks/useTranslation";
+import { useMemo } from "react";
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
-  const { getLocalizedPath } = useLanguage();
+  const { getLocalizedPath, getCountryCode } = useLanguage();
   const { t } = useTranslation();
   const [searchCategoryOpen, setSearchCategoryOpen] = useState(false);
   const [storesDropdownOpen, setStoresDropdownOpen] = useState(false);
@@ -46,6 +47,34 @@ export default function Navbar() {
     }
   };
   
+  // Helper function to get current country codes based on route/domain
+  const getCurrentCountryCodes = useMemo(() => {
+    if (typeof window === 'undefined') return null;
+    
+    const currentPathname = window.location.pathname;
+    const pathSegments = currentPathname.split('/').filter(Boolean);
+    const firstSegment = pathSegments[0];
+    const hasLanguageRoute = firstSegment && ['de', 'es', 'fr', 'it', 'pt', 'nl', 'ru', 'zh', 'ja'].includes(firstSegment);
+    
+    if (hasLanguageRoute) {
+      // Get country code from language route
+      const countryCode = getCountryCode();
+      return countryCode ? [countryCode.toUpperCase()] : null;
+    } else {
+      // Check if .com domain
+      const hostname = window.location.hostname;
+      const isDotComDomain = hostname && (
+        hostname === 'localhost' || 
+        hostname === '127.0.0.1' ||
+        (hostname.endsWith('.com') && !hostname.match(/\.com\.(de|uk|au|in|ca|pl|it|es|fr|nl|at|th|sa|ae|nz|hk|tw|kr|co|pe|cl|eg|gr|pt|be|ch|se|no|dk|fi|ie|ru|il|br|mx|jp|cn|sg|my|id|ph|vn|tr|za|ar)$/i))
+      );
+      if (isDotComDomain) {
+        return ['US', 'UK']; // US and UK for .com domain (UK maps to GB in database)
+      }
+    }
+    return null;
+  }, [pathname]); // Only depend on pathname, getCountryCode is called inside
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -56,10 +85,34 @@ export default function Navbar() {
           setEventsSlug(pageSettings.eventsSlug || 'events');
         }
         
+        // Get country code for filtering stores
+        let countryCode = getCountryCode();
+        let countryCodes: string[] | undefined = undefined;
+        
+        // Check if we're on a language-specific route
+        const pathSegments = pathname.split('/').filter(Boolean);
+        const firstSegment = pathSegments[0];
+        const hasLanguageRoute = firstSegment && ['de', 'es', 'fr', 'it', 'pt', 'nl', 'ru', 'zh', 'ja'].includes(firstSegment);
+        
+        // For .com domain (not .com.de, .com.uk, etc.), show US and UK stores
+        // BUT: Only apply this if NOT on a language-specific route
+        if (typeof window !== 'undefined' && !hasLanguageRoute) {
+          const hostname = window.location.hostname;
+          const isDotComDomain = hostname && (
+            hostname === 'localhost' || 
+            hostname === '127.0.0.1' ||
+            (hostname.endsWith('.com') && !hostname.match(/\.com\.(de|uk|au|in|ca|pl|it|es|fr|nl|at|th|sa|ae|nz|hk|tw|kr|co|pe|cl|eg|gr|pt|be|ch|se|no|dk|fi|ie|ru|il|br|mx|jp|cn|sg|my|id|ph|vn|tr|za|ar)$/i))
+          );
+          if (isDotComDomain) {
+            // Show both US and UK stores on .com domain
+            countryCodes = ['US', 'UK'];
+          }
+        }
+        
         // Fetch other data in parallel
         const [categoriesData, storesData, eventsData] = await Promise.all([
           getCategories(),
-          getStores(),
+          getStores(countryCodes ? countryCodes.join(',') : countryCode || undefined), // Pass country codes to filter stores
           getEvents()
         ]);
         setCategories(categoriesData);
@@ -88,18 +141,48 @@ export default function Navbar() {
       window.removeEventListener('notificationUpdated', handleNotificationUpdate);
       window.removeEventListener('favoritesUpdated', handleFavoritesUpdate);
     };
-  }, []);
+  }, [pathname]); // Re-fetch when pathname changes (getCountryCode is stable from context)
 
   const updateCounts = () => {
     setFavoritesCount(getFavoritesCount());
     setNotificationsCount(getUnreadCount());
   };
 
-  // Filter stores based on search query - only show stores starting with the search query
+  // Filter stores based on search query AND country code - only show stores starting with the search query AND matching country code
   const filteredStores = stores.filter(store => {
     if (!searchQuery.trim()) return false;
     const query = searchQuery.toLowerCase().trim();
-    return store.name.toLowerCase().startsWith(query);
+    const nameMatches = store.name.toLowerCase().startsWith(query);
+    
+    // If country codes filter is active, check if store matches
+    if (getCurrentCountryCodes && getCurrentCountryCodes.length > 0) {
+      const storeCountryCodes = (store as any).countryCodes || (store as any).country_codes;
+      if (!storeCountryCodes) return false; // Exclude stores without country codes if filter is active
+      
+      // Parse country codes (can be string or comma-separated or array)
+      let storeCodes: string[] = [];
+      if (typeof storeCountryCodes === 'string') {
+        storeCodes = storeCountryCodes.split(',').map((c: string) => c.trim().toUpperCase());
+      } else if (Array.isArray(storeCountryCodes)) {
+        storeCodes = storeCountryCodes.map((c: any) => String(c).trim().toUpperCase());
+      }
+      
+      // Check if store has any of the required country codes
+      // Also map UK to GB (UK stores are stored as GB in database)
+      const normalizedRequiredCodes = getCurrentCountryCodes.map((code: string) => {
+        const upper = code.toUpperCase();
+        return upper === 'UK' ? 'GB' : upper;
+      });
+      const normalizedStoreCodes = storeCodes.map(code => code === 'UK' ? 'GB' : code);
+      
+      const hasMatchingCountryCode = normalizedRequiredCodes.some((requiredCode: string) => 
+        normalizedStoreCodes.includes(requiredCode)
+      );
+      
+      return nameMatches && hasMatchingCountryCode;
+    }
+    
+    return nameMatches;
   }).slice(0, 10); // Limit to 10 results
 
   // Close dropdowns when clicking outside

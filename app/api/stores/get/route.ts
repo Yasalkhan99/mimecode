@@ -349,10 +349,24 @@ export async function GET(req: NextRequest) {
       query = query.eq('category_id', categoryId);
     }
 
-    // Filter by country code if provided
-    // country_codes is a TEXT[] array in Supabase, so we use cs (contains) operator
+    // Filter by country code(s) if provided
+    // country_codes is a TEXT[] array in Supabase
+    // Support comma-separated country codes (e.g., "US,GB" for both US and UK)
     if (countryCode) {
-      query = query.contains('country_codes', [countryCode.toUpperCase()]);
+      const countryCodes = countryCode.split(',').map(code => code.trim().toUpperCase());
+      console.log(`🌍 Filtering stores by country codes: ${countryCodes.join(', ')}`);
+      
+      // Use OR logic: store must have at least one of the specified country codes
+      // Supabase doesn't support OR directly with contains, so we'll filter after fetching
+      // For now, use the first country code for the query, then filter in memory
+      if (countryCodes.length === 1) {
+        query = query.contains('country_codes', [countryCodes[0]]);
+      } else {
+        // For multiple country codes, we need to fetch and filter manually
+        // Use OR condition with multiple contains checks
+        const orConditions = countryCodes.map(code => `country_codes.cs.{${code}}`).join(',');
+        query = query.or(orConditions);
+      }
     }
 
     // Check for cache-busting parameter
