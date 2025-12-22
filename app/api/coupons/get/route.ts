@@ -454,6 +454,114 @@ export async function GET(req: NextRequest) {
       });
     }
     
+    // Apply country code filtering BEFORE conversion (using original coupon data and storeDataMap)
+    // Support comma-separated country codes (e.g., "US,GB" for both US and UK)
+    // Filter by STORE's country codes (not coupon's country codes)
+    if (countryCode) {
+      const beforeCountryFilter = coupons?.length || 0;
+      const countryCodes = countryCode.split(',').map(code => code.trim().toUpperCase());
+      console.log(`🌍 Filtering coupons by store country codes: ${countryCodes.join(', ')}`);
+      
+      // Filter coupons based on their store's country codes
+      const filteredCoupons = (coupons || []).filter((coupon: any) => {
+        // Get store IDs from original coupon data (check all possible fields)
+        const couponStoreId = coupon['Store  Id'] || coupon['Store Id'] || coupon.storeId || coupon.storeIds?.[0];
+        const couponStoreIds = coupon.store_ids || coupon.storeIds || [];
+        
+        // Collect all store IDs to check
+        const allStoreIds: string[] = [];
+        if (couponStoreId) allStoreIds.push(String(couponStoreId));
+        if (Array.isArray(couponStoreIds)) {
+          allStoreIds.push(...couponStoreIds.map((id: any) => String(id)));
+        }
+        
+        // If no store IDs found, exclude this coupon when filter is active
+        if (allStoreIds.length === 0) {
+          return false;
+        }
+        
+        // Check if any of the coupon's stores have matching country codes
+        let hasMatchingStore = false;
+        
+        for (const storeId of allStoreIds) {
+          // Get store data from storeDataMap (try multiple ID formats)
+          let storeData = storeDataMap.get(storeId);
+          
+          // If not found, try different ID formats
+          if (!storeData) {
+            // Try as numeric ID
+            if (!storeId.includes('-')) {
+              const numericId = parseInt(storeId);
+              if (!isNaN(numericId)) {
+                storeData = storeDataMap.get(String(numericId));
+              }
+            }
+            // Try as UUID
+            if (!storeData && storeId.includes('-')) {
+              storeData = storeDataMap.get(storeId);
+            }
+          }
+          
+          if (!storeData) {
+            // Store not found in map - this coupon's store might not be loaded
+            // Skip this coupon (exclude it when filter is active)
+            continue;
+          }
+          
+          // Get store's country codes
+          const storeCountryCodes = storeData['country_codes'] || storeData.countryCodes || [];
+          
+          // If store has no country codes, skip this store
+          if (!storeCountryCodes || storeCountryCodes.length === 0) {
+            continue;
+          }
+          
+          // Parse store country codes (can be string, array, or comma-separated)
+          let storeCodes: string[] = [];
+          if (typeof storeCountryCodes === 'string') {
+            storeCodes = storeCountryCodes.split(',').map((c: string) => c.trim().toUpperCase());
+          } else if (Array.isArray(storeCountryCodes)) {
+            storeCodes = storeCountryCodes.map((c: any) => String(c).trim().toUpperCase());
+          }
+          
+          // Check if store has any of the required country codes
+          // Also map UK to GB (UK stores are stored as GB in database)
+          const normalizedRequiredCodes = countryCodes.map(code => code === 'UK' ? 'GB' : code);
+          const normalizedStoreCodes = storeCodes.map(code => code === 'UK' ? 'GB' : code);
+          
+          const storeMatches = normalizedRequiredCodes.some((requiredCode: string) => 
+            normalizedStoreCodes.includes(requiredCode)
+          );
+          
+          if (storeMatches) {
+            hasMatchingStore = true;
+            break; // Found a matching store, no need to check others
+          }
+        }
+        
+        // STRICT: Only include coupon if its STORE has matching country codes
+        // Do NOT fall back to coupon's own country codes - filter strictly by store
+        return hasMatchingStore;
+      });
+      
+      // Update coupons array to filtered coupons
+      coupons = filteredCoupons;
+      console.log(`🌍 Country code filter (${countryCodes.join(', ')}): ${beforeCountryFilter} -> ${coupons.length} coupons`);
+      
+      // Debug: Log sample of filtered coupons and their stores
+      if (coupons.length > 0) {
+        const sampleCoupon = coupons[0];
+        const sampleStoreId = sampleCoupon['Store  Id'] || sampleCoupon.store_ids?.[0];
+        const sampleStore = sampleStoreId ? storeDataMap.get(String(sampleStoreId)) : null;
+        console.log('📋 Sample filtered coupon:', {
+          couponId: sampleCoupon['Coupon Id'] || sampleCoupon.id,
+          storeId: sampleStoreId,
+          storeName: sampleStore?.['Store Name'] || sampleStore?.name,
+          storeCountryCodes: sampleStore?.['country_codes'] || sampleStore?.countryCodes
+        });
+      }
+    }
+    
     let convertedCoupons = (coupons || []).map((coupon: any) => {
       const couponStoreId = coupon['Store  Id'] || coupon.storeIds?.[0];
       const storeData = couponStoreId ? storeDataMap.get(couponStoreId) : null;
@@ -474,31 +582,6 @@ export async function GET(req: NextRequest) {
         couponType: convertedCoupons[0].couponType,
         url: convertedCoupons[0].url
       });
-    }
-
-    // Apply country code filtering (if provided)
-    if (countryCode) {
-      const beforeCountryFilter = convertedCoupons.length;
-      convertedCoupons = convertedCoupons.filter((coupon: any) => {
-        // Check if coupon has country_codes field
-        const couponCountryCodes = coupon.country_codes || coupon.countryCodes || [];
-        
-        // If coupon has no country codes specified, include it (for backward compatibility)
-        if (!couponCountryCodes || couponCountryCodes.length === 0) {
-          return true;
-        }
-        
-        // Check if the requested country code is in the coupon's country codes
-        // Support both uppercase and lowercase
-        const normalizedCountryCode = countryCode.toUpperCase();
-        const hasCountryCode = Array.isArray(couponCountryCodes) && 
-          couponCountryCodes.some((code: string) => 
-            String(code).toUpperCase() === normalizedCountryCode
-          );
-        
-        return hasCountryCode;
-      });
-      console.log(`🌍 Country code filter (${countryCode}): ${beforeCountryFilter} -> ${convertedCoupons.length} coupons`);
     }
 
     // Apply activeOnly filtering

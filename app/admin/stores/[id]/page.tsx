@@ -804,13 +804,13 @@ export default function EditStorePage() {
 
               <div>
                 <label htmlFor="trackingLink" className="block text-sm font-semibold text-gray-700 mb-1">
-                  Tracking Link
+                  Tracking URL
                 </label>
                 <input
                   id="trackingLink"
                   name="trackingLink"
                   type="url"
-                  placeholder="https://example.com/tracking-link"
+                  placeholder="https://example.com/tracking-url"
                   value={formData.trackingLink || ''}
                   onChange={(e) =>
                     setFormData({ ...formData, trackingLink: e.target.value })
@@ -818,15 +818,76 @@ export default function EditStorePage() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  Tracking/affiliate link for this store. Used for redirecting users to the store.
+                  Tracking/affiliate URL for this store. Used for redirecting users to the store.
                 </p>
               </div>
 
-              {/* Store URL Display */}
+              {/* Tracking Link Display */}
+              {formData.trackingLink && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    Tracking Link (Display)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={formData.trackingLink}
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const url = formData.trackingLink || '';
+                        navigator.clipboard.writeText(url).then(() => {
+                          alert('Tracking link copied to clipboard!');
+                        }).catch(() => {
+                          // Fallback for older browsers
+                          const textArea = document.createElement('textarea');
+                          textArea.value = url;
+                          document.body.appendChild(textArea);
+                          textArea.select();
+                          document.execCommand('copy');
+                          document.body.removeChild(textArea);
+                          alert('Tracking link copied to clipboard!');
+                        });
+                      }}
+                      className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition font-semibold text-sm whitespace-nowrap"
+                    >
+                      Copy URL
+                    </button>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    This is the tracking/affiliate link for this store
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="countryCodes" className="block text-sm font-semibold text-gray-700 mb-1">
+                  Country Codes
+                </label>
+                <input
+                  id="countryCodes"
+                  name="countryCodes"
+                  type="text"
+                  placeholder="US,GB,DE,FR (comma-separated)"
+                  value={formData.countryCodes || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, countryCodes: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Enter country codes for this store (e.g., US,GB for United States and United Kingdom). Use comma to separate multiple countries.
+                </p>
+              </div>
+
+              {/* Store Page URL Display */}
               {formData.slug && (
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">
-                    Store URL
+                    Store Page URL (MimeCode)
                   </label>
                   <div className="flex items-center gap-2">
                     <input
@@ -840,7 +901,7 @@ export default function EditStorePage() {
                       onClick={() => {
                         const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/stores/${formData.slug}`;
                         navigator.clipboard.writeText(url).then(() => {
-                          alert('Store URL copied to clipboard!');
+                          alert('Store page URL copied to clipboard!');
                         }).catch(() => {
                           // Fallback for older browsers
                           const textArea = document.createElement('textarea');
@@ -849,7 +910,7 @@ export default function EditStorePage() {
                           textArea.select();
                           document.execCommand('copy');
                           document.body.removeChild(textArea);
-                          alert('Store URL copied to clipboard!');
+                          alert('Store page URL copied to clipboard!');
                         });
                       }}
                       className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition font-semibold text-sm whitespace-nowrap"
@@ -858,10 +919,86 @@ export default function EditStorePage() {
                     </button>
                   </div>
                   <p className="mt-1 text-xs text-gray-500">
-                    This is the public URL where users can view this store
+                    This is the MimeCode store page URL where users can view this store
                   </p>
                 </div>
               )}
+
+              {/* Store Website URL Display */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Store Website URL (Display)
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={formData.websiteUrl || 'Not set'}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm"
+                  />
+                  {!formData.websiteUrl && formData.name && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        // Try to guess website URL from store name
+                        const storeName = formData.name || '';
+                        const slug = formData.slug || '';
+                        
+                        // Generate possible URLs
+                        const possibleUrls = [];
+                        const nameSlug = slug || storeName.toLowerCase().replace(/[^a-z0-9]/g, '');
+                        
+                        if (nameSlug) {
+                          possibleUrls.push(`https://${nameSlug}.com`);
+                          possibleUrls.push(`https://www.${nameSlug}.com`);
+                          possibleUrls.push(`https://${nameSlug}.co.uk`);
+                          possibleUrls.push(`https://www.${nameSlug}.co.uk`);
+                        }
+                        
+                        // Try first URL
+                        if (possibleUrls.length > 0) {
+                          const guessedUrl = possibleUrls[0];
+                          if (confirm(`Auto-fetch website URL?\n\nTrying: ${guessedUrl}\n\nIf this is correct, it will be set automatically.`)) {
+                            setFormData({ ...formData, websiteUrl: guessedUrl });
+                            alert(`Website URL set to: ${guessedUrl}\n\nYou can edit it in the "Website URL" field above if needed.`);
+                          }
+                        } else {
+                          alert('Please enter a store name or slug to auto-fetch the website URL.');
+                        }
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold text-sm whitespace-nowrap"
+                    >
+                      Auto-Fetch
+                    </button>
+                  )}
+                  {formData.websiteUrl && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const url = formData.websiteUrl || '';
+                        navigator.clipboard.writeText(url).then(() => {
+                          alert('Store website URL copied to clipboard!');
+                        }).catch(() => {
+                          // Fallback for older browsers
+                          const textArea = document.createElement('textarea');
+                          textArea.value = url;
+                          document.body.appendChild(textArea);
+                          textArea.select();
+                          document.execCommand('copy');
+                          document.body.removeChild(textArea);
+                          alert('Store website URL copied to clipboard!');
+                        });
+                      }}
+                      className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition font-semibold text-sm whitespace-nowrap"
+                    >
+                      Copy URL
+                    </button>
+                  )}
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  This is the actual website URL of the store (e.g., https://halfdays.com). Click "Auto-Fetch" to guess from store name.
+                </p>
+              </div>
             </div>
           </div>
 

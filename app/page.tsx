@@ -194,15 +194,46 @@ export default function Home() {
     const fetchCoupons = async () => {
       try {
         // Get country code from current language
-        const countryCode = getCountryCode();
+        let countryCode = getCountryCode();
         
-        // For .com domain (not .com.de, .com.uk, etc.), only show USA coupons
-        const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
-        const isDotComDomain = hostname && (
-          hostname === 'localhost' || 
-          hostname.endsWith('.com') && !hostname.match(/\.com\.(de|uk|au|in|ca|pl|it|es|fr|nl|at|th|sa|ae|nz|hk|tw|kr|co|pe|cl|eg|gr|pt|be|ch|se|no|dk|fi|ie|ru|il|br|mx|jp|cn|sg|my|id|ph|vn|tr|za|ar)$/i)
-        );
-        const finalCountryCode: string | undefined = isDotComDomain ? 'US' : (countryCode || undefined);
+        // Check if we're on a language-specific route (e.g., /de/)
+        const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+        const pathSegments = pathname.split('/').filter(Boolean);
+        const firstSegment = pathSegments[0];
+        const hasLanguageRoute = firstSegment && ['de', 'es', 'fr', 'it', 'pt', 'nl', 'ru', 'zh', 'ja'].includes(firstSegment);
+        
+        // For .com domain (not .com.de, .com.uk, etc.), show US and UK coupons
+        // BUT: Only apply this if NOT on a language-specific route
+        let finalCountryCode: string | undefined = undefined;
+        
+        if (typeof window !== 'undefined') {
+          const hostname = window.location.hostname;
+          const isDotComDomain = hostname && (
+            hostname === 'localhost' || 
+            hostname === '127.0.0.1' ||
+            (hostname.endsWith('.com') && !hostname.match(/\.com\.(de|uk|au|in|ca|pl|it|es|fr|nl|at|th|sa|ae|nz|hk|tw|kr|co|pe|cl|eg|gr|pt|be|ch|se|no|dk|fi|ie|ru|il|br|mx|jp|cn|sg|my|id|ph|vn|tr|za|ar)$/i))
+          );
+          
+          if (hasLanguageRoute) {
+            // Use country code from language route (e.g., DE for /de/)
+            finalCountryCode = countryCode || undefined;
+            console.log(`🌍 Language route detected (${firstSegment}), filtering coupons for ${countryCode}`);
+          } else if (isDotComDomain) {
+            // For .com domain (or localhost), pass "US,GB" to get both US and UK coupons
+            finalCountryCode = 'US,GB';
+            console.log('🌍 .com domain (or localhost) detected, filtering coupons for US and UK');
+          } else {
+            // For other domains, use country code from language context
+            finalCountryCode = countryCode || undefined;
+            console.log(`🌍 Other domain detected, using country code: ${countryCode || 'none'}`);
+          }
+        } else {
+          // Server-side: default to US,GB for .com domain
+          finalCountryCode = 'US,GB';
+        }
+        
+        // Log the final country code being used
+        console.log('🌍 Final country code for coupons:', finalCountryCode);
         
         // Increased timeout to 3 seconds - give API more time to respond
         const couponsData = await Promise.race([
@@ -211,6 +242,8 @@ export default function Home() {
             setTimeout(() => resolve([]), 3000)
           )
         ]);
+        
+        console.log(`📊 Fetched ${couponsData.length} coupons with country code filter: ${finalCountryCode || 'none'}`);
 
         // Set coupons immediately when they arrive
         setAllCoupons(couponsData);
@@ -382,7 +415,36 @@ export default function Home() {
     const fetchMimecodeCoupons = async () => {
       try {
         setMimecodeCouponsLoading(true);
-        const res = await fetch('/api/coupons/get?collection=coupons-mimecode');
+        
+        // Get country code for filtering (same logic as fetchCoupons)
+        const countryCode = getCountryCode();
+        const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+        const pathSegments = pathname.split('/').filter(Boolean);
+        const firstSegment = pathSegments[0];
+        const hasLanguageRoute = firstSegment && ['de', 'es', 'fr', 'it', 'pt', 'nl', 'ru', 'zh', 'ja'].includes(firstSegment);
+        
+        let finalCountryCode: string | undefined = undefined;
+        if (typeof window !== 'undefined') {
+          const hostname = window.location.hostname;
+          const isDotComDomain = hostname && (
+            hostname === 'localhost' || 
+            hostname === '127.0.0.1' ||
+            (hostname.endsWith('.com') && !hostname.match(/\.com\.(de|uk|au|in|ca|pl|it|es|fr|nl|at|th|sa|ae|nz|hk|tw|kr|co|pe|cl|eg|gr|pt|be|ch|se|no|dk|fi|ie|ru|il|br|mx|jp|cn|sg|my|id|ph|vn|tr|za|ar)$/i))
+          );
+          
+          if (hasLanguageRoute) {
+            finalCountryCode = countryCode || undefined;
+          } else if (isDotComDomain) {
+            finalCountryCode = 'US,GB';
+          } else {
+            finalCountryCode = countryCode || undefined;
+          }
+        } else {
+          finalCountryCode = 'US,GB'; // Server-side default
+        }
+        
+        const countryParam = finalCountryCode ? `&countryCode=${encodeURIComponent(finalCountryCode)}` : '';
+        const res = await fetch(`/api/coupons/get?collection=coupons-mimecode${countryParam}`);
         if (res.ok) {
           const data = await res.json();
           if (data.success && data.coupons && Array.isArray(data.coupons)) {
@@ -399,7 +461,7 @@ export default function Home() {
     };
 
     fetchMimecodeCoupons();
-  }, []);
+  }, [getCountryCode]);
 
   // const handleCloseModal = () => {
   //   setIsContactModalOpen(false);
@@ -1016,6 +1078,33 @@ export default function Home() {
     setSelectedCoupon(null);
   };
 
+  // Get current country codes for filtering (same logic as fetchCoupons)
+  const getCurrentCountryCodes = useMemo(() => {
+    const countryCode = getCountryCode();
+    const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+    const pathSegments = pathname.split('/').filter(Boolean);
+    const firstSegment = pathSegments[0];
+    const hasLanguageRoute = firstSegment && ['de', 'es', 'fr', 'it', 'pt', 'nl', 'ru', 'zh', 'ja'].includes(firstSegment);
+    
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      const isDotComDomain = hostname && (
+        hostname === 'localhost' || 
+        hostname === '127.0.0.1' ||
+        (hostname.endsWith('.com') && !hostname.match(/\.com\.(de|uk|au|in|ca|pl|it|es|fr|nl|at|th|sa|ae|nz|hk|tw|kr|co|pe|cl|eg|gr|pt|be|ch|se|no|dk|fi|ie|ru|il|br|mx|jp|cn|sg|my|id|ph|vn|tr|za|ar)$/i))
+      );
+      
+      if (hasLanguageRoute) {
+        return countryCode ? [countryCode.toUpperCase()] : [];
+      } else if (isDotComDomain) {
+        return ['US', 'GB'];
+      } else {
+        return countryCode ? [countryCode.toUpperCase()] : [];
+      }
+    }
+    return ['US', 'GB']; // Server-side default
+  }, [getCountryCode]);
+
   const displayLatestCoupons = useMemo(() => {
     // Helper to get a numeric timestamp from various createdAt formats
     const getCreatedAtTime = (coupon: Coupon): number => {
@@ -1047,14 +1136,65 @@ export default function Home() {
       return name.trim().toLowerCase().replace(/\s+/g, ' ');
     };
 
+    // Helper to check if coupon/store has matching country codes
+    const matchesCountryCodes = (coupon: Coupon, store: Store | null): boolean => {
+      if (getCurrentCountryCodes.length === 0) return true; // If no filter, allow all
+      
+      // First check coupon's own country codes
+      const couponCountryCodes = (coupon as any).country_codes || (coupon as any).countryCodes || [];
+      if (couponCountryCodes && couponCountryCodes.length > 0) {
+        let couponCodes: string[] = [];
+        if (typeof couponCountryCodes === 'string') {
+          couponCodes = couponCountryCodes.split(',').map((c: string) => c.trim().toUpperCase());
+        } else if (Array.isArray(couponCountryCodes)) {
+          couponCodes = couponCountryCodes.map((c: any) => String(c).trim().toUpperCase());
+        }
+        
+        const normalizedRequiredCodes = getCurrentCountryCodes.map((code: string) => code === 'UK' ? 'GB' : code);
+        const normalizedCouponCodes = couponCodes.map((code: string) => code === 'UK' ? 'GB' : code);
+        
+        if (normalizedRequiredCodes.some((requiredCode: string) => normalizedCouponCodes.includes(requiredCode))) {
+          return true; // Coupon has matching country code
+        }
+      }
+      
+      // Then check store's country codes (if store exists)
+      if (store) {
+        const storeCountryCodes = (store as any)['country_codes'] || (store as any).countryCodes || [];
+        if (storeCountryCodes && storeCountryCodes.length > 0) {
+          let storeCodes: string[] = [];
+          if (typeof storeCountryCodes === 'string') {
+            storeCodes = storeCountryCodes.split(',').map((c: string) => c.trim().toUpperCase());
+          } else if (Array.isArray(storeCountryCodes)) {
+            storeCodes = storeCountryCodes.map((c: any) => String(c).trim().toUpperCase());
+          }
+          
+          const normalizedRequiredCodes = getCurrentCountryCodes.map((code: string) => code === 'UK' ? 'GB' : code);
+          const normalizedStoreCodes = storeCodes.map((code: string) => code === 'UK' ? 'GB' : code);
+          
+          if (normalizedRequiredCodes.some((requiredCode: string) => normalizedStoreCodes.includes(requiredCode))) {
+            return true; // Store has matching country code
+          }
+          
+          // Store exists and has country codes but doesn't match - exclude
+          return false;
+        }
+        // Store exists but has no country codes - allow for backward compatibility
+        return true;
+      }
+      
+      // Store not found - allow coupon (will be filtered when stores load)
+      return true;
+    };
+
     // 1) Filter: only active, code-type coupons that have a URL
-    const codeCouponsWithUrl = allCoupons.filter(c =>
-      c &&
-      c.id &&
-      (c.couponType === 'code' || !c.couponType) &&
-      c.url &&
-      c.isActive !== false
-    ) as Coupon[];
+    // Country code filtering will be done later when stores are available
+    const codeCouponsWithUrl = allCoupons.filter(c => {
+      if (!c || !c.id || (c.couponType !== 'code' && c.couponType) || !c.url || c.isActive === false) {
+        return false;
+      }
+      return true;
+    }) as Coupon[];
 
     // 2) Sort by createdAt descending (newest first)
     const sortedByCreatedAt = [...codeCouponsWithUrl].sort((a, b) => {
@@ -1078,6 +1218,14 @@ export default function Home() {
       // This ensures we only show coupons for stores that actually exist in our stores list
       if (!store || !store.name || !normalizeStoreName(store.name)) {
         continue;
+      }
+
+      // Additional country code check (in case filter wasn't applied earlier)
+      // Only apply if stores are loaded - if stores not loaded yet, allow coupon
+      if (getCurrentCountryCodes.length > 0 && allStores.length > 0) {
+        if (!matchesCountryCodes(coupon, store)) {
+          continue; // Skip if doesn't match country codes
+        }
       }
 
       let identifier: string | null = null;
@@ -1130,7 +1278,7 @@ export default function Home() {
     }
 
     return result;
-  }, [allCoupons, allStores, getStoreForCoupon, extractDomainForLogo]);
+  }, [allCoupons, allStores, getStoreForCoupon, extractDomainForLogo, getCurrentCountryCodes]);
 
   // CRITICAL: Pre-compute all latest coupons data (store, logo, expiry) to avoid blocking render
   // This prevents INP issues when clicking on coupons and ensures correct logos
@@ -1317,15 +1465,77 @@ export default function Home() {
     const usedCouponIds = new Set<string>();
     const usedStoreIds = new Set<string>();
 
+    // Helper to check if coupon/store has matching country codes
+    const matchesCountryCodes = (coupon: Coupon, store: Store | null): boolean => {
+      if (getCurrentCountryCodes.length === 0) return true; // If no filter, allow all
+      
+      // First check coupon's own country codes
+      const couponCountryCodes = (coupon as any).country_codes || (coupon as any).countryCodes || [];
+      if (couponCountryCodes && couponCountryCodes.length > 0) {
+        let couponCodes: string[] = [];
+        if (typeof couponCountryCodes === 'string') {
+          couponCodes = couponCountryCodes.split(',').map((c: string) => c.trim().toUpperCase());
+        } else if (Array.isArray(couponCountryCodes)) {
+          couponCodes = couponCountryCodes.map((c: any) => String(c).trim().toUpperCase());
+        }
+        
+        const normalizedRequiredCodes = getCurrentCountryCodes.map((code: string) => code === 'UK' ? 'GB' : code);
+        const normalizedCouponCodes = couponCodes.map((code: string) => code === 'UK' ? 'GB' : code);
+        
+        if (normalizedRequiredCodes.some((requiredCode: string) => normalizedCouponCodes.includes(requiredCode))) {
+          return true; // Coupon has matching country code
+        }
+      }
+      
+      // Then check store's country codes (if store exists)
+      if (store) {
+        const storeCountryCodes = (store as any)['country_codes'] || (store as any).countryCodes || [];
+        if (storeCountryCodes && storeCountryCodes.length > 0) {
+          let storeCodes: string[] = [];
+          if (typeof storeCountryCodes === 'string') {
+            storeCodes = storeCountryCodes.split(',').map((c: string) => c.trim().toUpperCase());
+          } else if (Array.isArray(storeCountryCodes)) {
+            storeCodes = storeCountryCodes.map((c: any) => String(c).trim().toUpperCase());
+          }
+          
+          const normalizedRequiredCodes = getCurrentCountryCodes.map((code: string) => code === 'UK' ? 'GB' : code);
+          const normalizedStoreCodes = storeCodes.map((code: string) => code === 'UK' ? 'GB' : code);
+          
+          if (normalizedRequiredCodes.some((requiredCode: string) => normalizedStoreCodes.includes(requiredCode))) {
+            return true; // Store has matching country code
+          }
+        }
+      }
+      
+      // If neither coupon nor store has country codes, allow it (backward compatibility)
+      // But only if we have stores loaded - if stores are loaded and store doesn't match, exclude
+      if (allStores.length > 0 && store) {
+        // Store exists but doesn't match - exclude
+        return false;
+      }
+      
+      // If stores not loaded yet or store not found, allow coupon (will be filtered later)
+      return true;
+    };
+
     // Get ALL featured candidate coupons from allCoupons:
     // - deal type coupons only
-    const allFeaturedCoupons = allCoupons.filter(c =>
-      c &&
-      c.id &&
-      c.couponType === 'deal' &&
-      (c.url || c.affiliateLink) && // must have valid URL or affiliateLink
-      c.isActive !== false
-    ) as Coupon[];
+    // - AND matching country codes
+    const allFeaturedCoupons = allCoupons.filter(c => {
+      if (!c || !c.id || c.couponType !== 'deal' || !(c.url || c.affiliateLink) || c.isActive === false) {
+        return false;
+      }
+      
+      // Check store country codes if filter is active
+      if (getCurrentCountryCodes.length > 0) {
+        const store = getStoreForCoupon(c);
+        if (!matchesCountryCodes(c, store)) {
+          return false; // Exclude if doesn't match country codes
+        }
+      }
+      
+      return true;
+    }) as Coupon[];
 
     // Shuffle to randomize selection
     const shuffled = [...allFeaturedCoupons].sort(() => Math.random() - 0.5);
@@ -1358,13 +1568,38 @@ export default function Home() {
 
     // If we don't have enough deals, fill with stores (fallback)
     if (result.length < 10 && allStores.length > 0) {
-      // Get stores that haven't been used yet
-      const availableStores = allStores.filter(store => 
-        store.id && 
-        !usedStoreIds.has(store.id) &&
-        store.name &&
-        (store.websiteUrl || store.trackingUrl || store.trackingLink)
-      );
+      // Get stores that haven't been used yet AND match country codes
+      const availableStores = allStores.filter(store => {
+        // Basic filters
+        if (!store.id || usedStoreIds.has(store.id) || !store.name || !(store.websiteUrl || store.trackingUrl || store.trackingLink)) {
+          return false;
+        }
+        
+        // Country code filter
+        if (getCurrentCountryCodes.length > 0) {
+          const storeCountryCodes = (store as any)['country_codes'] || (store as any).countryCodes || [];
+          if (!storeCountryCodes || storeCountryCodes.length === 0) return false; // No country codes = exclude
+          
+          let storeCodes: string[] = [];
+          if (typeof storeCountryCodes === 'string') {
+            storeCodes = storeCountryCodes.split(',').map((c: string) => c.trim().toUpperCase());
+          } else if (Array.isArray(storeCountryCodes)) {
+            storeCodes = storeCountryCodes.map((c: any) => String(c).trim().toUpperCase());
+          }
+          
+          // Map UK to GB
+          const normalizedRequiredCodes = getCurrentCountryCodes.map((code: string) => code === 'UK' ? 'GB' : code);
+          const normalizedStoreCodes = storeCodes.map((code: string) => code === 'UK' ? 'GB' : code);
+          
+          const matches = normalizedRequiredCodes.some((requiredCode: string) => 
+            normalizedStoreCodes.includes(requiredCode)
+          );
+          
+          if (!matches) return false; // Exclude if doesn't match
+        }
+        
+        return true;
+      });
       
       // Shuffle stores
       const shuffledStores = [...availableStores].sort(() => Math.random() - 0.5);
@@ -1384,7 +1619,7 @@ export default function Home() {
     }
 
     return result.slice(0, 10);
-  }, [allCoupons, allStores, getStoreForCoupon]);
+  }, [allCoupons, allStores, getStoreForCoupon, getCurrentCountryCodes]);
 
   // Auto-slide banners
   useEffect(() => {
