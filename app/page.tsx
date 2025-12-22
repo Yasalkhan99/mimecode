@@ -2054,15 +2054,18 @@ export default function Home() {
                   style={{
                     width: 'fit-content',
                     animationName: 'scrollLeft',
-                    animationDuration: displayLatestCoupons.length > 0 ? `${Math.max(15, displayLatestCoupons.length * 2)}s` : '20s',
+                    animationDuration: displayLatestCoupons.length > 0 ? `${Math.max(10, displayLatestCoupons.length * 1.5)}s` : '15s',
                     animationTimingFunction: 'linear',
                     animationIterationCount: 'infinite',
                     animationPlayState: isMimecodeCouponsPaused ? 'paused' : 'running',
-                    willChange: 'transform'
+                    willChange: 'transform',
+                    backfaceVisibility: 'hidden',
+                    WebkitBackfaceVisibility: 'hidden',
+                    transform: 'translateZ(0)'
                   }}
                 >
-                  {/* Render 3 copies for seamless infinite scroll */}
-                  {displayLatestCoupons.length > 0 ? [...displayLatestCoupons, ...displayLatestCoupons, ...displayLatestCoupons].map((coupon, index) => {
+                  {/* Render 4 copies for truly seamless infinite scroll (no gap) */}
+                  {displayLatestCoupons.length > 0 ? [...displayLatestCoupons, ...displayLatestCoupons, ...displayLatestCoupons, ...displayLatestCoupons].map((coupon, index) => {
                     if (!coupon) return null; // Skip null coupons
                     const copyIndex = Math.floor(index / displayLatestCoupons.length);
                     const couponIndex = index % displayLatestCoupons.length;
