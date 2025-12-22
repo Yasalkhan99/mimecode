@@ -235,22 +235,39 @@ export default function Home() {
         // Log the final country code being used
         console.log('🌍 Final country code for coupons:', finalCountryCode);
         
-        // Increased timeout to 3 seconds - give API more time to respond
+        // Fetch ALL coupons without country code filtering for Latest Coupons
+        // Country filtering will be done client-side only for Featured Deals
         const couponsData = await Promise.race([
-          getCoupons(finalCountryCode),
+          getCoupons(), // No country code - fetch all coupons
           new Promise<Coupon[]>((resolve) =>
-            setTimeout(() => resolve([]), 3000)
+            setTimeout(() => resolve([]), 5000) // Increased timeout to 5 seconds
           )
         ]);
         
-        console.log(`📊 Fetched ${couponsData.length} coupons with country code filter: ${finalCountryCode || 'none'}`);
+        console.log(`📊 Fetched ${couponsData.length} coupons (NO country filter for Latest Coupons)`);
+        console.log('📋 Sample coupons:', couponsData.slice(0, 3).map(c => ({
+          id: c?.id,
+          code: c?.code,
+          couponType: c?.couponType,
+          isActive: c?.isActive,
+          url: c?.url,
+          storeName: c?.storeName
+        })));
 
         // Set coupons immediately when they arrive
         setAllCoupons(couponsData);
         setLatestCoupons(couponsData.slice(0, 6));
 
         // Show basic coupons immediately (even without stores) - don't wait for filtering
-        const codeCouponsOnly = couponsData.filter(coupon => coupon && coupon.couponType === 'code');
+        // Include coupons where couponType === 'code' OR couponType is undefined but has code field
+        const codeCouponsOnly = couponsData.filter(coupon => {
+          if (!coupon) return false;
+          if (coupon.couponType === 'code') return true;
+          // If couponType is not set, check if it has a code (indicates it's a code-type coupon)
+          if (!coupon.couponType && coupon.code && coupon.code.trim() !== '') return true;
+          return false;
+        });
+        console.log(`🔍 Filtered ${codeCouponsOnly.length} code-type coupons from ${couponsData.length} total`);
 
         // ALWAYS set latestCouponsWithLayout, even if empty
         if (codeCouponsOnly.length > 0) {
@@ -1187,14 +1204,39 @@ export default function Home() {
       return true;
     };
 
-    // 1) Filter: only active, code-type coupons that have a URL
-    // Country code filtering will be done later when stores are available
+    // 1) Filter: only active, code-type coupons
+    // SIMPLIFIED: Show all code-type coupons (no country filtering, no URL requirement)
     const codeCouponsWithUrl = allCoupons.filter(c => {
-      if (!c || !c.id || (c.couponType !== 'code' && c.couponType) || !c.url || c.isActive === false) {
+      // Must have id and be active
+      if (!c || !c.id || c.isActive === false) {
         return false;
       }
-      return true;
+      // Include if couponType is 'code' OR if couponType is undefined/null but has code field
+      if (c.couponType === 'code') return true;
+      if (!c.couponType && c.code && c.code.trim() !== '') return true;
+      // Exclude if couponType is explicitly set to something other than 'code'
+      if (c.couponType && c.couponType !== 'code') return false;
+      // Default: exclude if no code field
+      return false;
     }) as Coupon[];
+    
+    console.log(`🔍 [displayLatestCoupons] Total coupons: ${allCoupons.length}, Filtered code-type: ${codeCouponsWithUrl.length}`);
+    if (codeCouponsWithUrl.length > 0) {
+      console.log(`🔍 [displayLatestCoupons] Sample code coupons:`, codeCouponsWithUrl.slice(0, 3).map(c => ({
+        id: c?.id,
+        code: c?.code,
+        couponType: c?.couponType,
+        storeName: c?.storeName,
+        isActive: c?.isActive
+      })));
+    } else {
+      console.log(`⚠️ [displayLatestCoupons] No code-type coupons found! All coupons:`, allCoupons.slice(0, 5).map(c => ({
+        id: c?.id,
+        code: c?.code,
+        couponType: c?.couponType,
+        isActive: c?.isActive
+      })));
+    }
 
     // 2) Sort by createdAt descending (newest first)
     const sortedByCreatedAt = [...codeCouponsWithUrl].sort((a, b) => {
@@ -1207,6 +1249,8 @@ export default function Home() {
     const usedStoreIdentifiers = new Set<string>();
     const usedDomains = new Set<string>();
 
+    console.log(`🔍 [displayLatestCoupons] Starting to process ${sortedByCreatedAt.length} sorted coupons (NO country filtering - showing all code-type coupons), stores loaded: ${allStores.length}`);
+
     // 3) Walk sorted list and pick at most one coupon per store (up to 10)
     for (const coupon of sortedByCreatedAt) {
       if (result.length >= 10) break;
@@ -1214,26 +1258,7 @@ export default function Home() {
       // Try to resolve store via helper (uses storeMap/allStores)
       const store = getStoreForCoupon(coupon);
 
-      // Country code filtering - be VERY lenient
-      // Only filter if we have BOTH: country filter active AND store found with EXPLICIT country codes that DON'T match
-      // If store not found OR store has no country codes OR country codes match, allow the coupon
-      if (getCurrentCountryCodes.length > 0 && allStores.length > 0 && store) {
-        const storeCountryCodes = (store as any)['country_codes'] || (store as any).countryCodes || [];
-        const hasCountryCodes = storeCountryCodes && (
-          (Array.isArray(storeCountryCodes) && storeCountryCodes.length > 0) ||
-          (typeof storeCountryCodes === 'string' && storeCountryCodes.trim().length > 0)
-        );
-        
-        // Only filter if store has EXPLICIT country codes set AND they DON'T match
-        // If store has no country codes, ALWAYS allow the coupon
-        if (hasCountryCodes) {
-          // Store has country codes - check if they match
-          if (!matchesCountryCodes(coupon, store)) {
-            continue; // Skip only if store has country codes AND they don't match
-          }
-        }
-        // If store has no country codes, allow the coupon (backward compatibility)
-      }
+      // NO COUNTRY CODE FILTERING - Show all code-type coupons regardless of country codes
       
       // Allow coupon even if store is not found (store might not be loaded yet or might not exist)
       // We'll use coupon's own storeName or storeIds for identification
@@ -1259,11 +1284,16 @@ export default function Home() {
         identifier = `coupon-id:${coupon.id}`;
       }
 
+      // Only skip if we have a clear identifier and it's already used
+      // Be lenient - allow coupons even if identifier is not perfect
       if (identifier && usedStoreIdentifiers.has(identifier)) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`⏭️ [displayLatestCoupons] Skipping duplicate: ${identifier}`);
+        }
         continue; // already have a coupon for this store
       }
 
-      // Also enforce unique affiliate / tracking domain
+      // Also enforce unique affiliate / tracking domain (but be lenient)
       // Prefer store's websiteUrl (which often contains tracking URL), then coupon.url
       const candidateUrl =
         (store as any)?.websiteUrl ||
@@ -1273,7 +1303,12 @@ export default function Home() {
         null;
 
       const domain = extractDomainForLogo(candidateUrl);
+      // Only skip if domain is clearly identified and already used
+      // Allow coupons even if domain is not available
       if (domain && usedDomains.has(domain)) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`⏭️ [displayLatestCoupons] Skipping duplicate domain: ${domain}`);
+        }
         continue; // already have a coupon for this affiliate/tracking domain
       }
 
@@ -1285,8 +1320,30 @@ export default function Home() {
       }
 
       result.push(coupon);
+      console.log(`✅ [displayLatestCoupons] Added coupon ${coupon.code || coupon.id} for store "${store?.name || coupon.storeName}" (${result.length}/10)`);
     }
 
+    console.log(`🔍 [displayLatestCoupons] Final result: ${result.length} coupons after deduplication`);
+    
+    // If no coupons after deduplication, return at least first few code coupons (fallback)
+    if (result.length === 0 && codeCouponsWithUrl.length > 0) {
+      console.log(`⚠️ [displayLatestCoupons] No coupons after deduplication, using fallback: first ${Math.min(10, codeCouponsWithUrl.length)} code coupons`);
+      return codeCouponsWithUrl.slice(0, 10);
+    }
+    
+    // Always return at least some coupons if we have code-type coupons
+    if (result.length === 0 && codeCouponsWithUrl.length === 0) {
+      console.log(`❌ [displayLatestCoupons] No code-type coupons available! Total coupons: ${allCoupons.length}`);
+      if (allCoupons.length > 0) {
+        console.log(`❌ [displayLatestCoupons] Sample of all coupons:`, allCoupons.slice(0, 3).map(c => ({
+          id: c?.id,
+          code: c?.code,
+          couponType: c?.couponType,
+          isActive: c?.isActive
+        })));
+      }
+    }
+    
     return result;
   }, [allCoupons, allStores, getStoreForCoupon, extractDomainForLogo, getCurrentCountryCodes]);
 
@@ -1597,27 +1654,32 @@ export default function Home() {
           return false;
         }
         
-        // Country code filter
+        // Country code filter - Show only stores that match country codes
         if (getCurrentCountryCodes.length > 0) {
           const storeCountryCodes = (store as any)['country_codes'] || (store as any).countryCodes || [];
-          if (!storeCountryCodes || storeCountryCodes.length === 0) return false; // No country codes = exclude
-          
           let storeCodes: string[] = [];
-          if (typeof storeCountryCodes === 'string') {
-            storeCodes = storeCountryCodes.split(',').map((c: string) => c.trim().toUpperCase());
-          } else if (Array.isArray(storeCountryCodes)) {
-            storeCodes = storeCountryCodes.map((c: any) => String(c).trim().toUpperCase());
+          
+          // Parse store country codes
+          if (typeof storeCountryCodes === 'string' && storeCountryCodes.trim().length > 0) {
+            storeCodes = storeCountryCodes.split(',').map((code: string) => code.trim().toUpperCase());
+          } else if (Array.isArray(storeCountryCodes) && storeCountryCodes.length > 0) {
+            storeCodes = storeCountryCodes.map((code: any) => String(code).trim().toUpperCase());
           }
           
-          // Map UK to GB
-          const normalizedRequiredCodes = getCurrentCountryCodes.map((code: string) => code === 'UK' ? 'GB' : code);
+          // Normalize codes (UK -> GB)
+          const normalizedRequiredCodes = getCurrentCountryCodes.map((code: string) => code === 'UK' ? 'GB' : code.toUpperCase());
           const normalizedStoreCodes = storeCodes.map((code: string) => code === 'UK' ? 'GB' : code);
           
-          const matches = normalizedRequiredCodes.some((requiredCode: string) => 
-            normalizedStoreCodes.includes(requiredCode)
-          );
-          
-          if (!matches) return false; // Exclude if doesn't match
+          // Only show stores that have matching country codes
+          if (storeCodes.length > 0) {
+            const hasMatch = normalizedRequiredCodes.some((requiredCode: string) => normalizedStoreCodes.includes(requiredCode));
+            if (!hasMatch) {
+              return false; // Exclude if store has country codes but none match
+            }
+          } else {
+            // If store has no country codes, exclude it (strict filtering for Featured Deals)
+            return false;
+          }
         }
         
         return true;
@@ -1953,8 +2015,8 @@ export default function Home() {
             {/* Coupons Slider - Single Row Horizontal Scroll with Auto-scroll */}
             {/* OLD LOGIC REMOVED - replaced with simple fetch from API */}
             
-            {/* NEW LOGIC - Fetch 8 coupons from /api/coupons/get?collection=coupons-mimecode */}
-            {mimecodeCouponsLoading ? (
+            {/* Use displayLatestCoupons (code-type coupons from main coupons table) */}
+            {couponsLoading ? (
               <div className="flex gap-4 md:gap-5 overflow-hidden">
                 {[...Array(8)].map((_, index) => (
                   <div
@@ -1967,20 +2029,25 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-            ) : mimecodeCoupons.length === 0 ? (
+            ) : displayLatestCoupons.length === 0 ? (
               <div className="flex items-center justify-center ">
                 <div className="text-center">
                   <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                   </svg>
                   <p className="text-gray-600 text-lg font-medium">No coupons available</p>
+                  {process.env.NODE_ENV === 'development' && (
+                    <p className="text-gray-400 text-xs mt-2">
+                      Debug: Total: {allCoupons.length} | Code: {allCoupons.filter(c => c?.couponType === 'code' || (!c?.couponType && c?.code)).length} | Display: {displayLatestCoupons.length}
+                    </p>
+                  )}
                 </div>
               </div>
             ) : (
               <div
                 className="overflow-hidden pb-4 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8"
-                onMouseEnter={handleMimecodeCouponsMouseEnter}
-                onMouseLeave={handleMimecodeCouponsMouseLeave}
+                onMouseEnter={() => setIsMimecodeCouponsPaused(true)}
+                onMouseLeave={() => setIsMimecodeCouponsPaused(false)}
               >
                 <div
                   ref={mimecodeCouponsSliderRef}
@@ -1988,7 +2055,7 @@ export default function Home() {
                   style={{
                     width: 'fit-content',
                     animationName: 'scrollLeft',
-                    animationDuration: '40s',
+                    animationDuration: displayLatestCoupons.length > 0 ? `${Math.max(15, displayLatestCoupons.length * 2)}s` : '20s',
                     animationTimingFunction: 'linear',
                     animationIterationCount: 'infinite',
                     animationPlayState: isMimecodeCouponsPaused ? 'paused' : 'running',
@@ -1996,9 +2063,10 @@ export default function Home() {
                   }}
                 >
                   {/* Render 3 copies for seamless infinite scroll */}
-                  {[...mimecodeCoupons, ...mimecodeCoupons, ...mimecodeCoupons].map((coupon, index) => {
-                    const copyIndex = Math.floor(index / mimecodeCoupons.length);
-                    const couponIndex = index % mimecodeCoupons.length;
+                  {displayLatestCoupons.length > 0 ? [...displayLatestCoupons, ...displayLatestCoupons, ...displayLatestCoupons].map((coupon, index) => {
+                    if (!coupon) return null; // Skip null coupons
+                    const copyIndex = Math.floor(index / displayLatestCoupons.length);
+                    const couponIndex = index % displayLatestCoupons.length;
                     
                     // Get pre-computed data for this coupon (store, logo, etc.) - same as Featured Deals
                     const couponData = coupon.id ? couponDataMap.get(coupon.id) : null;
@@ -2007,11 +2075,11 @@ export default function Home() {
                     
                     return (
                       <motion.div
-                        key={`mimecode-coupon-${index}-${coupon.id || couponIndex}-copy-${copyIndex}`}
+                        key={`latest-coupon-${index}-${coupon.id || couponIndex}-copy-${copyIndex}`}
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        transition={{ duration: 0.4, delay: (index % mimecodeCoupons.length) * 0.05 }}
+                        transition={{ duration: 0.4, delay: (index % displayLatestCoupons.length) * 0.05 }}
                         className="bg-white rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 flex flex-col relative overflow-hidden group cursor-pointer w-[200px] sm:w-[220px] flex-shrink-0"
                         onClick={(e) => {
                           requestAnimationFrame(() => {
@@ -2111,7 +2179,7 @@ export default function Home() {
                       </button>
                       </motion.div>
                     );
-                  })}
+                  }) : null}
                 </div>
               </div>
             )}

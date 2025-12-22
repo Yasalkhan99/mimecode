@@ -13,15 +13,19 @@ import {
 import { getCategories, Category } from '@/lib/services/categoryService';
 import { getActiveRegions, Region } from '@/lib/services/regionService';
 import { extractOriginalCloudinaryUrl, isCloudinaryUrl } from '@/lib/utils/cloudinary';
+import { getCoupons, Coupon } from '@/lib/services/couponService';
 
 export default function StoresPage() {
   const [stores, setStores] = useState<Store[]>([]);
   const [filteredStores, setFilteredStores] = useState<Store[]>([]);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [filteredCoupons, setFilteredCoupons] = useState<Coupon[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [regions, setRegions] = useState<Region[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [couponSearchQuery, setCouponSearchQuery] = useState<string>('');
   const [formData, setFormData] = useState<Partial<Store>>({
     name: '',
     subStoreName: '',
@@ -45,6 +49,9 @@ export default function StoresPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
   const [totalItems, setTotalItems] = useState(0);
+  // Coupons pagination states
+  const [couponCurrentPage, setCouponCurrentPage] = useState(1);
+  const [couponItemsPerPage, setCouponItemsPerPage] = useState(25);
 
   // Generate slug from name
   const generateSlug = (name: string): string => {
@@ -277,13 +284,33 @@ export default function StoresPage() {
     setCurrentPage(1); // Reset to first page when search changes
   }, [searchQuery, stores]);
 
+  // Filter coupons based on search query
+  useEffect(() => {
+    if (coupons.length === 0) return;
+    
+    if (couponSearchQuery.trim() === '') {
+      setFilteredCoupons(coupons);
+    } else {
+      const query = couponSearchQuery.toLowerCase();
+      const filtered = coupons.filter(coupon => 
+        coupon.code?.toLowerCase().includes(query) ||
+        coupon.storeName?.toLowerCase().includes(query) ||
+        coupon.title?.toLowerCase().includes(query) ||
+        coupon.description?.toLowerCase().includes(query)
+      );
+      setFilteredCoupons(filtered);
+    }
+    setCouponCurrentPage(1); // Reset to first page when search changes
+  }, [couponSearchQuery, coupons]);
+
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      const [storesData, categoriesData, regionsData] = await Promise.all([
+      const [storesData, categoriesData, regionsData, couponsData] = await Promise.all([
         getStores(),
         getCategories(),
-        getActiveRegions()
+        getActiveRegions(),
+        getCoupons()
       ]);
       // Sort stores by numeric ID (1, 2, 3...) to match coupon dropdown
       const sortedStores = storesData.sort((a, b) => {
@@ -294,6 +321,8 @@ export default function StoresPage() {
       setStores(sortedStores);
       setCategories(categoriesData);
       setRegions(regionsData);
+      setCoupons(couponsData);
+      setFilteredCoupons(couponsData); // Initialize filtered coupons
       setLoading(false);
       // Filter will be applied automatically via useEffect when stores state updates
     };
@@ -1728,6 +1757,235 @@ export default function StoresPage() {
           </div>
         </div>
       )}
+
+      {/* Coupons Section */}
+      <div className="mt-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Manage Coupons</h2>
+          <Link
+            href="/admin/coupons"
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition whitespace-nowrap"
+          >
+            Go to Coupons Page
+          </Link>
+        </div>
+
+        {/* Coupon Search Bar */}
+        <div className="mb-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+            <label htmlFor="searchCoupon" className="block text-sm font-semibold text-gray-700 mb-2">
+              Search by Coupon Code, Store Name, or Title
+            </label>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex-1 relative">
+                <input
+                  id="searchCoupon"
+                  type="text"
+                  placeholder="Enter coupon code, store name, or title"
+                  value={couponSearchQuery}
+                  onChange={(e) => setCouponSearchQuery(e.target.value)}
+                  className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900"
+                />
+                <svg
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Coupons Table */}
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="mt-4 text-gray-600">Loading coupons...</p>
+          </div>
+        ) : filteredCoupons.length === 0 ? (
+          <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+            <p className="text-gray-500">No coupons found.</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full table-fixed">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-32">
+                      Code
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-40">
+                      Store Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-32">
+                      Discount
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-40">
+                      Title
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-24">
+                      Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-24">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-32">
+                      Uses
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-32">
+                      Expiry Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-40">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(() => {
+                    // Calculate pagination
+                    const totalPages = Math.ceil(filteredCoupons.length / couponItemsPerPage);
+                    const startIndex = (couponCurrentPage - 1) * couponItemsPerPage;
+                    const endIndex = startIndex + couponItemsPerPage;
+                    const paginatedCoupons = filteredCoupons.slice(startIndex, endIndex);
+                    
+                    return paginatedCoupons.map((coupon) => {
+                      const expiryDate = coupon.expiryDate 
+                        ? (coupon.expiryDate as any).toDate 
+                          ? (coupon.expiryDate as any).toDate() 
+                          : new Date(coupon.expiryDate)
+                        : null;
+                      const isExpired = expiryDate ? expiryDate < new Date() : false;
+                      
+                      return (
+                        <tr key={coupon.id} className="border-b hover:bg-gray-50">
+                          <td className="px-6 py-4">
+                            <div className="font-mono text-sm text-gray-800 font-semibold truncate" title={coupon.code}>
+                              {coupon.code || '-'}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 font-semibold text-gray-900 truncate">
+                            {coupon.storeName || '-'}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-800">
+                            {coupon.discountType === 'percentage' 
+                              ? `${coupon.discount}%` 
+                              : `$${coupon.discount}`}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-800 truncate" title={coupon.title || ''}>
+                            {coupon.title || '-'}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-800 text-center">
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${
+                              coupon.couponType === 'deal' 
+                                ? 'bg-purple-100 text-purple-700' 
+                                : 'bg-blue-100 text-blue-700'
+                            }`}>
+                              {coupon.couponType === 'deal' ? 'Deal' : 'Code'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-center">
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${
+                              !coupon.isActive || isExpired
+                                ? 'bg-red-100 text-red-700' 
+                                : 'bg-green-100 text-green-700'
+                            }`}>
+                              {isExpired ? 'Expired' : coupon.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-800 text-center">
+                            {coupon.currentUses || 0} / {coupon.maxUses || 0}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-800">
+                            {expiryDate 
+                              ? expiryDate.toLocaleDateString() 
+                              : '-'}
+                          </td>
+                          <td className="px-6 py-4 space-x-2">
+                            <Link
+                              href={`/admin/coupons?edit=${coupon.id}`}
+                              className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded text-sm hover:bg-blue-200"
+                            >
+                              Edit
+                            </Link>
+                          </td>
+                        </tr>
+                      );
+                    });
+                  })()}
+                </tbody>
+              </table>
+            </div>
+            
+            {/* Coupons Pagination Controls */}
+            <div className="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-700">Items per page:</label>
+                <select
+                  value={couponItemsPerPage}
+                  onChange={(e) => {
+                    setCouponItemsPerPage(Number(e.target.value));
+                    setCouponCurrentPage(1);
+                  }}
+                  className="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-900"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                <span className="text-sm text-gray-600 ml-4">
+                  Showing {Math.min((couponCurrentPage - 1) * couponItemsPerPage + 1, filteredCoupons.length)} - {Math.min(couponCurrentPage * couponItemsPerPage, filteredCoupons.length)} of {filteredCoupons.length}
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCouponCurrentPage(1)}
+                  disabled={couponCurrentPage === 1}
+                  className="px-3 py-1 border border-gray-300 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                >
+                  First
+                </button>
+                <button
+                  onClick={() => setCouponCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={couponCurrentPage === 1}
+                  className="px-3 py-1 border border-gray-300 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                >
+                  Previous
+                </button>
+                
+                <span className="text-sm text-gray-700 px-3">
+                  Page {couponCurrentPage} of {Math.ceil(filteredCoupons.length / couponItemsPerPage)}
+                </span>
+                
+                <button
+                  onClick={() => setCouponCurrentPage(prev => Math.min(Math.ceil(filteredCoupons.length / couponItemsPerPage), prev + 1))}
+                  disabled={couponCurrentPage >= Math.ceil(filteredCoupons.length / couponItemsPerPage)}
+                  className="px-3 py-1 border border-gray-300 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                >
+                  Next
+                </button>
+                <button
+                  onClick={() => setCouponCurrentPage(Math.ceil(filteredCoupons.length / couponItemsPerPage))}
+                  disabled={couponCurrentPage >= Math.ceil(filteredCoupons.length / couponItemsPerPage)}
+                  className="px-3 py-1 border border-gray-300 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                >
+                  Last
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
