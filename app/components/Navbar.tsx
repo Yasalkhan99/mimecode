@@ -74,7 +74,7 @@ export default function Navbar() {
     }
     return null;
   }, [pathname]); // Only depend on pathname, getCountryCode is called inside
-
+  
   useEffect(() => {
     const fetchData = async () => {
       try {

@@ -1593,6 +1593,9 @@ export default function StoresPage() {
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
                     Store Name
                   </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 w-40">
+                    Slug
+                  </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-28">
                     Network ID
                   </th>
@@ -1645,6 +1648,11 @@ export default function StoresPage() {
                     </td>
                     <td className="px-6 py-4 font-semibold text-gray-900 truncate">
                       {store.name}
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-800 font-mono" title={store.slug || ''}>
+                      <div className="max-w-[200px] truncate">
+                        {store.slug || '-'}
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-800 font-mono text-center">
                       {store.networkId || '-'}
