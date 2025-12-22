@@ -1858,11 +1858,17 @@ export default function StoresPage() {
                     const paginatedCoupons = filteredCoupons.slice(startIndex, endIndex);
                     
                     return paginatedCoupons.map((coupon) => {
-                      const expiryDate = coupon.expiryDate 
-                        ? (coupon.expiryDate as any).toDate 
-                          ? (coupon.expiryDate as any).toDate() 
-                          : new Date(coupon.expiryDate)
-                        : null;
+                      let expiryDate: Date | null = null;
+                      if (coupon.expiryDate) {
+                        if (typeof (coupon.expiryDate as any).toDate === 'function') {
+                          // Firestore Timestamp
+                          expiryDate = (coupon.expiryDate as any).toDate();
+                        } else if (coupon.expiryDate instanceof Date) {
+                          expiryDate = coupon.expiryDate;
+                        } else if (typeof coupon.expiryDate === 'string' || typeof coupon.expiryDate === 'number') {
+                          expiryDate = new Date(coupon.expiryDate);
+                        }
+                      }
                       const isExpired = expiryDate ? expiryDate < new Date() : false;
                       
                       return (
