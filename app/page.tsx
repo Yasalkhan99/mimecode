@@ -2368,6 +2368,17 @@ export default function Home() {
                     // Get logoUrl with multiple fallbacks - PRIORITIZE store's logoUrl
                     let logoUrl = null;
                     
+                    // Helper to get favicon from URL
+                    const getFaviconFromUrl = (url: string | null | undefined): string | null => {
+                      if (!url) return null;
+                      try {
+                        let domain = url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+                        return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+                      } catch {
+                        return null;
+                      }
+                    };
+                    
                     // Priority 1: Use dealStore's logoUrl (already extracted from admin) - THIS IS THE KEY!
                     if (dealStore?.logoUrl && dealStore.logoUrl.trim()) {
                       logoUrl = dealStore.logoUrl.trim();
@@ -2390,7 +2401,20 @@ export default function Home() {
                         if (process.env.NODE_ENV === 'development') {
                           console.log(`[Featured Deals Render] Using direct store.logoUrl for "${storeName}":`, logoUrl);
                         }
-                      } else if (process.env.NODE_ENV === 'development') {
+                      }
+                      
+                      // Priority 4: Try favicon from store's website URL
+                      if (!logoUrl && store) {
+                        const websiteUrl = store.websiteUrl || store.trackingUrl || store.trackingLink || (store as any)?.['Store Display Url'] || (store as any)?.['Tracking Url'];
+                        if (websiteUrl) {
+                          logoUrl = getFaviconFromUrl(websiteUrl);
+                          if (process.env.NODE_ENV === 'development' && logoUrl) {
+                            console.log(`[Featured Deals Render] Using favicon from websiteUrl for "${storeName}":`, logoUrl);
+                          }
+                        }
+                      }
+                      
+                      if (process.env.NODE_ENV === 'development' && !logoUrl) {
                         console.log(`[Featured Deals Render] ⚠️ No logoUrl found for "${storeName}"`, {
                           hasDealStore: !!dealStore,
                           dealStoreLogoUrl: dealStore?.logoUrl || 'NO',
@@ -2399,6 +2423,14 @@ export default function Home() {
                           hasStore: !!store,
                           storeLogoUrl: store?.logoUrl || 'NO',
                         });
+                      }
+                    }
+                    
+                    // Priority 5: Try favicon from coupon URL
+                    if (!logoUrl && coupon.url) {
+                      logoUrl = getFaviconFromUrl(coupon.url);
+                      if (process.env.NODE_ENV === 'development' && logoUrl) {
+                        console.log(`[Featured Deals Render] Using favicon from coupon.url for "${storeName}":`, logoUrl);
                       }
                     }
                     
@@ -2457,6 +2489,17 @@ export default function Home() {
                                 }}
                                 onError={(e) => {
                                   const target = e.target as HTMLImageElement;
+                                  // Try favicon as fallback before showing letter
+                                  const store = dealStore || getStoreForCoupon(coupon);
+                                  const websiteUrl = store?.websiteUrl || store?.trackingUrl || store?.trackingLink || coupon.url;
+                                  if (websiteUrl) {
+                                    const faviconUrl = getFaviconFromUrl(websiteUrl);
+                                    if (faviconUrl && faviconUrl !== logoUrl) {
+                                      target.src = faviconUrl;
+                                      return;
+                                    }
+                                  }
+                                  // Only show letter if all logo attempts fail
                                   target.style.display = 'none';
                                   const parent = target.parentElement;
                                   if (parent) {
