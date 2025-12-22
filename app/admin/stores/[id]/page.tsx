@@ -931,10 +931,11 @@ export default function EditStorePage() {
                 </label>
                 <div className="flex items-center gap-2">
                   <input
-                    type="text"
-                    readOnly
-                    value={formData.websiteUrl || 'Not set'}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm"
+                    type="url"
+                    value={formData.websiteUrl || ''}
+                    onChange={(e) => setFormData({ ...formData, websiteUrl: e.target.value })}
+                    placeholder="https://example.com"
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                   {!formData.websiteUrl && formData.name && (
                     <button
@@ -996,7 +997,7 @@ export default function EditStorePage() {
                   )}
                 </div>
                 <p className="mt-1 text-xs text-gray-500">
-                  This is the actual website URL of the store (e.g., https://halfdays.com). Click "Auto-Fetch" to guess from store name.
+                  This is the actual website URL of the store (e.g., https://halfdays.com). You can edit it directly or click "Auto-Fetch" to guess from store name.
                 </p>
               </div>
             </div>
