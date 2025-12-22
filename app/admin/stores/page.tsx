@@ -710,35 +710,6 @@ export default function StoresPage() {
             Create New Store
           </h2>
           
-          {/* URL Extraction Section */}
-          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <label htmlFor="storeUrl" className="block text-gray-700 text-sm font-semibold mb-2">
-              Extract Store Info from URL (e.g., nike.com, amazon.com)
-            </label>
-            <div className="flex gap-2">
-              <input
-                id="storeUrl"
-                name="storeUrl"
-                type="text"
-                value={storeUrl}
-                onChange={(e) => setStoreUrl(e.target.value)}
-                placeholder="Enter website URL (e.g., nike.com or https://nike.com)"
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-              />
-              <button
-                type="button"
-                onClick={handleExtractFromUrl}
-                disabled={extracting || !storeUrl.trim()}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {extracting ? 'Extracting...' : 'Extract Info'}
-              </button>
-            </div>
-            <p className="mt-2 text-xs text-gray-600">
-              This will automatically extract store name, logo, description, and other information from the website.
-            </p>
-          </div>
-
           <form onSubmit={handleCreate} className="space-y-6">
             {/* Two Column Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

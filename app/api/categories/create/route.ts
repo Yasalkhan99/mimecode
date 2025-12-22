@@ -33,6 +33,12 @@ export async function POST(req: NextRequest) {
       throw error;
     }
 
+    // Clear cache after successful create
+    if (typeof (global as any).categoriesCache !== 'undefined') {
+      (global as any).categoriesCache.data = null;
+      (global as any).categoriesCache.timestamp = 0;
+    }
+
     return NextResponse.json({ 
       success: true, 
       id: data.id 

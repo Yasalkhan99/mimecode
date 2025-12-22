@@ -4,9 +4,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 
-// Simple in-memory cache
-let categoriesCache: { data: any[] | null; timestamp: number } = { data: null, timestamp: 0 };
+// Simple in-memory cache (shared across requests)
+// Use global to share cache between get and delete routes
+if (typeof (global as any).categoriesCache === 'undefined') {
+  (global as any).categoriesCache = { data: null, timestamp: 0 };
+}
+const categoriesCache = (global as any).categoriesCache;
 const CACHE_TTL = 120 * 1000; // 2 minutes cache (categories change rarely)
+
+// Export function to clear cache
+export function clearCategoriesCache() {
+  categoriesCache.data = null;
+  categoriesCache.timestamp = 0;
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -61,8 +71,9 @@ export async function GET(req: NextRequest) {
       updatedAt: cat.updated_at,
     })) || [];
 
-    // Update cache
-    categoriesCache = { data: formattedCategories, timestamp: now };
+    // Update cache - modify properties instead of reassigning
+    categoriesCache.data = formattedCategories;
+    categoriesCache.timestamp = now;
 
     return NextResponse.json(
       { success: true, categories: formattedCategories },

@@ -159,8 +159,17 @@ export default function CategoriesPage() {
   const handleDelete = async (id: string | undefined) => {
     if (!id) return;
     if (confirm('Are you sure you want to delete this category?')) {
-      await deleteCategory(id);
-      fetchCategories();
+      const result = await deleteCategory(id);
+      if (result.success) {
+        // Force refresh by adding timestamp to bypass cache
+        await fetchCategories();
+        // Also add a small delay to ensure cache is cleared
+        setTimeout(() => {
+          fetchCategories();
+        }, 100);
+      } else {
+        alert(`Failed to delete category: ${result.error || 'Unknown error'}`);
+      }
     }
   };
 

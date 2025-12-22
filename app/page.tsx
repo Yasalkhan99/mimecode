@@ -232,13 +232,14 @@ export default function Home() {
           finalCountryCode = 'US,GB';
         }
         
-        // Log the final country code being used
-        console.log('🌍 Final country code for coupons:', finalCountryCode);
+        // Log the final country code being used (for Featured Deals only)
+        console.log('🌍 Final country code for Featured Deals:', finalCountryCode);
         
         // Fetch ALL coupons without country code filtering for Latest Coupons
+        // IMPORTANT: Do NOT pass countryCode to getCoupons() - we want ALL coupons for Latest Coupons
         // Country filtering will be done client-side only for Featured Deals
         const couponsData = await Promise.race([
-          getCoupons(), // No country code - fetch all coupons
+          getCoupons(undefined), // Explicitly pass undefined - fetch ALL coupons without country filter
           new Promise<Coupon[]>((resolve) =>
             setTimeout(() => resolve([]), 5000) // Increased timeout to 5 seconds
           )

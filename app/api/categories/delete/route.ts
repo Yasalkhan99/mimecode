@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 
+// Clear categories cache (shared with get route)
+function clearCategoriesCache() {
+  if (typeof (global as any).categoriesCache !== 'undefined') {
+    (global as any).categoriesCache.data = null;
+    (global as any).categoriesCache.timestamp = 0;
+  }
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const { id } = body || {};
@@ -25,6 +33,9 @@ export async function POST(req: NextRequest) {
     if (error) {
       throw error;
     }
+
+    // Clear cache after successful delete
+    clearCategoriesCache();
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: any) {

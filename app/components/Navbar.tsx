@@ -431,36 +431,45 @@ export default function Navbar() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
                         </div>
-                        {/* All Categories List */}
-                        {categories.map((category) => {
-                          // Get stores for this category
-                          const categoryStores = stores.filter(store => store.categoryId === category.id);
-                          
-                          return (
-                            <div
-                              key={category.id}
-                              className={`px-4 py-2 text-gray-700 hover:bg-gray-100 text-sm cursor-pointer flex items-center gap-2 ${
-                                hoveredCategoryId === category.id ? 'bg-gray-100' : ''
-                              }`}
-                              onMouseEnter={() => setHoveredCategoryId(category.id || null)}
-                            >
-                              {category.logoUrl && (
-                                <img 
-                                  src={category.logoUrl} 
-                                  alt={category.name} 
-                                  className="w-5 h-5 object-contain flex-shrink-0" 
-                                />
-                              )}
-                              <span className="flex-1">{category.name}</span>
-                              {categoryStores.length > 0 && (
-                                <span className="text-xs text-gray-500">({categoryStores.length})</span>
-                              )}
-                              <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                              </svg>
-                            </div>
-                          );
-                        })}
+                        {/* All Categories List - Remove duplicates only */}
+                        {categories
+                          .filter((category, index, self) => {
+                            // Remove duplicates by category ID
+                            return index === self.findIndex(c => c.id === category.id);
+                          })
+                          .map((category) => {
+                            // Get stores for this category - handle both string and UUID comparisons
+                            const categoryStores = stores.filter(store => {
+                              const storeCategoryId = store.categoryId?.toString().trim();
+                              const categoryId = category.id?.toString().trim();
+                              return storeCategoryId && categoryId && storeCategoryId === categoryId;
+                            });
+                            
+                            return (
+                              <div
+                                key={category.id}
+                                className={`px-4 py-2 text-gray-700 hover:bg-gray-100 text-sm cursor-pointer flex items-center gap-2 ${
+                                  hoveredCategoryId === category.id ? 'bg-gray-100' : ''
+                                }`}
+                                onMouseEnter={() => setHoveredCategoryId(category.id || null)}
+                              >
+                                {category.logoUrl && (
+                                  <img 
+                                    src={category.logoUrl} 
+                                    alt={category.name} 
+                                    className="w-5 h-5 object-contain flex-shrink-0" 
+                                  />
+                                )}
+                                <span className="flex-1">{category.name}</span>
+                                {categoryStores.length > 0 && (
+                                  <span className="text-xs text-gray-500">({categoryStores.length})</span>
+                                )}
+                                <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                              </div>
+                            );
+                          })}
                       </div>
                       
                       {/* Stores Column - Shows stores for hovered category or all stores */}
