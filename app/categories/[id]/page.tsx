@@ -264,11 +264,12 @@ export default function CategoryDetailPage() {
             >
               {category.logoUrl ? (
                 <>
-                  <img
-                    src={category.logoUrl}
-                    alt={category.name}
-                    className={`${category.logoUrl.includes('data:image/svg+xml') ? 'w-full h-full' : 'w-8 h-8 sm:w-12 sm:h-12 md:w-14 md:h-14'} object-contain relative z-10`}
-                    onError={(e) => {
+                  <div className="w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-black/90 flex items-center justify-center relative z-10 shadow-sm">
+                    <img
+                      src={category.logoUrl}
+                      alt={category.name}
+                      className={`${category.logoUrl.includes('data:image/svg+xml') ? 'w-full h-full' : 'w-7 h-7 sm:w-10 sm:h-10 md:w-12 md:h-12'} object-contain`}
+                      onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.style.display = 'none';
                       // Show fallback letter when image fails
@@ -289,7 +290,8 @@ export default function CategoryDetailPage() {
                         }
                       }
                     }}
-                  />
+                    />
+                  </div>
                   {/* Fallback letter (hidden by default, shown if image fails) */}
                   <div className="category-fallback-letter absolute inset-0 w-full h-full rounded-full flex items-center justify-center z-20" style={{ display: 'none' }}>
                     <div className="w-3/4 h-3/4 rounded-full bg-gray-200 flex items-center justify-center">

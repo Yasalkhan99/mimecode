@@ -411,9 +411,9 @@ export default function Navbar() {
                       setHoveredCategoryId(null);
                     }}
                   >
-                    <div className="bg-white border border-gray-300 rounded-lg shadow-lg flex min-w-[500px] max-h-[500px]">
+                    <div className="bg-gradient-to-br from-gray-800 via-black to-gray-900 border-2 border-[#FFE019] rounded-lg shadow-2xl shadow-[#FFE019]/20 flex min-w-[500px] max-h-[500px]">
                       {/* Categories Column */}
-                      <div className="w-1/2 border-r border-gray-200 overflow-y-auto max-h-[500px]">
+                      <div className="w-1/2 border-r border-[#FFE019]/30 overflow-y-auto max-h-[500px] bg-gradient-to-b from-gray-800/80 via-gray-900/60 to-black/80">
                         {/* All Categories Heading */}
                         {/* <div className="px-4 py-2 text-gray-700 text-sm font-semibold border-b border-gray-200 bg-gray-50 sticky top-0">
                           All Categories
@@ -421,13 +421,13 @@ export default function Navbar() {
                         
                         {/* All Stores Option */}
                         <div
-                          className={`block px-4 py-2 text-gray-700 hover:bg-gray-100 text-sm cursor-pointer flex items-center gap-2 ${
-                            hoveredCategoryId === 'all' ? 'bg-gray-100' : ''
+                          className={`block px-4 py-2 text-white hover:bg-gradient-to-r hover:from-[#FFE019] hover:via-yellow-400 hover:to-[#FFE019] hover:text-black text-sm cursor-pointer flex items-center gap-2 transition-all ${
+                            hoveredCategoryId === 'all' ? 'bg-gradient-to-r from-[#FFE019] via-yellow-400 to-[#FFE019] text-black shadow-lg shadow-[#FFE019]/30' : 'bg-gradient-to-r from-transparent via-white/5 to-transparent'
                           }`}
                           onMouseEnter={() => setHoveredCategoryId('all')}
                         >
-                          <span className="flex-1">All Stores</span>
-                          <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <span className="flex-1 font-semibold">All Stores</span>
+                          <svg className={`w-3 h-3 ${hoveredCategoryId === 'all' ? 'text-black' : 'text-[#FFE019]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
                         </div>
@@ -448,23 +448,25 @@ export default function Navbar() {
                             return (
                               <div
                                 key={category.id}
-                                className={`px-4 py-2 text-gray-700 hover:bg-gray-100 text-sm cursor-pointer flex items-center gap-2 ${
-                                  hoveredCategoryId === category.id ? 'bg-gray-100' : ''
+                                className={`px-4 py-2 text-white hover:bg-gradient-to-r hover:from-[#FFE019] hover:via-yellow-400 hover:to-[#FFE019] hover:text-black text-sm cursor-pointer flex items-center gap-2 transition-all ${
+                                  hoveredCategoryId === category.id ? 'bg-gradient-to-r from-[#FFE019] via-yellow-400 to-[#FFE019] text-black shadow-lg shadow-[#FFE019]/30' : 'bg-gradient-to-r from-transparent via-white/5 to-transparent'
                                 }`}
                                 onMouseEnter={() => setHoveredCategoryId(category.id || null)}
                               >
                                 {category.logoUrl && (
-                                  <img 
-                                    src={category.logoUrl} 
-                                    alt={category.name} 
-                                    className="w-5 h-5 object-contain flex-shrink-0" 
-                                  />
+                                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-white/30 via-white/20 to-white/10 flex items-center justify-center flex-shrink-0 p-0.5 border border-[#FFE019]/40 shadow-sm">
+                                    <img 
+                                      src={category.logoUrl} 
+                                      alt={category.name} 
+                                      className="w-4 h-4 object-contain" 
+                                    />
+                                  </div>
                                 )}
-                                <span className="flex-1">{category.name}</span>
+                                <span className="flex-1 font-medium">{category.name}</span>
                                 {categoryStores.length > 0 && (
-                                  <span className="text-xs text-gray-500">({categoryStores.length})</span>
+                                  <span className={`text-xs ${hoveredCategoryId === category.id ? 'text-black/70' : 'text-white/60'}`}>({categoryStores.length})</span>
                                 )}
-                                <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className={`w-3 h-3 ${hoveredCategoryId === category.id ? 'text-black' : 'text-[#FFE019]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                 </svg>
                               </div>
@@ -473,10 +475,10 @@ export default function Navbar() {
                       </div>
                       
                       {/* Stores Column - Shows stores for hovered category or all stores */}
-                      <div className="w-1/2 overflow-y-auto max-h-[500px]">
+                      <div className="w-1/2 overflow-y-auto max-h-[500px] bg-gradient-to-b from-gray-800/80 via-gray-900/60 to-black/80">
                         {hoveredCategoryId === 'all' ? (
                           <>
-                            <div className="px-4 py-2 text-gray-700 text-sm font-semibold border-b border-gray-200 bg-gray-50 sticky top-0">
+                            <div className="px-4 py-2 text-[#FFE019] text-sm font-semibold border-b border-[#FFE019]/30 bg-gradient-to-r from-gray-900/90 via-black/90 to-gray-900/90 sticky top-0 backdrop-blur-sm shadow-lg">
                               All Stores 
                               {/* ({stores.length}) */}
                             </div>
@@ -484,7 +486,7 @@ export default function Navbar() {
                               <LocalizedLink
                                 key={`dropdown-store-${index}-${store.id}`}
                                 href={`/stores/${store.slug || store.id}`}
-                                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 text-sm"
+                                className="flex items-center gap-2 px-4 py-2 text-white hover:bg-gradient-to-r hover:from-[#FFE019] hover:via-yellow-400 hover:to-[#FFE019] hover:text-black text-sm transition-all bg-gradient-to-r from-transparent via-white/5 to-transparent"
                                 onClick={() => setStoresDropdownOpen(false)}
                               >
                                 {store.logoUrl && (
@@ -500,7 +502,7 @@ export default function Navbar() {
                             {stores.length > 30 && (
                               <LocalizedLink
                                 href="/stores"
-                                className="block px-4 py-2 text-gray-700 hover:bg-gray-100 text-sm font-semibold text-center border-t border-gray-200"
+                                className="block px-4 py-2 text-[#FFE019] hover:bg-gradient-to-r hover:from-[#FFE019] hover:via-yellow-400 hover:to-[#FFE019] hover:text-black text-sm font-semibold text-center border-t border-[#FFE019]/30 transition-all bg-gradient-to-r from-gray-900/50 via-black/50 to-gray-900/50"
                                 onClick={() => setStoresDropdownOpen(false)}
                               >
                                 {t('viewAll')} {t('stores')} →
@@ -509,7 +511,7 @@ export default function Navbar() {
                           </>
                         ) : hoveredCategoryId ? (
                           <>
-                            <div className="px-4 py-2 text-gray-700 text-sm font-semibold border-b border-gray-200 bg-gray-50 sticky top-0">
+                            <div className="px-4 py-2 text-[#FFE019] text-sm font-semibold border-b border-[#FFE019]/30 bg-gradient-to-r from-gray-900/90 via-black/90 to-gray-900/90 sticky top-0 backdrop-blur-sm shadow-lg">
                               {categories.find(c => c.id === hoveredCategoryId)?.name || 'Stores'}
                             </div>
                             {stores
@@ -519,7 +521,7 @@ export default function Navbar() {
                                 <LocalizedLink
                                   key={`category-store-${index}-${store.id}`}
                                   href={`/stores/${store.slug || store.id}`}
-                                  className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 text-sm"
+                                  className="flex items-center gap-2 px-4 py-2 text-white hover:bg-gradient-to-r hover:from-[#FFE019] hover:via-yellow-400 hover:to-[#FFE019] hover:text-black text-sm transition-all bg-gradient-to-r from-transparent via-white/5 to-transparent"
                                   onClick={() => setStoresDropdownOpen(false)}
                                 >
                                   {store.logoUrl && (
@@ -533,13 +535,13 @@ export default function Navbar() {
                                 </LocalizedLink>
                               ))}
                             {stores.filter(store => store.categoryId === hoveredCategoryId).length === 0 && (
-                              <div className="px-4 py-8 text-center text-gray-500 text-sm">
+                              <div className="px-4 py-8 text-center text-white/60 text-sm">
                                 No stores in this category
                               </div>
                             )}
                           </>
                         ) : (
-                          <div className="px-4 py-8 text-center text-gray-500 text-sm">
+                          <div className="px-4 py-8 text-center text-white/60 text-sm">
                             Hover over "All Stores" or a category to see stores
                           </div>
                         )}

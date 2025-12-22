@@ -418,11 +418,6 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue, store
                         <p className="text-gray-900 text-sm font-bold text-center">
                           {coupon.storeName || 'Store'}
                         </p>
-                        {coupon.url && (
-                          <p className="text-gray-500 text-xs mt-0.5 text-center">
-                            {getDomainFromUrl(coupon.url)}
-                          </p>
-                        )}
                       </div>
                     ) : (
                       <div className="flex flex-col items-center relative z-10">

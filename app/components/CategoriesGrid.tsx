@@ -115,15 +115,17 @@ export default function CategoriesGrid() {
                               ></div>
                               
                               {category.logoUrl ? (
-                                <img
-                                  src={category.logoUrl}
-                                  alt={category.name}
-                                  className={`${category.logoUrl.includes('data:image/svg+xml') ? 'w-full h-full' : 'w-8 h-8'} object-contain relative z-10 group-hover:rotate-12 transition-transform duration-300`}
-                                  onError={(e) => {
-                                    const target = e.target as HTMLImageElement;
-                                    target.style.display = 'none';
-                                  }}
-                                />
+                                <div className="w-10 h-10 rounded-full bg-black/90 flex items-center justify-center relative z-10 shadow-sm">
+                                  <img
+                                    src={category.logoUrl}
+                                    alt={category.name}
+                                    className={`${category.logoUrl.includes('data:image/svg+xml') ? 'w-full h-full' : 'w-7 h-7'} object-contain group-hover:rotate-12 transition-transform duration-300`}
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = 'none';
+                                    }}
+                                  />
+                                </div>
                               ) : (
                                 <div className="w-full h-full rounded-full flex items-center justify-center relative z-10" style={{ backgroundColor: category.backgroundColor }}>
                                   <div className="w-3/4 h-3/4 rounded-full bg-gray-200 flex items-center justify-center">
@@ -158,15 +160,17 @@ export default function CategoriesGrid() {
                               ></div>
                               
                               {category.logoUrl ? (
-                                <img
-                                  src={category.logoUrl}
-                                  alt={category.name}
-                                  className={`${category.logoUrl.includes('data:image/svg+xml') ? 'w-full h-full' : 'w-8 h-8'} object-contain relative z-10 group-hover:rotate-12 transition-transform duration-300`}
-                                  onError={(e) => {
-                                    const target = e.target as HTMLImageElement;
-                                    target.style.display = 'none';
-                                  }}
-                                />
+                                <div className="w-10 h-10 rounded-full bg-black/90 flex items-center justify-center relative z-10 shadow-sm">
+                                  <img
+                                    src={category.logoUrl}
+                                    alt={category.name}
+                                    className={`${category.logoUrl.includes('data:image/svg+xml') ? 'w-full h-full' : 'w-7 h-7'} object-contain group-hover:rotate-12 transition-transform duration-300`}
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = 'none';
+                                    }}
+                                  />
+                                </div>
                               ) : (
                                 <div className="w-full h-full rounded-full flex items-center justify-center relative z-10" style={{ backgroundColor: category.backgroundColor }}>
                                   <div className="w-3/4 h-3/4 rounded-full bg-gray-200 flex items-center justify-center">
@@ -201,15 +205,17 @@ export default function CategoriesGrid() {
                               ></div>
                               
                               {category.logoUrl ? (
-                                <img
-                                  src={category.logoUrl}
-                                  alt={category.name}
-                                  className={`${category.logoUrl.includes('data:image/svg+xml') ? 'w-full h-full' : 'w-8 h-8'} object-contain relative z-10 group-hover:rotate-12 transition-transform duration-300`}
-                                  onError={(e) => {
-                                    const target = e.target as HTMLImageElement;
-                                    target.style.display = 'none';
-                                  }}
-                                />
+                                <div className="w-10 h-10 rounded-full bg-black/90 flex items-center justify-center relative z-10 shadow-sm">
+                                  <img
+                                    src={category.logoUrl}
+                                    alt={category.name}
+                                    className={`${category.logoUrl.includes('data:image/svg+xml') ? 'w-full h-full' : 'w-7 h-7'} object-contain group-hover:rotate-12 transition-transform duration-300`}
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = 'none';
+                                    }}
+                                  />
+                                </div>
                               ) : (
                                 <div className="w-full h-full rounded-full flex items-center justify-center relative z-10" style={{ backgroundColor: category.backgroundColor }}>
                                   <div className="w-3/4 h-3/4 rounded-full bg-gray-200 flex items-center justify-center">
@@ -251,16 +257,17 @@ export default function CategoriesGrid() {
                   ></div>
                   
                   {category.logoUrl ? (
-                    <img
-                      src={category.logoUrl}
-                      alt={category.name}
-                      className={`${category.logoUrl.includes('data:image/svg+xml') ? 'w-full h-full' : 'w-9 h-9 sm:w-11 sm:h-11'} object-contain relative z-10 group-hover:rotate-12 transition-transform duration-300`}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        // Show fallback
-                        const parent = target.parentElement;
-                        if (parent) {
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-black/90 flex items-center justify-center relative z-10 shadow-sm">
+                      <img
+                        src={category.logoUrl}
+                        alt={category.name}
+                        className={`${category.logoUrl.includes('data:image/svg+xml') ? 'w-full h-full' : 'w-8 h-8 sm:w-10 sm:h-10'} object-contain group-hover:rotate-12 transition-transform duration-300`}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          // Show fallback
+                          const parent = target.parentElement;
+                          if (parent) {
                           const existingFallback = parent.querySelector('.fallback-letter');
                           if (!existingFallback) {
                             const fallback = document.createElement('div');
@@ -274,7 +281,8 @@ export default function CategoriesGrid() {
                           }
                         }
                       }}
-                    />
+                      />
+                    </div>
                   ) : (
                     <div className="w-full h-full rounded-full flex items-center justify-center relative z-10" style={{ backgroundColor: category.backgroundColor }}>
                       <div className="w-3/4 h-3/4 rounded-full bg-gray-200 flex items-center justify-center group-hover:bg-gray-100 transition-colors duration-300">
