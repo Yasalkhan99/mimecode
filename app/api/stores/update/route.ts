@@ -62,33 +62,14 @@ export async function POST(req: NextRequest) {
       }
     }
     // Update Network ID if provided (even if null, to clear the field)
+    // Multiple stores can have the same Network ID
     // Use exact column name "Network ID" (with capital ID) as in Supabase
     if (updates.networkId !== undefined) {
       if (updates.networkId !== null && updates.networkId !== '') {
-      const networkIdStr = String(updates.networkId).trim();
-      if (networkIdStr && networkIdStr !== 'null' && networkIdStr !== 'undefined') {
-          // Check if Network ID already exists for a different store
-          const { data: existingStore, error: checkError } = await supabaseAdmin
-            .from('stores')
-            .select('"Store Id", "Store Name"')
-            .eq('Network ID', networkIdStr)
-            .neq('Store Id', id) // Exclude current store
-            .maybeSingle();
-          
-          if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned (not an error)
-            console.error('Error checking Network ID:', checkError);
-          } else if (existingStore) {
-            return NextResponse.json(
-              { 
-                success: false, 
-                error: `Network ID "${networkIdStr}" already exists for store "${existingStore['Store Name']}" (ID: ${existingStore['Store Id']})` 
-              },
-              { status: 400 }
-            );
-          }
-          
+        const networkIdStr = String(updates.networkId).trim();
+        if (networkIdStr && networkIdStr !== 'null' && networkIdStr !== 'undefined') {
           supabaseUpdates['Network ID'] = networkIdStr;
-        console.log(`💾 Updating Network ID: "${networkIdStr}" for store ID: ${id}`);
+          console.log(`💾 Updating Network ID: "${networkIdStr}" for store ID: ${id}`);
         }
       } else {
         // If explicitly set to null or empty, clear the field

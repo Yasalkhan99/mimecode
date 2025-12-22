@@ -259,19 +259,46 @@ export default function CategoryDetailPage() {
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
           <div className="flex items-center gap-3 sm:gap-4 md:gap-6">
             <div
-              className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center shadow-md flex-shrink-0"
+              className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center shadow-md flex-shrink-0 relative overflow-hidden"
               style={{ backgroundColor: category.backgroundColor }}
             >
               {category.logoUrl ? (
-                <img
-                  src={category.logoUrl}
-                  alt={category.name}
-                  className={`${category.logoUrl.includes('data:image/svg+xml') ? 'w-full h-full' : 'w-8 h-8 sm:w-12 sm:h-12 md:w-14 md:h-14'} object-contain`}
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                  }}
-                />
+                <>
+                  <img
+                    src={category.logoUrl}
+                    alt={category.name}
+                    className={`${category.logoUrl.includes('data:image/svg+xml') ? 'w-full h-full' : 'w-8 h-8 sm:w-12 sm:h-12 md:w-14 md:h-14'} object-contain relative z-10`}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      // Show fallback letter when image fails
+                      const parent = target.parentElement;
+                      if (parent) {
+                        const existingFallback = parent.querySelector('.category-fallback-letter');
+                        if (!existingFallback) {
+                          const fallback = document.createElement('div');
+                          fallback.className = 'category-fallback-letter absolute inset-0 w-full h-full rounded-full flex items-center justify-center z-20';
+                          fallback.innerHTML = `
+                            <div class="w-3/4 h-3/4 rounded-full bg-gray-200 flex items-center justify-center">
+                              <span class="text-lg sm:text-2xl md:text-3xl font-bold text-gray-700">${category.name.charAt(0).toUpperCase()}</span>
+                            </div>
+                          `;
+                          parent.appendChild(fallback);
+                        } else {
+                          (existingFallback as HTMLElement).style.display = 'flex';
+                        }
+                      }
+                    }}
+                  />
+                  {/* Fallback letter (hidden by default, shown if image fails) */}
+                  <div className="category-fallback-letter absolute inset-0 w-full h-full rounded-full flex items-center justify-center z-20" style={{ display: 'none' }}>
+                    <div className="w-3/4 h-3/4 rounded-full bg-gray-200 flex items-center justify-center">
+                      <span className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-700">
+                        {category.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                </>
               ) : (
                 <div className="w-full h-full rounded-full flex items-center justify-center" style={{ backgroundColor: category.backgroundColor }}>
                   <div className="w-3/4 h-3/4 rounded-full bg-gray-200 flex items-center justify-center">

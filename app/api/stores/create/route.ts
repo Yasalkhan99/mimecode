@@ -79,29 +79,10 @@ export async function POST(req: NextRequest) {
     // Add optional fields only if they have values
     if (store.logoUrl) supabaseStore['Store Logo'] = store.logoUrl;
     if (store.voucherText) supabaseStore['voucher_text'] = store.voucherText;
-    // Save Network ID if provided - check for duplicates first
+    // Save Network ID if provided (multiple stores can have same Network ID)
     if (store.networkId !== undefined && store.networkId !== null && store.networkId !== '') {
       const networkIdStr = String(store.networkId).trim();
       if (networkIdStr && networkIdStr !== 'null' && networkIdStr !== 'undefined') {
-        // Check if Network ID already exists
-        const { data: existingStore, error: checkError } = await supabaseAdmin
-          .from('stores')
-          .select('"Store Id", "Store Name"')
-          .eq('Network ID', networkIdStr)
-          .maybeSingle();
-        
-        if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned (not an error)
-          console.error('Error checking Network ID:', checkError);
-        } else if (existingStore) {
-          return NextResponse.json(
-            { 
-              success: false, 
-              error: `Network ID "${networkIdStr}" already exists for store "${existingStore['Store Name']}" (ID: ${existingStore['Store Id']})` 
-            },
-            { status: 400 }
-          );
-        }
-        
         supabaseStore['Network ID'] = networkIdStr;
         console.log(`💾 Saving Network ID: "${networkIdStr}" for store: ${store.name}`);
       }

@@ -1214,19 +1214,29 @@ export default function Home() {
       // Try to resolve store via helper (uses storeMap/allStores)
       const store = getStoreForCoupon(coupon);
 
-      // If store is not found in allStores, or has no valid name, skip this coupon
-      // This ensures we only show coupons for stores that actually exist in our stores list
-      if (!store || !store.name || !normalizeStoreName(store.name)) {
-        continue;
-      }
-
-      // Additional country code check (in case filter wasn't applied earlier)
-      // Only apply if stores are loaded - if stores not loaded yet, allow coupon
-      if (getCurrentCountryCodes.length > 0 && allStores.length > 0) {
-        if (!matchesCountryCodes(coupon, store)) {
-          continue; // Skip if doesn't match country codes
+      // Country code filtering - be VERY lenient
+      // Only filter if we have BOTH: country filter active AND store found with EXPLICIT country codes that DON'T match
+      // If store not found OR store has no country codes OR country codes match, allow the coupon
+      if (getCurrentCountryCodes.length > 0 && allStores.length > 0 && store) {
+        const storeCountryCodes = (store as any)['country_codes'] || (store as any).countryCodes || [];
+        const hasCountryCodes = storeCountryCodes && (
+          (Array.isArray(storeCountryCodes) && storeCountryCodes.length > 0) ||
+          (typeof storeCountryCodes === 'string' && storeCountryCodes.trim().length > 0)
+        );
+        
+        // Only filter if store has EXPLICIT country codes set AND they DON'T match
+        // If store has no country codes, ALWAYS allow the coupon
+        if (hasCountryCodes) {
+          // Store has country codes - check if they match
+          if (!matchesCountryCodes(coupon, store)) {
+            continue; // Skip only if store has country codes AND they don't match
+          }
         }
+        // If store has no country codes, allow the coupon (backward compatibility)
       }
+      
+      // Allow coupon even if store is not found (store might not be loaded yet or might not exist)
+      // We'll use coupon's own storeName or storeIds for identification
 
       let identifier: string | null = null;
 
@@ -1490,7 +1500,12 @@ export default function Home() {
       // Then check store's country codes (if store exists)
       if (store) {
         const storeCountryCodes = (store as any)['country_codes'] || (store as any).countryCodes || [];
-        if (storeCountryCodes && storeCountryCodes.length > 0) {
+        const hasCountryCodes = storeCountryCodes && (
+          (Array.isArray(storeCountryCodes) && storeCountryCodes.length > 0) ||
+          (typeof storeCountryCodes === 'string' && storeCountryCodes.trim().length > 0)
+        );
+        
+        if (hasCountryCodes) {
           let storeCodes: string[] = [];
           if (typeof storeCountryCodes === 'string') {
             storeCodes = storeCountryCodes.split(',').map((c: string) => c.trim().toUpperCase());
@@ -1504,17 +1519,15 @@ export default function Home() {
           if (normalizedRequiredCodes.some((requiredCode: string) => normalizedStoreCodes.includes(requiredCode))) {
             return true; // Store has matching country code
           }
+          
+          // Store has country codes but doesn't match - exclude
+          return false;
         }
+        // Store exists but has no country codes - allow for backward compatibility
+        return true;
       }
       
-      // If neither coupon nor store has country codes, allow it (backward compatibility)
-      // But only if we have stores loaded - if stores are loaded and store doesn't match, exclude
-      if (allStores.length > 0 && store) {
-        // Store exists but doesn't match - exclude
-        return false;
-      }
-      
-      // If stores not loaded yet or store not found, allow coupon (will be filtered later)
+      // Store not found - allow coupon (will be filtered when stores load)
       return true;
     };
 
@@ -1527,11 +1540,20 @@ export default function Home() {
       }
       
       // Check store country codes if filter is active
+      // Be lenient: if store has no country codes set, allow the coupon
       if (getCurrentCountryCodes.length > 0) {
         const store = getStoreForCoupon(c);
-        if (!matchesCountryCodes(c, store)) {
-          return false; // Exclude if doesn't match country codes
+        const storeCountryCodes = store ? ((store as any)['country_codes'] || (store as any).countryCodes || []) : [];
+        const hasCountryCodes = storeCountryCodes && (
+          (Array.isArray(storeCountryCodes) && storeCountryCodes.length > 0) ||
+          (typeof storeCountryCodes === 'string' && storeCountryCodes.trim().length > 0)
+        );
+        
+        // Only filter if store has country codes set - if no country codes, allow it
+        if (hasCountryCodes && !matchesCountryCodes(c, store)) {
+          return false; // Exclude if store has country codes but doesn't match
         }
+        // If store has no country codes, allow the coupon (backward compatibility)
       }
       
       return true;
@@ -2215,6 +2237,17 @@ export default function Home() {
                       // Priority 2: Favicon from store URL (trackingLink/trackingUrl/websiteUrl) - if store.logoUrl not available
                       if (!logoUrl && storeUrl) {
                         logoUrl = getLogoFromWebsite(storeUrl);
+                        if (process.env.NODE_ENV === 'development' && logoUrl) {
+                          console.log(`[Featured Deals Store Card] Using favicon from URL for "${storeName}":`, logoUrl);
+                        }
+                      }
+                      
+                      // Priority 3: Try websiteUrl if storeUrl didn't work
+                      if (!logoUrl && store.websiteUrl) {
+                        logoUrl = getLogoFromWebsite(store.websiteUrl);
+                        if (process.env.NODE_ENV === 'development' && logoUrl) {
+                          console.log(`[Featured Deals Store Card] Using favicon from websiteUrl for "${storeName}":`, logoUrl);
+                        }
                       }
 
                       // Create a temporary coupon object for stores to work with popup
@@ -2268,6 +2301,16 @@ export default function Home() {
                                   }}
                                   onError={(e) => {
                                     const target = e.target as HTMLImageElement;
+                                    // Try favicon as fallback before showing letter
+                                    const websiteUrl = store.websiteUrl || storeUrl;
+                                    if (websiteUrl) {
+                                      const faviconUrl = getLogoFromWebsite(websiteUrl);
+                                      if (faviconUrl && faviconUrl !== logoUrl) {
+                                        target.src = faviconUrl;
+                                        return;
+                                      }
+                                    }
+                                    // Only show letter if all logo attempts fail
                                     target.style.display = 'none';
                                     const parent = target.parentElement;
                                     if (parent) {
@@ -2493,8 +2536,8 @@ export default function Home() {
             )}
           </section>
 
-          {/* Region Specific Offers Section */}
-          <RegionSpecificOffers />
+          {/* Region Specific Offers Section - REMOVED */}
+          {/* <RegionSpecificOffers /> */}
 
           {/* Stores Of The Season Section */}
           {storesWithLogos.length > 0 && (

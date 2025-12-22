@@ -865,27 +865,54 @@ export default function StoresPage() {
                         >
                           {/* Logo Section */}
                           <div className="aspect-[4/3] px-4 pt-3 pb-1.5 flex flex-col items-center justify-center relative bg-gradient-to-br from-gray-50 via-white to-gray-50 transition-all duration-500 flex-shrink-0">
-                            {store.logoUrl ? (
-                              <div className="w-full h-full flex items-center justify-center transform group-hover:scale-110 transition-transform duration-500">
-                                <img
-                                  src={store.logoUrl}
-                                  alt={store.name}
-                                  className="max-w-full max-h-full object-contain drop-shadow-lg group-hover:drop-shadow-xl transition-all duration-500"
-                                  onError={(e) => {
-                                    const target = e.target as HTMLImageElement;
-                                    target.style.display = 'none';
-                                    const parent = target.parentElement;
-                                    if (parent) {
-                                      parent.innerHTML = `<div class="text-gray-400 text-xs text-center font-semibold">${store.name}</div>`;
-                                    }
-                                  }}
-                                />
-                              </div>
-                            ) : (
-                              <div className="text-gray-400 text-xs text-center font-semibold group-hover:text-orange-600 transition-colors">
-                                {store.name}
-                              </div>
-                            )}
+                            {(() => {
+                              // Try to get logo from multiple sources
+                              const logoUrl = store.logoUrl;
+                              const websiteUrl = store.websiteUrl || (store as any)?.['Store Display Url'] || (store as any)?.['Tracking Url'] || store.trackingUrl || store.trackingLink;
+                              
+                              // Generate favicon URL from website if logoUrl is not available
+                              const getFaviconUrl = (url: string | null | undefined): string | null => {
+                                if (!url) return null;
+                                try {
+                                  let domain = url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+                                  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+                                } catch {
+                                  return null;
+                                }
+                              };
+                              
+                              const faviconUrl = !logoUrl && websiteUrl ? getFaviconUrl(websiteUrl) : null;
+                              const finalLogoUrl = logoUrl || faviconUrl;
+                              
+                              if (finalLogoUrl) {
+                                return (
+                                  <div className="w-full h-full flex items-center justify-center transform group-hover:scale-110 transition-transform duration-500">
+                                    <img
+                                      src={finalLogoUrl}
+                                      alt={store.name}
+                                      className="max-w-full max-h-full object-contain drop-shadow-lg group-hover:drop-shadow-xl transition-all duration-500"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
+                                        const parent = target.parentElement;
+                                        if (parent) {
+                                          // Show fallback letter only if both logoUrl and favicon fail
+                                          parent.innerHTML = `<div class="w-16 h-16 rounded-full bg-gradient-to-br from-[#ABC443] to-[#41361A] flex items-center justify-center"><span class="text-white font-bold text-xl">${store.name.charAt(0).toUpperCase()}</span></div>`;
+                                        }
+                                      }}
+                                    />
+                                  </div>
+                                );
+                              }
+                              
+                              return (
+                                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#ABC443] to-[#41361A] flex items-center justify-center">
+                                  <span className="text-white font-bold text-xl">
+                                    {store.name.charAt(0).toUpperCase()}
+                                  </span>
+                                </div>
+                              );
+                            })()}
                           </div>
                           
                           {/* Content Section - Footer */}
