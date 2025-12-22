@@ -1211,12 +1211,11 @@ export default function Home() {
       if (!c || !c.id || c.isActive === false) {
         return false;
       }
-      // Include if couponType is 'code' OR if couponType is undefined/null but has code field
+      // Include if couponType is 'code'
       if (c.couponType === 'code') return true;
+      // Include if couponType is undefined/null but has code field (backward compatibility)
       if (!c.couponType && c.code && c.code.trim() !== '') return true;
-      // Exclude if couponType is explicitly set to something other than 'code'
-      if (c.couponType && c.couponType !== 'code') return false;
-      // Default: exclude if no code field
+      // Exclude everything else (deal type or other)
       return false;
     }) as Coupon[];
     
