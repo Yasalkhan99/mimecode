@@ -13,19 +13,15 @@ import {
 import { getCategories, Category } from '@/lib/services/categoryService';
 import { getActiveRegions, Region } from '@/lib/services/regionService';
 import { extractOriginalCloudinaryUrl, isCloudinaryUrl } from '@/lib/utils/cloudinary';
-import { getCoupons, Coupon } from '@/lib/services/couponService';
 
 export default function StoresPage() {
   const [stores, setStores] = useState<Store[]>([]);
   const [filteredStores, setFilteredStores] = useState<Store[]>([]);
-  const [coupons, setCoupons] = useState<Coupon[]>([]);
-  const [filteredCoupons, setFilteredCoupons] = useState<Coupon[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [regions, setRegions] = useState<Region[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [couponSearchQuery, setCouponSearchQuery] = useState<string>('');
   const [formData, setFormData] = useState<Partial<Store>>({
     name: '',
     subStoreName: '',
@@ -49,9 +45,6 @@ export default function StoresPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
   const [totalItems, setTotalItems] = useState(0);
-  // Coupons pagination states
-  const [couponCurrentPage, setCouponCurrentPage] = useState(1);
-  const [couponItemsPerPage, setCouponItemsPerPage] = useState(25);
 
   // Generate slug from name
   const generateSlug = (name: string): string => {
@@ -93,10 +86,10 @@ export default function StoresPage() {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [logoUploadMethod, setLogoUploadMethod] = useState<'url' | 'file'>('url');
   
-  // Takeads import states
-  const [takeadsApiKey, setTakeadsApiKey] = useState('');
-  const [syncingMerchants, setSyncingMerchants] = useState(false);
-  const [syncMessage, setSyncMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  // Bulk logo upload states
+  const [bulkLogoFile, setBulkLogoFile] = useState<File | null>(null);
+  const [bulkUploading, setBulkUploading] = useState(false);
+  const [bulkUploadResult, setBulkUploadResult] = useState<{success: number, failed: number, errors: string[]} | null>(null);
 
   const handleExportStores = () => {
     if (!stores || stores.length === 0) {
@@ -193,73 +186,49 @@ export default function StoresPage() {
     // Filter will be applied automatically via useEffect when stores state updates
   };
 
-  // Test API key first
-  const handleTestApiKey = async () => {
-    if (!takeadsApiKey.trim()) {
-      alert('Please enter your Takeads API key first');
+  // Bulk logo upload handler
+  const handleBulkLogoUploadWithFile = async (file: File) => {
+    if (!file) {
+      alert('Please select a file');
       return;
     }
 
-    setSyncMessage({ type: 'success', text: 'Testing API key...' });
+    setBulkUploading(true);
+    setBulkUploadResult(null);
 
     try {
-      const response = await fetch('/api/takeads/test-api-key', {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', 'bulk-logos');
+
+      const response = await fetch('/api/stores/bulk-upload-logos', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          apiKey: takeadsApiKey,
-        }),
+        body: formData,
       });
 
       const data = await response.json();
 
       if (data.success) {
-        setSyncMessage({ type: 'success', text: `✅ ${data.message} Found ${data.testResult.merchantsFound} merchant(s).` });
+        setBulkUploadResult({
+          success: data.successCount || 0,
+          failed: data.failedCount || 0,
+          errors: data.errors || []
+        });
+        alert(`✅ Bulk upload completed! Success: ${data.successCount}, Failed: ${data.failedCount}`);
+        // Refresh stores list
+        await fetchStores();
+        setBulkLogoFile(null);
+        // Reset file input
+        const fileInput = document.getElementById('bulk-logo-upload-input') as HTMLInputElement;
+        if (fileInput) fileInput.value = '';
       } else {
-        const troubleshooting = data.troubleshooting ? '\n\n' + data.troubleshooting.join('\n') : '';
-        setSyncMessage({ type: 'error', text: `${data.error}\n${data.message}${troubleshooting}` });
+        alert(`Upload failed: ${data.error || 'Unknown error'}`);
       }
-    } catch (error: any) {
-      setSyncMessage({ type: 'error', text: error.message || 'Failed to test API key' });
-    }
-  };
-
-  // Handle Takeads merchants sync
-  const handleSyncTakeadsMerchants = async () => {
-    if (!takeadsApiKey.trim()) {
-      alert('Please enter your Takeads API key');
-      return;
-    }
-
-    setSyncingMerchants(true);
-    setSyncMessage(null);
-
-    try {
-      const response = await fetch('/api/takeads/sync-merchants', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          apiKey: takeadsApiKey,
-          limit: 500,
-          isActive: true,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setSyncMessage({ type: 'success', text: data.message });
-        await fetchStores(); // Refresh stores list
-      } else {
-        // Show detailed error message
-        const errorMsg = data.error || 'Failed to sync merchants';
-        const troubleshooting = data.troubleshooting ? '\n\n' + data.troubleshooting.join('\n') : '';
-        setSyncMessage({ type: 'error', text: `${errorMsg}${troubleshooting}` });
-      }
-    } catch (error: any) {
-      setSyncMessage({ type: 'error', text: error.message || 'Failed to sync merchants' });
+    } catch (error) {
+      console.error('Error uploading bulk logos:', error);
+      alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
-      setSyncingMerchants(false);
+      setBulkUploading(false);
     }
   };
 
@@ -284,35 +253,15 @@ export default function StoresPage() {
     setCurrentPage(1); // Reset to first page when search changes
   }, [searchQuery, stores]);
 
-  // Filter coupons based on search query
-  useEffect(() => {
-    if (coupons.length === 0) return;
-    
-    if (couponSearchQuery.trim() === '') {
-      setFilteredCoupons(coupons);
-    } else {
-      const query = couponSearchQuery.toLowerCase();
-      const filtered = coupons.filter(coupon => 
-        coupon.code?.toLowerCase().includes(query) ||
-        coupon.storeName?.toLowerCase().includes(query) ||
-        coupon.title?.toLowerCase().includes(query) ||
-        coupon.description?.toLowerCase().includes(query)
-      );
-      setFilteredCoupons(filtered);
-    }
-    setCouponCurrentPage(1); // Reset to first page when search changes
-  }, [couponSearchQuery, coupons]);
-
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      const [storesData, categoriesData, regionsData, couponsData] = await Promise.all([
+      const [storesData, categoriesData, regionsData] = await Promise.all([
         getStores(),
         getCategories(),
-        getActiveRegions(),
-        getCoupons()
+        getActiveRegions()
       ]);
-      // Sort stores by numeric ID (1, 2, 3...) to match coupon dropdown
+      // Sort stores by numeric ID (1, 2, 3...)
       const sortedStores = storesData.sort((a, b) => {
         const idA = parseInt(String(a.id || '0'), 10) || 0;
         const idB = parseInt(String(b.id || '0'), 10) || 0;
@@ -321,8 +270,6 @@ export default function StoresPage() {
       setStores(sortedStores);
       setCategories(categoriesData);
       setRegions(regionsData);
-      setCoupons(couponsData);
-      setFilteredCoupons(couponsData); // Initialize filtered coupons
       setLoading(false);
       // Filter will be applied automatically via useEffect when stores state updates
     };
@@ -355,24 +302,6 @@ export default function StoresPage() {
     return () => {
       window.removeEventListener('popstate', checkAndRefresh);
     };
-  }, []);
-
-  // Load API key from environment on mount (if available via API)
-  useEffect(() => {
-    const loadApiKey = async () => {
-      try {
-        const response = await fetch('/api/takeads/get-api-key');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.apiKey) {
-            setTakeadsApiKey(data.apiKey);
-          }
-        }
-      } catch (error) {
-        // Silently fail - user can enter manually
-      }
-    };
-    loadApiKey();
   }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -696,110 +625,34 @@ export default function StoresPage() {
           >
             Export Stores (CSV)
           </button>
+          <input
+            type="file"
+            accept=".csv,.xlsx,.xls"
+            onChange={(e) => {
+              const file = e.target.files?.[0] || null;
+              setBulkLogoFile(file);
+              if (file) {
+                handleBulkLogoUploadWithFile(file);
+              }
+            }}
+            className="hidden"
+            id="bulk-logo-upload-input"
+            disabled={bulkUploading}
+          />
+          <label
+            htmlFor="bulk-logo-upload-input"
+            className={`bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition text-sm font-semibold whitespace-nowrap cursor-pointer ${
+              bulkUploading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+          >
+            {bulkUploading ? 'Uploading...' : 'Upload Logos'}
+          </label>
           <button
             onClick={() => setShowForm(!showForm)}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition whitespace-nowrap"
           >
             {showForm ? 'Cancel' : 'Create New Store'}
           </button>
-        </div>
-      </div>
-
-      {/* Takeads Import Section */}
-      <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 shadow-sm">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
-            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
-            Import Merchants from Takeads
-          </h3>
-        </div>
-        <div className="space-y-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Takeads API Key
-            </label>
-            <input
-              type="password"
-              value={takeadsApiKey}
-              onChange={(e) => setTakeadsApiKey(e.target.value)}
-              placeholder="Enter your Takeads API key (Bearer token)"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-            />
-            <p className="mt-1 text-xs text-gray-500">
-              {takeadsApiKey && takeadsApiKey.length > 12 ? (
-                <span className="text-green-600">✓ API key loaded from environment (TAKEADS_API_KEY)</span>
-              ) : (
-                <>
-                  Get your API key from{' '}
-                  <a 
-                    href="https://developers.takeads.com" 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="text-blue-600 hover:underline"
-                  >
-                    Takeads Developers
-                  </a>
-                  {' '}or set TAKEADS_API_KEY in your .env.local file
-                </>
-              )}
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={handleTestApiKey}
-              disabled={!takeadsApiKey.trim()}
-              className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2 text-sm font-medium"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Test API Key
-            </button>
-            <button
-              onClick={handleSyncTakeadsMerchants}
-              disabled={syncingMerchants || !takeadsApiKey.trim()}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2 text-sm font-medium"
-            >
-              {syncingMerchants ? (
-                <>
-                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Syncing...
-                </>
-              ) : (
-                <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                  </svg>
-                  Import Merchants
-                </>
-              )}
-            </button>
-          </div>
-          {syncMessage && (
-            <div className={`p-3 rounded-md ${
-              syncMessage.type === 'success' 
-                ? 'bg-green-100 text-green-800 border border-green-200' 
-                : 'bg-red-100 text-red-800 border border-red-200'
-            }`}>
-              <div className="flex items-center gap-2">
-                {syncMessage.type === 'success' ? (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                )}
-                <span className="text-sm font-medium">{syncMessage.text}</span>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -1766,240 +1619,6 @@ export default function StoresPage() {
         </div>
       )}
 
-      {/* Coupons Section */}
-      <div className="mt-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Manage Coupons</h2>
-          <Link
-            href="/admin/coupons"
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition whitespace-nowrap"
-          >
-            Go to Coupons Page
-          </Link>
-        </div>
-
-        {/* Coupon Search Bar */}
-        <div className="mb-6">
-          <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-            <label htmlFor="searchCoupon" className="block text-sm font-semibold text-gray-700 mb-2">
-              Search by Coupon Code, Store Name, or Title
-            </label>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="flex-1 relative">
-                <input
-                  id="searchCoupon"
-                  type="text"
-                  placeholder="Enter coupon code, store name, or title"
-                  value={couponSearchQuery}
-                  onChange={(e) => setCouponSearchQuery(e.target.value)}
-                  className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900"
-                />
-                <svg
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Coupons Table */}
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="mt-4 text-gray-600">Loading coupons...</p>
-          </div>
-        ) : filteredCoupons.length === 0 ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-            <p className="text-gray-500">No coupons found.</p>
-          </div>
-        ) : (
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full table-fixed">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-32">
-                      Code
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-40">
-                      Store Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-32">
-                      Discount
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-40">
-                      Title
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-24">
-                      Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-24">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-32">
-                      Uses
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-32">
-                      Expiry Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-40">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(() => {
-                    // Calculate pagination
-                    const totalPages = Math.ceil(filteredCoupons.length / couponItemsPerPage);
-                    const startIndex = (couponCurrentPage - 1) * couponItemsPerPage;
-                    const endIndex = startIndex + couponItemsPerPage;
-                    const paginatedCoupons = filteredCoupons.slice(startIndex, endIndex);
-                    
-                    return paginatedCoupons.map((coupon) => {
-                      let expiryDate: Date | null = null;
-                      if (coupon.expiryDate) {
-                        if (typeof (coupon.expiryDate as any).toDate === 'function') {
-                          // Firestore Timestamp
-                          expiryDate = (coupon.expiryDate as any).toDate();
-                        } else if (coupon.expiryDate instanceof Date) {
-                          expiryDate = coupon.expiryDate;
-                        } else if (typeof coupon.expiryDate === 'string' || typeof coupon.expiryDate === 'number') {
-                          expiryDate = new Date(coupon.expiryDate);
-                        }
-                      }
-                      const isExpired = expiryDate ? expiryDate < new Date() : false;
-                      
-                      return (
-                        <tr key={coupon.id} className="border-b hover:bg-gray-50">
-                          <td className="px-6 py-4">
-                            <div className="font-mono text-sm text-gray-800 font-semibold truncate" title={coupon.code}>
-                              {coupon.code || '-'}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 font-semibold text-gray-900 truncate">
-                            {coupon.storeName || '-'}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-800">
-                            {coupon.discountType === 'percentage' 
-                              ? `${coupon.discount}%` 
-                              : `$${coupon.discount}`}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-800 truncate" title={coupon.title || ''}>
-                            {coupon.title || '-'}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-800 text-center">
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              coupon.couponType === 'deal' 
-                                ? 'bg-purple-100 text-purple-700' 
-                                : 'bg-blue-100 text-blue-700'
-                            }`}>
-                              {coupon.couponType === 'deal' ? 'Deal' : 'Code'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-center">
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              !coupon.isActive || isExpired
-                                ? 'bg-red-100 text-red-700' 
-                                : 'bg-green-100 text-green-700'
-                            }`}>
-                              {isExpired ? 'Expired' : coupon.isActive ? 'Active' : 'Inactive'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-800 text-center">
-                            {coupon.currentUses || 0} / {coupon.maxUses || 0}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-800">
-                            {expiryDate 
-                              ? expiryDate.toLocaleDateString() 
-                              : '-'}
-                          </td>
-                          <td className="px-6 py-4 space-x-2">
-                            <Link
-                              href={`/admin/coupons?edit=${coupon.id}`}
-                              className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded text-sm hover:bg-blue-200"
-                            >
-                              Edit
-                            </Link>
-                          </td>
-                        </tr>
-                      );
-                    });
-                  })()}
-                </tbody>
-              </table>
-            </div>
-            
-            {/* Coupons Pagination Controls */}
-            <div className="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-700">Items per page:</label>
-                <select
-                  value={couponItemsPerPage}
-                  onChange={(e) => {
-                    setCouponItemsPerPage(Number(e.target.value));
-                    setCouponCurrentPage(1);
-                  }}
-                  className="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-900"
-                >
-                  <option value={10}>10</option>
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                </select>
-                <span className="text-sm text-gray-600 ml-4">
-                  Showing {Math.min((couponCurrentPage - 1) * couponItemsPerPage + 1, filteredCoupons.length)} - {Math.min(couponCurrentPage * couponItemsPerPage, filteredCoupons.length)} of {filteredCoupons.length}
-                </span>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setCouponCurrentPage(1)}
-                  disabled={couponCurrentPage === 1}
-                  className="px-3 py-1 border border-gray-300 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                >
-                  First
-                </button>
-                <button
-                  onClick={() => setCouponCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={couponCurrentPage === 1}
-                  className="px-3 py-1 border border-gray-300 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                >
-                  Previous
-                </button>
-                
-                <span className="text-sm text-gray-700 px-3">
-                  Page {couponCurrentPage} of {Math.ceil(filteredCoupons.length / couponItemsPerPage)}
-                </span>
-                
-                <button
-                  onClick={() => setCouponCurrentPage(prev => Math.min(Math.ceil(filteredCoupons.length / couponItemsPerPage), prev + 1))}
-                  disabled={couponCurrentPage >= Math.ceil(filteredCoupons.length / couponItemsPerPage)}
-                  className="px-3 py-1 border border-gray-300 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                >
-                  Next
-                </button>
-                <button
-                  onClick={() => setCouponCurrentPage(Math.ceil(filteredCoupons.length / couponItemsPerPage))}
-                  disabled={couponCurrentPage >= Math.ceil(filteredCoupons.length / couponItemsPerPage)}
-                  className="px-3 py-1 border border-gray-300 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                >
-                  Last
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
     </div>
   );
 }

@@ -61,11 +61,6 @@ export default function CouponsPage() {
   const [isCreating, setIsCreating] = useState(false);
   const storeDropdownRef = useRef<HTMLDivElement>(null);
   
-  // Takeads import states
-  const [takeadsApiKey, setTakeadsApiKey] = useState('');
-  const [syncingCoupons, setSyncingCoupons] = useState(false);
-  const [syncMessage, setSyncMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-
   // Excel bulk upload states
   const [excelFile, setExcelFile] = useState<File | null>(null);
   const [importingFromExcel, setImportingFromExcel] = useState(false);
@@ -294,42 +289,6 @@ export default function CouponsPage() {
       }
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Handle Takeads coupons sync
-  const handleSyncTakeadsCoupons = async () => {
-    if (!takeadsApiKey.trim()) {
-      alert('Please enter your Takeads API key');
-      return;
-    }
-
-    setSyncingCoupons(true);
-    setSyncMessage(null);
-
-    try {
-      const response = await fetch('/api/takeads/sync-coupons', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          apiKey: takeadsApiKey,
-          limit: 500,
-          isActive: true,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setSyncMessage({ type: 'success', text: data.message });
-        await fetchCoupons(); // Refresh coupons list
-      } else {
-        setSyncMessage({ type: 'error', text: data.error || 'Failed to sync coupons' });
-      }
-    } catch (error: any) {
-      setSyncMessage({ type: 'error', text: error.message || 'Failed to sync coupons' });
-    } finally {
-      setSyncingCoupons(false);
     }
   };
 
@@ -667,24 +626,6 @@ export default function CouponsPage() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
     };
-  }, []);
-
-  // Load API key from environment on mount (if available via API)
-  useEffect(() => {
-    const loadApiKey = async () => {
-      try {
-        const response = await fetch('/api/takeads/get-api-key');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.apiKey) {
-            setTakeadsApiKey(data.apiKey);
-          }
-        }
-      } catch (error) {
-        // Silently fail - user can enter manually
-      }
-    };
-    loadApiKey();
   }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -1228,92 +1169,6 @@ export default function CouponsPage() {
           >
             🗑️ Delete All Coupons
           </button>
-        </div>
-      </div>
-
-      {/* Takeads Import Section */}
-      <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200 shadow-sm">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
-            <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
-            Import Coupons from Takeads
-          </h3>
-        </div>
-        <div className="space-y-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Takeads API Key
-            </label>
-            <input
-              type="password"
-              value={takeadsApiKey}
-              onChange={(e) => setTakeadsApiKey(e.target.value)}
-              placeholder="Enter your Takeads API key (Bearer token)"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
-            />
-            <p className="mt-1 text-xs text-gray-500">
-              {takeadsApiKey && takeadsApiKey.length > 12 ? (
-                <span className="text-green-600">✓ API key loaded from environment (TAKEADS_API_KEY)</span>
-              ) : (
-                <>
-                  Get your API key from{' '}
-                  <a 
-                    href="https://developers.takeads.com" 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="text-purple-600 hover:underline"
-                  >
-                    Takeads Developers
-                  </a>
-                  {' '}or set TAKEADS_API_KEY in your .env.local file
-                </>
-              )}
-            </p>
-          </div>
-          <button
-            onClick={handleSyncTakeadsCoupons}
-            disabled={syncingCoupons || !takeadsApiKey.trim()}
-            className="w-full px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2 text-sm font-medium"
-          >
-            {syncingCoupons ? (
-              <>
-                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Syncing Coupons...
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                </svg>
-                Import Coupons from Takeads
-              </>
-            )}
-          </button>
-          {syncMessage && (
-            <div className={`p-3 rounded-md ${
-              syncMessage.type === 'success' 
-                ? 'bg-green-100 text-green-800 border border-green-200' 
-                : 'bg-red-100 text-red-800 border border-red-200'
-            }`}>
-              <div className="flex items-center gap-2">
-                {syncMessage && syncMessage.type === 'success' ? (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                )}
-                {syncMessage && <span className="text-sm font-medium">{syncMessage.text}</span>}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
