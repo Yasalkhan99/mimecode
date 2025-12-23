@@ -174,6 +174,7 @@ const convertToAPIFormat = (row: any) => {
     slug: row.Slug || row.slug || '',
     networkId: (row['Network ID'] || row['Network Id'] || row.network_id || '').toString().trim(),
     logoUrl: logoUrl, // Logo URL with smart fallback to website favicon
+    logoAlt: row['logo_alt'] || row.logoAlt || null, // Alt text for logo
     description: row.description || row['Store Description'] || row['Store Summary'] || '',
     websiteUrl: websiteUrl,
     trackingUrl: trackingUrl || null, // Separate tracking URL

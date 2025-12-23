@@ -39,6 +39,10 @@ export async function POST(req: NextRequest) {
       console.log('💾 Updating description:', updates.description);
     }
     if (updates.logoUrl !== undefined) supabaseUpdates['Store Logo'] = updates.logoUrl;
+    // Note: logo_alt column may not exist in Supabase yet - only save if provided and non-empty
+    if (updates.logoAlt !== undefined && updates.logoAlt && updates.logoAlt.trim()) {
+      supabaseUpdates['logo_alt'] = updates.logoAlt.trim();
+    }
     if (updates.websiteUrl !== undefined) {
       supabaseUpdates['website_url'] = updates.websiteUrl;
       supabaseUpdates['Store Display Url'] = updates.websiteUrl;
@@ -131,6 +135,49 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       console.error('Supabase update error:', error);
+      
+      // Check if error is about missing logo_alt column
+      if (error.message && error.message.includes("logo_alt") && error.message.includes("schema cache")) {
+        console.warn('logo_alt column not found in Supabase, retrying without it...');
+        // Remove logo_alt from updates and retry
+        delete supabaseUpdates['logo_alt'];
+        
+        const { data: retryData, error: retryError } = await supabaseAdmin
+          .from('stores')
+          .update(supabaseUpdates)
+          .eq('Store Id', id)
+          .select()
+          .single();
+        
+        if (retryError) {
+          console.error('Supabase retry update error:', retryError);
+          
+          // Check for duplicate slug error
+          if (retryError.code === '23505') {
+            return NextResponse.json(
+              { success: false, error: 'Store with this slug already exists' },
+              { status: 400 }
+            );
+          }
+          
+          throw retryError;
+        }
+        
+        // Success after retry
+        clearStoresCache();
+        console.log('Store updated successfully (without logo_alt):', id);
+        
+        const response = NextResponse.json({
+          success: true,
+          warning: 'logo_alt column not found in database, update completed without it',
+        });
+        
+        response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        response.headers.set('Pragma', 'no-cache');
+        response.headers.set('Expires', '0');
+        
+        return response;
+      }
       
       // Check for duplicate slug error
       if (error.code === '23505') { // Unique constraint violation

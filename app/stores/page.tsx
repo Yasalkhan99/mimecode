@@ -634,7 +634,7 @@ export default function StoresPage() {
                       {store.logoUrl && (
                         <img
                           src={store.logoUrl}
-                          alt={store.name}
+                          alt={store.logoAlt || store.name || 'Store logo'}
                           className="w-10 h-10 object-contain flex-shrink-0 rounded"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
@@ -765,7 +765,7 @@ export default function StoresPage() {
                               <div className="w-full h-full flex items-center justify-center transform group-hover:scale-110 transition-transform duration-500">
                                 <img
                                   src={store.logoUrl}
-                                  alt={store.name}
+                                  alt={store.logoAlt || store.name || 'Store logo'}
                                   className="max-w-full max-h-full object-contain drop-shadow-lg group-hover:drop-shadow-xl transition-all duration-500"
                                   onError={(e) => {
                                     const target = e.target as HTMLImageElement;
@@ -889,7 +889,7 @@ export default function StoresPage() {
                                   <div className="w-full h-full flex items-center justify-center transform group-hover:scale-110 transition-transform duration-500">
                                     <img
                                       src={finalLogoUrl}
-                                      alt={store.name}
+                                      alt={store.logoAlt || store.name || 'Store logo'}
                                       className="max-w-full max-h-full object-contain drop-shadow-lg group-hover:drop-shadow-xl transition-all duration-500"
                                       onError={(e) => {
                                         const target = e.target as HTMLImageElement;
@@ -997,7 +997,7 @@ export default function StoresPage() {
                         <div className="w-full h-full flex items-center justify-center transform group-hover:scale-110 transition-transform duration-500">
                           <img
                             src={store.logoUrl}
-                            alt={store.name}
+                            alt={store.logoAlt || store.name || 'Store logo'}
                             className="max-w-full max-h-full object-contain drop-shadow-lg group-hover:drop-shadow-xl transition-all duration-500"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
@@ -1213,7 +1213,7 @@ export default function StoresPage() {
                             <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-50 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                               <img
                                 src={store.logoUrl}
-                                alt={store.name}
+                                alt={store.logoAlt || store.name || 'Store logo'}
                                 className="w-full h-full object-contain"
                                 onError={(e) => {
                                   const target = e.target as HTMLImageElement;

@@ -139,6 +139,21 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         return false;
       }
       
+      // Suppress image loading errors (CORS, 404, etc.)
+      if (
+        message.includes('Failed to load resource') ||
+        message.includes('ERR_BLOCKED_BY_RESPONSE') ||
+        message.includes('NotSameOrigin') ||
+        message.includes('net::ERR_BLOCKED_BY_RESPONSE') ||
+        (message.includes('404') && (source.includes('.png') || source.includes('.jpg') || source.includes('logo'))) ||
+        (source && (source.includes('.png') || source.includes('.jpg') || source.includes('.jpeg') || source.includes('.gif') || source.includes('.svg') || source.includes('logo'))) ||
+        (filename && (filename.includes('.png') || filename.includes('.jpg') || filename.includes('logo')))
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        return false;
+      }
+      
       if (
         message.includes('RESOURCE_EXHAUSTED') || 
         message.includes('Quota exceeded') ||
@@ -196,6 +211,54 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         (message.includes('404') && message.includes('gstatic.com')) ||
         (message.includes('404') && message.includes('favicon')) ||
         hasFaviconUrl
+      );
+    };
+    
+    // Helper to detect image loading errors (CORS, 404, etc.)
+    const isImageError = (args: any[]): boolean => {
+      if (args.length === 0) return false;
+      
+      const message = args.join(' ').toLowerCase();
+      
+      // Check for image-related errors
+      const hasImageError = args.some((arg) => {
+        if (typeof arg === 'string') {
+          const lowerArg = arg.toLowerCase();
+          return (
+            lowerArg.includes('failed to load resource') ||
+            lowerArg.includes('err_blocked_by_response') ||
+            lowerArg.includes('notsameorigin') ||
+            lowerArg.includes('.png') ||
+            lowerArg.includes('.jpg') ||
+            lowerArg.includes('.jpeg') ||
+            lowerArg.includes('.gif') ||
+            lowerArg.includes('.svg') ||
+            lowerArg.includes('logo') ||
+            lowerArg.includes('image') ||
+            (lowerArg.includes('404') && (lowerArg.includes('.png') || lowerArg.includes('.jpg') || lowerArg.includes('logo')))
+          );
+        }
+        if (arg && typeof arg === 'object') {
+          const errorMsg = String(arg.message || arg.toString() || '').toLowerCase();
+          return (
+            errorMsg.includes('failed to load resource') ||
+            errorMsg.includes('err_blocked_by_response') ||
+            errorMsg.includes('notsameorigin') ||
+            errorMsg.includes('404') ||
+            errorMsg.includes('logo') ||
+            errorMsg.includes('image')
+          );
+        }
+        return false;
+      });
+      
+      return (
+        message.includes('failed to load resource') ||
+        message.includes('err_blocked_by_response') ||
+        message.includes('notsameorigin') ||
+        message.includes('net::err_blocked_by_response') ||
+        (message.includes('404') && (message.includes('.png') || message.includes('.jpg') || message.includes('logo'))) ||
+        hasImageError
       );
     };
     
@@ -280,7 +343,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         message.includes('firebase admin') ||
         message.includes('supabase admin') ||
         message.includes('unauthorized') ||
-        message.includes('forbidden')
+        message.includes('forbidden') ||
+        (message.includes('server') && message.includes('update') && message.includes('failed'))
       );
     };
     
@@ -300,6 +364,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         return; // Silently ignore favicon errors
       }
       
+      // Suppress image loading errors (CORS, 404, etc.)
+      if (isImageError(args)) {
+        return; // Silently ignore image loading errors
+      }
+      
       // Suppress browser compatibility/performance/security warnings
       if (isBrowserWarning(args)) {
         return; // Silently ignore browser warnings
@@ -310,9 +379,9 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         return; // Silently ignore Firebase Admin SDK errors
       }
       
-      // Suppress server/API errors in production
-      if (process.env.NODE_ENV === 'production' && isServerError(args)) {
-        return; // Silently ignore server errors in production
+      // Suppress server/API errors (including "Server update failed")
+      if (isServerError(args)) {
+        return; // Silently ignore server errors
       }
       
       const message = args.join(' ');
@@ -327,10 +396,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         setShowQuotaError(true);
       }
       
-      // Only log errors in development or non-server errors
-      if (process.env.NODE_ENV === 'development' || !isServerError(args)) {
-        originalError.apply(console, args);
-      }
+      // Log all other errors
+      originalError.apply(console, args);
     };
     
     // Also suppress favicon warnings and browser warnings
@@ -349,9 +416,9 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         return; // Silently ignore Firebase Admin SDK errors
       }
       
-      // Suppress server/API warnings in production
-      if (process.env.NODE_ENV === 'production' && isServerError(args)) {
-        return; // Silently ignore server warnings in production
+      // Suppress server/API warnings (including "Server update failed")
+      if (isServerError(args)) {
+        return; // Silently ignore server warnings
       }
       
       originalWarn.apply(console, args);
@@ -363,6 +430,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         return; // Silently ignore favicon logs
       }
       
+      // Suppress image loading error logs
+      if (isImageError(args)) {
+        return; // Silently ignore image loading error logs
+      }
+      
       // Suppress browser compatibility/performance/security warnings
       if (isBrowserWarning(args)) {
         return; // Silently ignore browser warnings
@@ -371,17 +443,30 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       originalLog.apply(console, args);
     };
 
-    // Suppress image load errors for favicons (but allow ALL requests to go through)
+    // Suppress image load errors for favicons and other images (but allow ALL requests to go through)
     const handleImageError = (event: Event) => {
       const target = event.target as HTMLImageElement;
       if (target && target.src) {
-        // Only suppress console errors for Google favicon services when they fail
-        // ALLOW all requests to complete - just suppress error logging
-        if (
+        // Suppress console errors for:
+        // 1. Google favicon services
+        // 2. External domain images (CORS errors)
+        // 3. Missing logo files (404 errors)
+        const shouldSuppress = (
           target.src.includes('gstatic.com/faviconV2') ||
           target.src.includes('google.com/s2/favicons') ||
-          (target.src.includes('favicon') && (target.src.includes('gstatic.com') || target.src.includes('google.com')))
-        ) {
+          (target.src.includes('favicon') && (target.src.includes('gstatic.com') || target.src.includes('google.com'))) ||
+          target.src.includes('logo') ||
+          target.src.includes('.png') ||
+          target.src.includes('.jpg') ||
+          target.src.includes('.jpeg') ||
+          target.src.includes('.gif') ||
+          target.src.includes('.svg') ||
+          // External domains (CORS errors)
+          (target.src.startsWith('http://') || target.src.startsWith('https://')) && 
+          !target.src.includes(window.location.hostname)
+        );
+        
+        if (shouldSuppress) {
           // Suppress error propagation to console, but request already completed/failed
           event.stopPropagation();
           event.preventDefault();

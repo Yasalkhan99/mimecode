@@ -2716,7 +2716,7 @@ export default function Home() {
                             {store.logoUrl ? (
                               <img
                                 src={store.logoUrl}
-                                alt={store.name || 'Store'}
+                                alt={store.logoAlt || store.name || 'Store logo'}
                                 className="max-w-full max-h-full object-contain rounded-full"
                                 onError={(e) => {
                                   const target = e.target as HTMLImageElement;

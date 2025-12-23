@@ -562,6 +562,27 @@ export default function EditStorePage() {
                     />
                   </div>
                 )}
+                
+                <div className="mt-4">
+                  <label htmlFor="logoAlt" className="block text-sm font-semibold text-gray-700 mb-1">
+                    Logo Alt Text (Optional)
+                  </label>
+                  <input
+                    id="logoAlt"
+                    name="logoAlt"
+                    type="text"
+                    value={formData.logoAlt || ''}
+                    onChange={(e) =>
+                      setFormData({ ...formData, logoAlt: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    placeholder={`${formData.name || 'Store'} logo`}
+                    maxLength={100}
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Alt text for the store logo (for accessibility and SEO). If left blank, store name will be used.
+                  </p>
+                </div>
               </div>
 
               {/* Detailed Store Info Fields */}
@@ -655,12 +676,27 @@ export default function EditStorePage() {
                       setFormData({ ...formData, seoTitle: e.target.value })
                     }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                    placeholder="Best Nike Shoes Coupons & Deals 2024 - Save Up to 70%"
-                    maxLength={60}
+                    placeholder="{store_name} Coupons & Deals {month_year} - Save Up to {highest_offer} - {active_coupons} Active Offers"
+                    maxLength={100}
                   />
                   <p className="mt-1 text-xs text-gray-500">
-                    Optimized title for search engines (shown in browser tab). Max 60 characters. Leave blank to use default: "[Store Name] Coupons & Deals - MimeCode"
+                    Optimized title for search engines (shown in browser tab). Max 100 characters.
                   </p>
+                  <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-xs font-semibold text-blue-900 mb-2">Available Dynamic Placeholders:</p>
+                    <ul className="text-xs text-blue-800 space-y-1">
+                      <li><code className="bg-blue-100 px-1 rounded">{"{store_name}"}</code> - Store name (e.g., "Nike")</li>
+                      <li><code className="bg-blue-100 px-1 rounded">{"{month_year}"}</code> - Current month and year (e.g., "December 2024")</li>
+                      <li><code className="bg-blue-100 px-1 rounded">{"{active_coupons}"}</code> - Active coupons + deals count</li>
+                      <li><code className="bg-blue-100 px-1 rounded">{"{highest_offer}"}</code> - Highest discount/offer (e.g., "70%" or "$50")</li>
+                    </ul>
+                    <p className="text-xs text-blue-700 mt-2">
+                      Example: <code className="bg-blue-100 px-1 rounded">{"{store_name} Coupons {month_year} - Save Up to {highest_offer}"}</code>
+                    </p>
+                    <p className="text-xs text-gray-600 mt-2">
+                      Leave blank to use default template with all placeholders.
+                    </p>
+                  </div>
                 </div>
 
                 <div>
@@ -684,77 +720,6 @@ export default function EditStorePage() {
                   </p>
                 </div>
 
-                <div>
-                  <label htmlFor="features" className="block text-sm font-semibold text-gray-700 mb-1">
-                    Features (One per line)
-                  </label>
-                  <textarea
-                    id="features"
-                    name="features"
-                    value={formData.features ? formData.features.join('\n') : ''}
-                    onChange={(e) => {
-                      const features = e.target.value.split('\n').filter(f => f.trim() !== '');
-                      setFormData({ ...formData, features });
-                    }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                    rows={4}
-                    placeholder="Free Shipping&#10;24/7 Support&#10;Easy Returns"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    Enter one feature per line
-                  </p>
-                </div>
-
-                <div>
-                  <label htmlFor="shippingInfo" className="block text-sm font-semibold text-gray-700 mb-1">
-                    Shipping Information
-                  </label>
-                  <textarea
-                    id="shippingInfo"
-                    name="shippingInfo"
-                    value={formData.shippingInfo || ''}
-                    onChange={(e) =>
-                      setFormData({ ...formData, shippingInfo: e.target.value })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                    rows={4}
-                    placeholder="Shipping information..."
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="returnPolicy" className="block text-sm font-semibold text-gray-700 mb-1">
-                    Return Policy
-                  </label>
-                  <textarea
-                    id="returnPolicy"
-                    name="returnPolicy"
-                    value={formData.returnPolicy || ''}
-                    onChange={(e) =>
-                      setFormData({ ...formData, returnPolicy: e.target.value })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                    rows={4}
-                    placeholder="Return policy information..."
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="contactInfo" className="block text-sm font-semibold text-gray-700 mb-1">
-                    Contact Information
-                  </label>
-                  <textarea
-                    id="contactInfo"
-                    name="contactInfo"
-                    value={formData.contactInfo || ''}
-                    onChange={(e) =>
-                      setFormData({ ...formData, contactInfo: e.target.value })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                    rows={3}
-                    placeholder="Contact information..."
-                  />
-                </div>
               </div>
             </div>
 
@@ -1003,8 +968,8 @@ export default function EditStorePage() {
             </div>
           </div>
 
-          {/* Trending & Layout Position - Full Width */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+          {/* Trending - Full Width */}
+          <div className="mt-6">
             <div className="flex items-center">
               <input
                 id="isTrending"
@@ -1016,8 +981,6 @@ export default function EditStorePage() {
                   setFormData({
                     ...formData,
                     isTrending,
-                    // Clear layout position if trending is disabled
-                    layoutPosition: isTrending ? formData.layoutPosition : null
                   });
                 }}
                 className="w-4 h-4 rounded mr-2"
@@ -1025,38 +988,6 @@ export default function EditStorePage() {
               <label htmlFor="isTrending" className="text-gray-700">
                 Mark as Trending
               </label>
-            </div>
-
-            <div>
-              <label htmlFor="layoutPosition" className="block text-sm font-semibold text-gray-700 mb-1">
-                Layout Position (1-8)
-              </label>
-              <select
-                id="layoutPosition"
-                name="layoutPosition"
-                value={formData.layoutPosition || ''}
-                onChange={(e) => {
-                  const position = e.target.value ? parseInt(e.target.value) : null;
-                  setFormData({
-                    ...formData,
-                    layoutPosition: position,
-                    // Auto-enable trending if layout position is assigned
-                    isTrending: position !== null ? true : formData.isTrending
-                  });
-                }}
-                disabled={!formData.isTrending && !formData.layoutPosition}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-              >
-                <option value="">Not Assigned</option>
-                {[1, 2, 3, 4, 5, 6, 7, 8].map((pos) => (
-                  <option key={pos} value={pos}>
-                    Layout {pos}
-                  </option>
-                ))}
-              </select>
-              {!formData.isTrending && !formData.layoutPosition && (
-                <p className="mt-1 text-xs text-gray-400">Enable "Mark as Trending" or select a layout position</p>
-              )}
             </div>
           </div>
 

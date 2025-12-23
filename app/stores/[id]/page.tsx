@@ -74,11 +74,57 @@ export default function StoreDetailPage() {
     }
   };
 
+  // Function to generate dynamic SEO title with placeholders
+  const generateDynamicSEOTitle = (store: Store, coupons: Coupon[]): string => {
+    // Get active coupons (both code and deal types)
+    const activeCoupons = coupons.filter(c => c.isActive !== false);
+    const activeCouponsCount = activeCoupons.length;
+    
+    // Find highest offer/discount
+    let highestOffer = '';
+    if (activeCoupons.length > 0) {
+      // Sort by discount (highest first)
+      const sortedByDiscount = [...activeCoupons].sort((a, b) => {
+        // Convert to percentage for comparison
+        const discountA = a.discountType === 'percentage' ? a.discount : (a.discount * 10); // Rough conversion
+        const discountB = b.discountType === 'percentage' ? b.discount : (b.discount * 10);
+        return discountB - discountA;
+      });
+      
+      const topCoupon = sortedByDiscount[0];
+      if (topCoupon.discountType === 'percentage') {
+        highestOffer = `${topCoupon.discount}%`;
+      } else {
+        highestOffer = `$${topCoupon.discount}`;
+      }
+    }
+    
+    // Get current month and year
+    const now = new Date();
+    const monthYear = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }); // e.g., "December 2024"
+    
+    // Get store name
+    const storeName = store.name || 'Store';
+    
+    // Get SEO title template (from store.seoTitle or use default template)
+    const seoTemplate = store.seoTitle || '{store_name} Coupons & Deals {month_year} - Save Up to {highest_offer} - {active_coupons} Active Offers';
+    
+    // Replace placeholders
+    let seoTitle = seoTemplate
+      .replace(/{store_name}/g, storeName)
+      .replace(/{month_year}/g, monthYear)
+      .replace(/{active_coupons}/g, activeCouponsCount.toString())
+      .replace(/{highest_offer}/g, highestOffer || '70%'); // Default to 70% if no offer found
+    
+    return seoTitle;
+  };
+
   useEffect(() => {
     // Set page title and meta description
     if (store) {
-      // Use SEO title if available, otherwise use default
-      document.title = store.seoTitle || `${store.name} Coupons & Deals - MimeCode`;
+      // Generate dynamic SEO title with placeholders
+      const dynamicTitle = generateDynamicSEOTitle(store, coupons);
+      document.title = dynamicTitle;
       
       // Set meta description if available
       if (store.seoDescription) {
@@ -91,7 +137,7 @@ export default function StoreDetailPage() {
         metaDescription.setAttribute('content', store.seoDescription);
       }
     }
-  }, [store]);
+  }, [store, coupons]);
 
   // CRITICAL: Handle popup from query parameters (for code type coupons opened in new tab)
   useEffect(() => {
@@ -528,7 +574,7 @@ export default function StoreDetailPage() {
             <div className="flex-shrink-0">
               <img
                 src={store.logoUrl}
-                alt={store.name}
+                alt={store.logoAlt || store.name || 'Store logo'}
                 className="w-24 h-24 sm:w-32 sm:h-32 object-contain"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
@@ -601,7 +647,7 @@ export default function StoreDetailPage() {
                   <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border-4 border-gray-200">
                     <img
                       src={store.logoUrl}
-                      alt={store.name}
+                      alt={store.logoAlt || store.name || 'Store logo'}
                       className="w-full h-full object-contain p-2"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
@@ -752,7 +798,7 @@ export default function StoreDetailPage() {
                           <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-50 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                             <img
                               src={relatedStore.logoUrl}
-                              alt={relatedStore.name}
+                              alt={relatedStore.logoAlt || relatedStore.name || 'Store logo'}
                               className="w-full h-full object-contain"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
@@ -917,7 +963,7 @@ export default function StoreDetailPage() {
                       <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50">
                         <img
                           src={store.logoUrl}
-                          alt={store.name}
+                          alt={store.logoAlt || store.name || 'Store logo'}
                           className="w-full h-full object-contain"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;

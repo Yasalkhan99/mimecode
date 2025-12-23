@@ -303,7 +303,7 @@ export default function Navbar() {
                         {store.logoUrl && (
                           <img 
                             src={store.logoUrl} 
-                            alt={store.name} 
+                            alt={store.logoAlt || store.name || 'Store logo'} 
                             className="w-10 h-10 object-contain flex-shrink-0"
                           />
                         )}
@@ -492,7 +492,7 @@ export default function Navbar() {
                                 {store.logoUrl && (
                                   <img 
                                     src={store.logoUrl} 
-                                    alt={store.name} 
+                                    alt={store.logoAlt || store.name || 'Store logo'} 
                                     className="w-5 h-5 object-contain flex-shrink-0" 
                                   />
                                 )}
@@ -527,7 +527,7 @@ export default function Navbar() {
                                   {store.logoUrl && (
                                     <img 
                                       src={store.logoUrl} 
-                                      alt={store.name} 
+                                      alt={store.logoAlt || store.name || 'Store logo'} 
                                       className="w-5 h-5 object-contain flex-shrink-0" 
                                     />
                                   )}
@@ -613,7 +613,7 @@ export default function Navbar() {
                   {store.logoUrl && (
                     <img 
                       src={store.logoUrl} 
-                      alt={store.name} 
+                      alt={store.logoAlt || store.name || 'Store logo'} 
                       className="w-10 h-10 object-contain flex-shrink-0"
                     />
                   )}

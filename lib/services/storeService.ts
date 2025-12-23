@@ -9,6 +9,7 @@ export interface Store {
   slug?: string; // URL-friendly slug (e.g., "nike", "amazon")
   description: string;
   logoUrl?: string;
+  logoAlt?: string; // Alt text for store logo (for accessibility and SEO)
   voucherText?: string; // e.g., "Upto 58% Voucher"
   networkId?: string; // Network location ID to identify store location
   affiliateFallbackUrl?: string; // Fallback affiliate URL for coupons without code/deal

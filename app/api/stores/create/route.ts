@@ -78,6 +78,10 @@ export async function POST(req: NextRequest) {
 
     // Add optional fields only if they have values
     if (store.logoUrl) supabaseStore['Store Logo'] = store.logoUrl;
+    // Note: logo_alt column may not exist in Supabase yet - only save if provided and non-empty
+    if (store.logoAlt && store.logoAlt.trim()) {
+      supabaseStore['logo_alt'] = store.logoAlt.trim();
+    }
     if (store.voucherText) supabaseStore['voucher_text'] = store.voucherText;
     // Save Network ID if provided (multiple stores can have same Network ID)
     if (store.networkId !== undefined && store.networkId !== null && store.networkId !== '') {
@@ -153,6 +157,50 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       console.error('❌ Supabase create store error:', error);
+      
+      // Check if error is about missing logo_alt column
+      if (error.message && error.message.includes("logo_alt") && error.message.includes("schema cache")) {
+        console.warn('logo_alt column not found in Supabase, retrying without it...');
+        // Remove logo_alt from store data and retry
+        delete supabaseStore['logo_alt'];
+        
+        const { data: retryData, error: retryError } = await supabaseAdmin
+          .from('stores')
+          .insert([supabaseStore])
+          .select('"Store Id", "Store Name"')
+          .single();
+        
+        if (retryError) {
+          console.error('❌ Supabase retry create store error:', retryError);
+          
+          // Check for duplicate slug error
+          if (retryError.code === '23505') {
+            return NextResponse.json(
+              { success: false, error: 'Store with this slug already exists' },
+              { status: 400 }
+            );
+          }
+          
+          throw retryError;
+        }
+        
+        // Success after retry
+        clearStoresCache();
+        const createdStoreId = retryData?.['Store Id'] || storeId;
+        console.log('Store created successfully (without logo_alt) with ID:', createdStoreId);
+        
+        const response = NextResponse.json({
+          success: true,
+          id: createdStoreId,
+          warning: 'logo_alt column not found in database, store created without it',
+        });
+        
+        response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        response.headers.set('Pragma', 'no-cache');
+        response.headers.set('Expires', '0');
+        
+        return response;
+      }
       
       // Check for duplicate slug error
       if (error.code === '23505') { // Unique constraint violation

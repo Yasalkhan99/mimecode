@@ -1368,24 +1368,44 @@ export default function CouponsPage() {
                   <div className="relative">
                     <input
                       type="text"
-                      value={manualStoreId}
+                      value={manualStoreId || (selectedStoreIds.length > 0 
+                        ? stores
+                            .filter(s => selectedStoreIds.includes(String(s.id)))
+                            .map(s => s.name)
+                            .join(', ')
+                        : '')}
                       onChange={(e) => {
                         setManualStoreId(e.target.value);
                         // Open dropdown when user types to show filtered results
                         setIsStoreDropdownOpen(true);
                       }}
-                      onFocus={() => setIsStoreDropdownOpen(true)}
+                      onFocus={(e) => {
+                        // Clear the input when focused if it's showing selected store names
+                        if (selectedStoreIds.length > 0 && !manualStoreId) {
+                          setManualStoreId('');
+                          e.target.select(); // Select all text for easy replacement
+                        }
+                        setIsStoreDropdownOpen(true);
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
-                          const storeId = manualStoreId.trim();
-                          if (storeId) {
-                            // Try to find store by ID (check both string match and numeric match)
+                          const searchQuery = manualStoreId.trim();
+                          if (searchQuery) {
+                            // Try to find store by name or ID
+                            const searchLower = searchQuery.toLowerCase();
                             const foundStore = stores.find(store => {
-                              const storeIdNum = parseInt(String(store.id || '0'), 10);
-                              const inputIdNum = parseInt(storeId, 10);
-                              return store.id === storeId || 
-                                     (storeIdNum > 0 && storeIdNum === inputIdNum && inputIdNum <= 100000);
+                              // Search by name (case-insensitive)
+                              const nameMatch = store.name?.toLowerCase().includes(searchLower);
+                              
+                              // Search by numeric Store ID
+                              const numericStoreId = (store as any).storeId;
+                              const storeIdMatch = numericStoreId && String(numericStoreId).includes(searchQuery);
+                              
+                              // Search by UUID (id field) - convert to string first
+                              const uuidMatch = store.id && String(store.id).toLowerCase().includes(searchLower);
+                              
+                              return nameMatch || storeIdMatch || uuidMatch;
                             });
                             
                             if (foundStore && foundStore.id) {
@@ -1396,11 +1416,20 @@ export default function CouponsPage() {
                                 
                                 // Auto-populate storeName and logoUrl
                                 const updates: Partial<Coupon> = { storeName: foundStore.name };
+                                console.log('🏪 Store selected:', foundStore.name, 'Logo URL:', foundStore.logoUrl);
                                 if (foundStore.logoUrl && foundStore.logoUrl.trim() !== '') {
                                   updates.logoUrl = foundStore.logoUrl;
                                   setLogoUrl(foundStore.logoUrl);
                                   handleLogoUrlChange(foundStore.logoUrl);
                                   setLogoUploadMethod('url');
+                                  // Set logo preview to show the logo
+                                  setLogoPreview(foundStore.logoUrl);
+                                  console.log('✅ Logo preview set to:', foundStore.logoUrl);
+                                } else {
+                                  console.log('⚠️ Store has no logoUrl');
+                                  // Clear logo if store doesn't have one
+                                  setLogoPreview(null);
+                                  setLogoUrl('');
                                 }
                                 setFormData({ ...formData, ...updates } as any);
                                 setManualStoreId('');
@@ -1412,7 +1441,7 @@ export default function CouponsPage() {
                                 setIsStoreDropdownOpen(true);
                               }
                             } else {
-                              alert(`Store with ID "${storeId}" not found. Please check the ID and try again.`);
+                              alert(`Store "${searchQuery}" not found. Please check the name or ID and try again.`);
                             }
                           }
                         } else if (e.key === 'Escape') {
@@ -1425,11 +1454,20 @@ export default function CouponsPage() {
                         const currentValue = manualStoreId.trim();
                         setTimeout(() => {
                           if (currentValue) {
+                            // Try to find store by name or ID
+                            const searchLower = currentValue.toLowerCase();
                             const foundStore = stores.find(store => {
-                              const storeIdNum = parseInt(String(store.id || '0'), 10);
-                              const inputIdNum = parseInt(currentValue, 10);
-                              return store.id === currentValue || 
-                                     (storeIdNum > 0 && storeIdNum === inputIdNum && inputIdNum <= 100000);
+                              // Search by name (case-insensitive)
+                              const nameMatch = store.name?.toLowerCase().includes(searchLower);
+                              
+                              // Search by numeric Store ID
+                              const numericStoreId = (store as any).storeId;
+                              const storeIdMatch = numericStoreId && String(numericStoreId).includes(currentValue);
+                              
+                              // Search by UUID (id field) - convert to string first
+                              const uuidMatch = store.id && String(store.id).toLowerCase().includes(searchLower);
+                              
+                              return nameMatch || storeIdMatch || uuidMatch;
                             });
                             
                             if (foundStore && foundStore.id && !selectedStoreIds.includes(String(foundStore.id))) {
@@ -1437,11 +1475,20 @@ export default function CouponsPage() {
                               setSelectedStoreIds(newSelected);
                               
                               const updates: Partial<Coupon> = { storeName: foundStore.name };
+                              console.log('🏪 Store selected (onBlur):', foundStore.name, 'Logo URL:', foundStore.logoUrl);
                               if (foundStore.logoUrl && foundStore.logoUrl.trim() !== '') {
                                 updates.logoUrl = foundStore.logoUrl;
                                 setLogoUrl(foundStore.logoUrl);
                                 handleLogoUrlChange(foundStore.logoUrl);
                                 setLogoUploadMethod('url');
+                                // Set logo preview to show the logo
+                                setLogoPreview(foundStore.logoUrl);
+                                console.log('✅ Logo preview set to:', foundStore.logoUrl);
+                              } else {
+                                console.log('⚠️ Store has no logoUrl');
+                                // Clear logo if store doesn't have one
+                                setLogoPreview(null);
+                                setLogoUrl('');
                               }
                               setFormData({ ...formData, ...updates } as any);
                               setManualStoreId('');
@@ -1460,9 +1507,11 @@ export default function CouponsPage() {
                           }
                         }, 200);
                       }}
-                      placeholder={selectedStoreIds.length > 0 
-                        ? `${selectedStoreIds.length} store${selectedStoreIds.length > 1 ? 's' : ''} selected (or type ID)`
-                        : 'Select stores... (or type Store ID)'}
+                      placeholder={
+                        selectedStoreIds.length === 0
+                          ? 'Type store name or ID to search...'
+                          : 'Type to search for more stores...'
+                      }
                       className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg bg-white text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                     />
                     <button
@@ -1487,18 +1536,29 @@ export default function CouponsPage() {
                       <div className="p-2">
                         {stores
                           .filter((store, index) => {
-                            // Filter stores based on manualStoreId input
+                            // Filter stores based on manualStoreId input (can be name or ID)
                             if (!manualStoreId.trim()) {
                               return true; // Show all stores if no input
                             }
-                            const inputNum = parseInt(manualStoreId.trim(), 10);
-                            if (isNaN(inputNum)) {
-                              return true; // Show all if not a number
-                            }
-                            // Match by index (1-based) or by actual store ID
-                            const storeIdNum = parseInt(String(store.id || '0'), 10);
-                            return (index + 1 === inputNum) || 
-                                   (storeIdNum > 0 && storeIdNum === inputNum && inputNum <= 100000);
+                            
+                            const searchQuery = manualStoreId.trim().toLowerCase();
+                            
+                            // Search by store name (case-insensitive)
+                            const nameMatch = store.name?.toLowerCase().includes(searchQuery);
+                            
+                            // Search by numeric Store ID
+                            const numericStoreId = (store as any).storeId;
+                            const storeIdMatch = numericStoreId && String(numericStoreId).includes(searchQuery);
+                            
+                            // Search by UUID (id field) - convert to string first
+                            const uuidMatch = store.id && String(store.id).toLowerCase().includes(searchQuery);
+                            
+                            // Search by index (1-based) if input is a number
+                            const inputNum = parseInt(searchQuery, 10);
+                            const indexMatch = !isNaN(inputNum) && (index + 1 === inputNum);
+                            
+                            // Return true if any match is found
+                            return nameMatch || storeIdMatch || uuidMatch || indexMatch;
                           })
                           .map((store) => {
                             // Find original index for display
@@ -1545,6 +1605,7 @@ export default function CouponsPage() {
                                       const firstStore = stores.find(s => s.id === newSelected[0]);
                                       if (firstStore) {
                                         const updates: Partial<Coupon> = { storeName: firstStore.name };
+                                        console.log('🏪 Store selected (checkbox):', firstStore.name, 'Logo URL:', firstStore.logoUrl);
                                         // Auto-set logo from store if store has a logo
                                         if (firstStore.logoUrl && firstStore.logoUrl.trim() !== '') {
                                           updates.logoUrl = firstStore.logoUrl;
@@ -1552,11 +1613,21 @@ export default function CouponsPage() {
                                           handleLogoUrlChange(firstStore.logoUrl);
                                           // Switch to URL method if logo is set
                                           setLogoUploadMethod('url');
+                                          // Set logo preview to show the logo
+                                          setLogoPreview(firstStore.logoUrl);
+                                          console.log('✅ Logo preview set to:', firstStore.logoUrl);
+                                        } else {
+                                          console.log('⚠️ Store has no logoUrl');
+                                          // Clear logo if store doesn't have one
+                                          setLogoPreview(null);
+                                          setLogoUrl('');
                                         }
                                         setFormData({ ...formData, ...updates } as any);
                                       }
                                     } else {
                                       setFormData({ ...formData, storeName: '' });
+                                      setLogoPreview(null);
+                                      setLogoUrl('');
                                     }
                                   }}
                                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
@@ -1604,11 +1675,15 @@ export default function CouponsPage() {
                                   handleLogoUrlChange(firstStore.logoUrl);
                                   // Switch to URL method if logo is set
                                   setLogoUploadMethod('url');
+                                  // Set logo preview to show the logo
+                                  setLogoPreview(firstStore.logoUrl);
                                 }
                                 setFormData({ ...formData, ...updates } as any);
                               }
                             } else {
                               setFormData({ ...formData, storeName: '' });
+                              setLogoPreview(null);
+                              setLogoUrl('');
                             }
                           }}
                           className="text-blue-700 hover:text-blue-900 font-bold"
@@ -1875,9 +1950,23 @@ export default function CouponsPage() {
                 </div>
               )}
               
-              {logoPreview && (
+              {/* Show logo preview for both file uploads and URL-based logos */}
+              {(logoPreview || (logoUrl && logoUploadMethod === 'url')) && (
                 <div className="mt-2">
-                  <img src={logoPreview} alt="Logo preview" className="h-16 object-contain" />
+                  <p className="text-xs text-gray-500 mb-1">Logo Preview:</p>
+                  <img 
+                    src={logoPreview || logoUrl} 
+                    alt="Logo preview" 
+                    className="h-16 object-contain border border-gray-200 rounded p-1 bg-white"
+                    onError={(e) => {
+                      console.error('❌ Logo image failed to load:', logoPreview || logoUrl);
+                      // Hide image on error
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                    onLoad={() => {
+                      console.log('✅ Logo image loaded successfully:', logoPreview || logoUrl);
+                    }}
+                  />
                 </div>
               )}
             </div>

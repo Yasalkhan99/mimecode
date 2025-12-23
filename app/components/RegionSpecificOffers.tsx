@@ -728,7 +728,7 @@ export default function RegionSpecificOffers() {
                           <div className="w-16 h-16 mx-auto mb-3 bg-gray-50 rounded-lg p-2 flex items-center justify-center group-hover:scale-110 transition-transform">
                             <img
                               src={store.logoUrl}
-                              alt={store.name}
+                              alt={store.logoAlt || store.name || 'Store logo'}
                               className="max-w-full max-h-full object-contain"
                             />
                           </div>

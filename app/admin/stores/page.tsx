@@ -13,6 +13,7 @@ import {
 import { getCategories, Category } from '@/lib/services/categoryService';
 import { getActiveRegions, Region } from '@/lib/services/regionService';
 import { extractOriginalCloudinaryUrl, isCloudinaryUrl } from '@/lib/utils/cloudinary';
+import { getCoupons, Coupon } from '@/lib/services/couponService';
 
 export default function StoresPage() {
   const [stores, setStores] = useState<Store[]>([]);
@@ -28,6 +29,7 @@ export default function StoresPage() {
     slug: '',
     description: '',
     logoUrl: '',
+    logoAlt: '',
     networkId: '',
     merchantId: '',
     trackingLink: '',
@@ -90,6 +92,9 @@ export default function StoresPage() {
   const [bulkLogoFile, setBulkLogoFile] = useState<File | null>(null);
   const [bulkUploading, setBulkUploading] = useState(false);
   const [bulkUploadResult, setBulkUploadResult] = useState<{success: number, failed: number, errors: string[]} | null>(null);
+  
+  // Coupon statistics for each store
+  const [storeCouponStats, setStoreCouponStats] = useState<Record<string, { total: number; active: number; inactive: number }>>({});
 
   const handleExportStores = () => {
     if (!stores || stores.length === 0) {
@@ -179,8 +184,72 @@ export default function StoresPage() {
 
   const fetchStores = async () => {
     setLoading(true);
-    const data = await getStores();
-    setStores(data);
+    const [storesData, couponsData] = await Promise.all([
+      getStores(),
+      getCoupons()
+    ]);
+    
+    // Sort stores by numeric ID
+    const sortedStores = storesData.sort((a, b) => {
+      const idA = parseInt(String(a.id || '0'), 10) || 0;
+      const idB = parseInt(String(b.id || '0'), 10) || 0;
+      return idA - idB;
+    });
+    
+    setStores(sortedStores);
+    
+    // Calculate coupon statistics for each store
+    const stats: Record<string, { total: number; active: number; inactive: number }> = {};
+    sortedStores.forEach(store => {
+      const storeId = store.id;
+      const numericStoreId = (store as any).storeId || null;
+      const storeName = store.name;
+      
+      if (!storeId) return;
+      
+      // Find coupons for this store - check multiple matching criteria
+      const storeCoupons = couponsData.filter(coupon => {
+        // 1. Check if coupon has storeIds array and includes this store (UUID match)
+        if (coupon.storeIds && Array.isArray(coupon.storeIds) && coupon.storeIds.length > 0) {
+          const hasUuidMatch = coupon.storeIds.some(id => String(id) === String(storeId));
+          if (hasUuidMatch) return true;
+          
+          // Also check numeric Store Id if available
+          if (numericStoreId) {
+            const hasNumericMatch = coupon.storeIds.some(id => String(id) === String(numericStoreId));
+            if (hasNumericMatch) return true;
+          }
+        }
+        
+        // 2. Check if coupon has numeric Store Id field (from Supabase)
+        const couponStoreId = (coupon as any)['Store  Id'] || (coupon as any).storeId;
+        if (couponStoreId) {
+          // Match by UUID
+          if (String(couponStoreId) === String(storeId)) return true;
+          // Match by numeric Store Id
+          if (numericStoreId && String(couponStoreId) === String(numericStoreId)) return true;
+        }
+        
+        // 3. Fallback: check storeName match
+        if (storeName && coupon.storeName && 
+            coupon.storeName.toLowerCase().trim() === storeName.toLowerCase().trim()) {
+          return true;
+        }
+        
+        return false;
+      });
+      
+      const total = storeCoupons.length;
+      const active = storeCoupons.filter(c => c.isActive !== false).length;
+      const inactive = total - active;
+      
+      // Only set stats if there are coupons (don't show dash for stores with 0 coupons)
+      if (total > 0) {
+        stats[storeId] = { total, active, inactive };
+      }
+    });
+    
+    setStoreCouponStats(stats);
     setCurrentPage(1); // Reset to first page when data changes
     setLoading(false);
     // Filter will be applied automatically via useEffect when stores state updates
@@ -256,10 +325,11 @@ export default function StoresPage() {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      const [storesData, categoriesData, regionsData] = await Promise.all([
+      const [storesData, categoriesData, regionsData, couponsData] = await Promise.all([
         getStores(),
         getCategories(),
-        getActiveRegions()
+        getActiveRegions(),
+        getCoupons()
       ]);
       // Sort stores by numeric ID (1, 2, 3...)
       const sortedStores = storesData.sort((a, b) => {
@@ -270,6 +340,59 @@ export default function StoresPage() {
       setStores(sortedStores);
       setCategories(categoriesData);
       setRegions(regionsData);
+      
+      // Calculate coupon statistics for each store
+      const stats: Record<string, { total: number; active: number; inactive: number }> = {};
+      storesData.forEach(store => {
+        const storeId = store.id;
+        const numericStoreId = (store as any).storeId || null;
+        const storeName = store.name;
+        
+        if (!storeId) return;
+        
+        // Find coupons for this store - check multiple matching criteria
+        const storeCoupons = couponsData.filter(coupon => {
+          // 1. Check if coupon has storeIds array and includes this store (UUID match)
+          if (coupon.storeIds && Array.isArray(coupon.storeIds) && coupon.storeIds.length > 0) {
+            const hasUuidMatch = coupon.storeIds.some(id => String(id) === String(storeId));
+            if (hasUuidMatch) return true;
+            
+            // Also check numeric Store Id if available
+            if (numericStoreId) {
+              const hasNumericMatch = coupon.storeIds.some(id => String(id) === String(numericStoreId));
+              if (hasNumericMatch) return true;
+            }
+          }
+          
+          // 2. Check if coupon has numeric Store Id field (from Supabase)
+          const couponStoreId = (coupon as any)['Store  Id'] || (coupon as any).storeId;
+          if (couponStoreId) {
+            // Match by UUID
+            if (String(couponStoreId) === String(storeId)) return true;
+            // Match by numeric Store Id
+            if (numericStoreId && String(couponStoreId) === String(numericStoreId)) return true;
+          }
+          
+          // 3. Fallback: check storeName match
+          if (storeName && coupon.storeName && 
+              coupon.storeName.toLowerCase().trim() === storeName.toLowerCase().trim()) {
+            return true;
+          }
+          
+          return false;
+        });
+        
+        const total = storeCoupons.length;
+        const active = storeCoupons.filter(c => c.isActive !== false).length;
+        const inactive = total - active;
+        
+        // Only set stats if there are coupons (don't show dash for stores with 0 coupons)
+        if (total > 0) {
+          stats[storeId] = { total, active, inactive };
+        }
+      });
+      
+      setStoreCouponStats(stats);
       setLoading(false);
       // Filter will be applied automatically via useEffect when stores state updates
     };
@@ -932,6 +1055,27 @@ export default function StoresPage() {
                   </div>
                 </div>
               )}
+              
+              <div className="mt-4">
+                <label htmlFor="logoAlt" className="block text-gray-700 text-sm font-semibold mb-2">
+                  Logo Alt Text (Optional)
+                </label>
+                <input
+                  id="logoAlt"
+                  name="logoAlt"
+                  type="text"
+                  value={formData.logoAlt || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, logoAlt: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  placeholder={`${formData.name || 'Store'} logo`}
+                  maxLength={100}
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Alt text for the store logo (for accessibility and SEO). If left blank, store name will be used.
+                </p>
+              </div>
             </div>
 
             <div>
@@ -1031,12 +1175,27 @@ export default function StoresPage() {
                     setFormData({ ...formData, seoTitle: e.target.value })
                   }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                  placeholder="Best Nike Shoes Coupons & Deals 2024"
-                  maxLength={60}
+                  placeholder="{store_name} Coupons & Deals {month_year} - Save Up to {highest_offer} - {active_coupons} Active Offers"
+                  maxLength={100}
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  Shown in browser tab. Max 60 characters.
+                  Shown in browser tab. Max 100 characters.
                 </p>
+                <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-xs font-semibold text-blue-900 mb-2">Available Dynamic Placeholders:</p>
+                  <ul className="text-xs text-blue-800 space-y-1">
+                    <li><code className="bg-blue-100 px-1 rounded">{"{store_name}"}</code> - Store name (e.g., "Nike")</li>
+                    <li><code className="bg-blue-100 px-1 rounded">{"{month_year}"}</code> - Current month and year (e.g., "December 2024")</li>
+                    <li><code className="bg-blue-100 px-1 rounded">{"{active_coupons}"}</code> - Active coupons + deals count</li>
+                    <li><code className="bg-blue-100 px-1 rounded">{"{highest_offer}"}</code> - Highest discount/offer (e.g., "70%" or "$50")</li>
+                  </ul>
+                  <p className="text-xs text-blue-700 mt-2">
+                    Example: <code className="bg-blue-100 px-1 rounded">{"{store_name} Coupons {month_year} - Save Up to {highest_offer}"}</code>
+                  </p>
+                  <p className="text-xs text-gray-600 mt-2">
+                    Leave blank to use default template with all placeholders.
+                  </p>
+                </div>
               </div>
 
               <div>
@@ -1072,65 +1231,18 @@ export default function StoresPage() {
                     const isTrending = e.target.checked;
                     setFormData({ 
                       ...formData, 
-                      isTrending,
-                      // Clear layout position if trending is disabled
-                      layoutPosition: isTrending ? formData.layoutPosition : null
+                      isTrending
                     });
                   }}
                   className="mr-2"
                 />
                 <label htmlFor="isTrending" className="text-gray-700">Mark as Trending</label>
               </div>
-
-              <div>
-                <label htmlFor="layoutPosition" className="block text-gray-700 text-sm font-semibold mb-2">
-                  Assign to Layout Position (1-8)
-                </label>
-                <select
-                  id="layoutPosition"
-                  name="layoutPosition"
-                  value={formData.layoutPosition || ''}
-                  onChange={(e) => {
-                    const position = e.target.value ? parseInt(e.target.value) : null;
-                    setFormData({ 
-                      ...formData, 
-                      layoutPosition: position,
-                      // Auto-enable trending if layout position is assigned
-                      isTrending: position !== null ? true : formData.isTrending
-                    });
-                  }}
-                  disabled={!formData.isTrending && !formData.layoutPosition}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                >
-                  <option value="">Not Assigned</option>
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map((pos) => {
-                    const isTaken = stores.some(
-                      s => s.layoutPosition === pos && s.isTrending && s.id
-                    );
-                    const takenBy = stores.find(
-                      s => s.layoutPosition === pos && s.isTrending && s.id
-                    );
-                    return (
-                      <option key={pos} value={pos}>
-                        Layout {pos} {isTaken ? `(Currently: ${takenBy?.name})` : ''}
-                      </option>
-                    );
-                  })}
-                </select>
-                {!formData.isTrending && !formData.layoutPosition && (
-                  <p className="mt-1 text-xs text-gray-400">Enable "Mark as Trending" or select a layout position</p>
-                )}
-                {formData.layoutPosition && (
-                  <p className="mt-1 text-xs text-blue-600">
-                    Store will be placed at Layout {formData.layoutPosition} in Trending Stores section
-                  </p>
-                )}
+            </div>
               </div>
-            </div>
-            </div>
 
-            {/* Right Column: Technical & Affiliate Info */}
-            <div className="space-y-4">
+              {/* Right Column: Technical & Affiliate Info */}
+              <div className="space-y-4">
               <h3 className="text-lg font-bold text-gray-800 border-b pb-2">Technical & Affiliate Information</h3>
               
               <div>
@@ -1427,8 +1539,14 @@ export default function StoresPage() {
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-24">
                     Country
                   </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-32">
+                    Category
+                  </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-48">
                     Tracking Link
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-40">
+                    Coupons
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-40">
                     Actions
@@ -1459,7 +1577,7 @@ export default function StoresPage() {
                       {store.logoUrl ? (
                         <img
                           src={store.logoUrl}
-                          alt={store.name}
+                          alt={store.logoAlt || store.name || 'Store logo'}
                           className="h-12 w-12 object-contain"
                           onError={(e) => {
                             (e.target as HTMLImageElement).style.display = 'none';
@@ -1485,6 +1603,13 @@ export default function StoresPage() {
                     <td className="px-6 py-4 text-sm text-gray-800 text-center">
                       {store.countryCodes || '-'}
                     </td>
+                    <td className="px-6 py-4 text-sm text-gray-800">
+                      {(() => {
+                        if (!store.categoryId) return '-';
+                        const category = categories.find(c => c.id === store.categoryId || String(c.id) === String(store.categoryId));
+                        return category ? category.name : '-';
+                      })()}
+                    </td>
                     <td className="px-6 py-4">
                       {(() => {
                         // Use trackingLink if available, otherwise fallback to trackingUrl
@@ -1506,6 +1631,21 @@ export default function StoresPage() {
                         </a>
                       ) : (
                           <span className="text-gray-400 text-sm" title="No tracking link available">-</span>
+                        );
+                      })()}
+                    </td>
+                    <td className="px-6 py-4">
+                      {(() => {
+                        const stats = storeCouponStats[store.id || ''];
+                        if (!stats) {
+                          return <span className="text-gray-400 text-sm">-</span>;
+                        }
+                        return (
+                          <div className="text-sm text-gray-700 space-y-1">
+                            <div>Total: <span className="font-semibold">{stats.total}</span></div>
+                            <div>Active: <span className="font-semibold text-green-600">{stats.active}</span></div>
+                            <div>Inactive: <span className="font-semibold text-red-600">{stats.inactive}</span></div>
+                          </div>
                         );
                       })()}
                     </td>
