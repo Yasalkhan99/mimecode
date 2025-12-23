@@ -3,6 +3,7 @@ import { extractOriginalCloudinaryUrl } from '@/lib/utils/cloudinary';
 
 export interface Store {
   id?: string;
+  storeId?: string; // Numeric Store Id from database
   merchantId?: string; // Merchant ID for the store
   name: string;
   subStoreName?: string; // Sub store name displayed on store page
