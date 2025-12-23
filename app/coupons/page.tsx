@@ -115,6 +115,19 @@ function CouponsContent() {
       });
     }
     
+    // Sort by priority (higher priority first), then by ID
+    filtered.sort((a, b) => {
+      const priorityA = a.priority || 0;
+      const priorityB = b.priority || 0;
+      if (priorityB !== priorityA) {
+        return priorityB - priorityA; // Higher priority first
+      }
+      // If priorities are equal, sort by ID (newer first)
+      const idA = parseInt(String(a.id || '0'), 10) || 0;
+      const idB = parseInt(String(b.id || '0'), 10) || 0;
+      return idB - idA;
+    });
+    
     // Reset to page 1 when filters change
     setCurrentPage(1);
     

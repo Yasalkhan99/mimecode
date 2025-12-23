@@ -593,6 +593,19 @@ export async function GET(req: NextRequest) {
       console.log(`📊 After activeOnly filter: ${convertedCoupons.length} (removed ${beforeActiveFilter - convertedCoupons.length})`);
     }
 
+    // Sort by priority (higher priority first), then by ID
+    convertedCoupons.sort((a: any, b: any) => {
+      const priorityA = a.priority || 0;
+      const priorityB = b.priority || 0;
+      if (priorityB !== priorityA) {
+        return priorityB - priorityA; // Higher priority first
+      }
+      // If priorities are equal, sort by ID (newer first)
+      const idA = parseInt(String(a.id || '0'), 10) || 0;
+      const idB = parseInt(String(b.id || '0'), 10) || 0;
+      return idB - idA;
+    });
+
     // Filter out expired coupons - but be lenient for Excel imports
     const beforeExpiryFilter = convertedCoupons.length;
     const nowDate = new Date();

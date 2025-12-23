@@ -1262,15 +1262,26 @@ export default function CouponsPage() {
       });
     }
     
-    // Apply search query filter
+    // Apply search query filter (store name only)
     if (searchQuery.trim() !== '') {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(coupon => 
-        coupon.storeName?.toLowerCase().includes(query) ||
-        coupon.code?.toLowerCase().includes(query) ||
-        coupon.title?.toLowerCase().includes(query)
+        coupon.storeName?.toLowerCase().includes(query)
       );
     }
+    
+    // Sort by priority (higher priority first), then by ID
+    filtered.sort((a, b) => {
+      const priorityA = a.priority || 0;
+      const priorityB = b.priority || 0;
+      if (priorityB !== priorityA) {
+        return priorityB - priorityA; // Higher priority first
+      }
+      // If priorities are equal, sort by ID (newer first)
+      const idA = parseInt(String(a.id || '0'), 10) || 0;
+      const idB = parseInt(String(b.id || '0'), 10) || 0;
+      return idB - idA;
+    });
     
     return filtered;
   }, [coupons, searchQuery, statusFilter]);
@@ -2002,46 +2013,68 @@ export default function CouponsPage() {
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           {/* Status Filter and Bulk Actions */}
           <div className="p-4 border-b border-gray-200 bg-gray-50">
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-              {/* Status Filter */}
-              <div className="flex items-center gap-4">
-                <label className="text-sm font-semibold text-gray-700">Status Filter:</label>
-                <div className="flex gap-3">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="statusFilter"
-                      value="all"
-                      checked={statusFilter === 'all'}
-                      onChange={() => setStatusFilter('all')}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-700">All</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="statusFilter"
-                      value="enable"
-                      checked={statusFilter === 'enable'}
-                      onChange={() => setStatusFilter('enable')}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-700">Enable</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="statusFilter"
-                      value="disable"
-                      checked={statusFilter === 'disable'}
-                      onChange={() => setStatusFilter('disable')}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-700">Disable</span>
-                  </label>
-                </div>
+            <div className="flex flex-col gap-4">
+              {/* Search by Store Name */}
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-semibold text-gray-700 whitespace-nowrap">Search by Store Name:</label>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Enter store name to filter coupons..."
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition"
+                    title="Clear search"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
+              
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                {/* Status Filter */}
+                <div className="flex items-center gap-4">
+                  <label className="text-sm font-semibold text-gray-700">Status Filter:</label>
+                  <div className="flex gap-3">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="statusFilter"
+                        value="all"
+                        checked={statusFilter === 'all'}
+                        onChange={() => setStatusFilter('all')}
+                        className="mr-2"
+                      />
+                      <span className="text-sm text-gray-700">All</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="statusFilter"
+                        value="enable"
+                        checked={statusFilter === 'enable'}
+                        onChange={() => setStatusFilter('enable')}
+                        className="mr-2"
+                      />
+                      <span className="text-sm text-gray-700">Enable</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="statusFilter"
+                        value="disable"
+                        checked={statusFilter === 'disable'}
+                        onChange={() => setStatusFilter('disable')}
+                        className="mr-2"
+                      />
+                      <span className="text-sm text-gray-700">Disable</span>
+                    </label>
+                  </div>
+                </div>
 
               {/* Bulk Actions */}
               {selectedCouponIds.length > 0 && (

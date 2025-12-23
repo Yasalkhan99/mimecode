@@ -1238,8 +1238,14 @@ export default function Home() {
       })));
     }
 
-    // 2) Sort by createdAt descending (newest first)
+    // 2) Sort by priority first (higher priority first), then by createdAt descending (newest first)
     const sortedByCreatedAt = [...codeCouponsWithUrl].sort((a, b) => {
+      const priorityA = a.priority || 0;
+      const priorityB = b.priority || 0;
+      if (priorityB !== priorityA) {
+        return priorityB - priorityA; // Higher priority first
+      }
+      // If priorities are equal, sort by createdAt (newest first)
       const timeA = getCreatedAtTime(a);
       const timeB = getCreatedAtTime(b);
       return timeB - timeA;
