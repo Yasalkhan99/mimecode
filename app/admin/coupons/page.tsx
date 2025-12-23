@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import {
   getCoupons,
   getCouponById,
@@ -38,6 +38,8 @@ export default function CouponsPage() {
     latestLayoutPosition: null,
     categoryId: null,
     couponType: 'code',
+    imageAlt: '',
+    priority: 0,
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -45,11 +47,9 @@ export default function CouponsPage() {
   const [logoUrl, setLogoUrl] = useState('');
   const [extractedLogoUrl, setExtractedLogoUrl] = useState<string | null>(null);
   const [uploadingToCloudinary, setUploadingToCloudinary] = useState(false);
-  const [couponUrl, setCouponUrl] = useState('');
-  const [extracting, setExtracting] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(0);
   const [stores, setStores] = useState<Store[]>([]);
-  const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
+  const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   const [isStoreDropdownOpen, setIsStoreDropdownOpen] = useState(false);
   const [manualStoreId, setManualStoreId] = useState<string>('');
   
@@ -59,6 +59,10 @@ export default function CouponsPage() {
   const [totalItems, setTotalItems] = useState(0);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isCreating, setIsCreating] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'enable' | 'disable'>('all');
+  const [selectedCouponIds, setSelectedCouponIds] = useState<string[]>([]);
+  const [isSelectAll, setIsSelectAll] = useState(false);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
   const storeDropdownRef = useRef<HTMLDivElement>(null);
   
   // Excel bulk upload states
@@ -602,8 +606,24 @@ export default function CouponsPage() {
   useEffect(() => {
     fetchCoupons(true); // Always bypass cache on initial load
     getCategories().then(setCategories);
-    getStores().then(setStores);
+    getStores().then((storesData) => {
+      // Sort stores by numeric ID (1, 2, 3...)
+      const sortedStores = storesData.sort((a, b) => {
+        const idA = parseInt(String(a.id || '0'), 10) || 0;
+        const idB = parseInt(String(b.id || '0'), 10) || 0;
+        return idA - idB;
+      });
+      setStores(sortedStores);
+    });
   }, []);
+
+  // Compute selected store display text
+  const selectedStoreDisplay = selectedStoreId 
+    ? (() => {
+        const selectedStore = stores.find(s => String(s.id) === String(selectedStoreId));
+        return selectedStore ? `Selected: ${selectedStore.name}` : 'Select store...';
+      })()
+    : 'Select store...';
 
   // Refresh coupons when page becomes visible (e.g., returning from edit page)
   useEffect(() => {
@@ -698,7 +718,7 @@ export default function CouponsPage() {
     // Always include storeIds (even if empty array) to ensure it's saved
     // Filter out any undefined/null values
     // Convert to string and trim - handle both string and number types
-    const validStoreIds = selectedStoreIds
+    const validStoreIds = selectedStoreId ? [selectedStoreId] : []
       .map(id => String(id || ''))
       .filter(id => id.trim() !== '');
     couponData.storeIds = validStoreIds.length > 0 ? validStoreIds : [];
@@ -707,7 +727,7 @@ export default function CouponsPage() {
     console.log('📝 Creating coupon with data:', {
       storeName: couponData.storeName,
       storeIds: couponData.storeIds,
-      selectedStoreIds: selectedStoreIds,
+      selectedStoreId: selectedStoreId,
       validStoreIds: validStoreIds,
       logoUrl: logoUrl,
       logoUploadMethod: logoUploadMethod,
@@ -786,15 +806,16 @@ export default function CouponsPage() {
           latestLayoutPosition: null,
           categoryId: null,
           couponType: 'code',
+          imageAlt: '',
+          priority: 0,
           buttonText: '',
         });
         setLogoFile(null);
         setLogoPreview(null);
         setLogoUrl('');
         setExtractedLogoUrl(null);
-        setCouponUrl('');
         setFileInputKey(prev => prev + 1);
-        setSelectedStoreIds([]); // Reset selected stores
+        setSelectedStoreId(null); // Reset selected store
         setUploadingToCloudinary(false); // Reset upload state
         setLogoUploadMethod('file'); // Reset to file method
       } else {
@@ -815,50 +836,6 @@ export default function CouponsPage() {
     }
   };
 
-  const handleExtractFromUrl = async () => {
-    if (!couponUrl.trim()) {
-      alert('Please enter a URL');
-      return;
-    }
-
-    setExtracting(true);
-    try {
-      const response = await fetch('/api/stores/extract-metadata', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: couponUrl }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Auto-populate form fields
-        setFormData({
-          ...formData,
-          storeName: data.name || formData.storeName || '',
-          description: data.description || formData.description || '',
-          url: data.siteUrl || formData.url || '',
-        });
-        
-        if (data.logoUrl) {
-          setLogoUrl(data.logoUrl);
-          handleLogoUrlChange(data.logoUrl);
-          // Switch to URL upload method if logo is extracted
-          setLogoUploadMethod('url');
-        }
-
-        // Show success message
-        alert(`Successfully extracted data from ${data.name || 'the website'}!`);
-      } else {
-        alert(`Failed to extract metadata: ${data.error || 'Unknown error'}`);
-      }
-    } catch (error) {
-      console.error('Error extracting metadata:', error);
-      alert('Failed to extract metadata. Please check the URL and try again.');
-    } finally {
-      setExtracting(false);
-    }
-  };
 
   const handleLogoUrlChange = (url: string) => {
     setLogoUrl(url);
@@ -870,6 +847,87 @@ export default function CouponsPage() {
       setExtractedLogoUrl(null);
       setLogoPreview(url);
     }
+  };
+
+  // Helper function to get logo from website URL (favicon)
+  const getLogoFromWebsite = (url: string | null | undefined): string | null => {
+    if (!url) return null;
+    try {
+      const domain = new URL(url.startsWith('http') ? url : `https://${url}`).hostname.replace('www.', '');
+      return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+    } catch {
+      return null;
+    }
+  };
+
+  // Function to fetch logo from store URLs (trackingLink, trackingUrl, websiteUrl)
+  const fetchLogoFromStoreUrls = async (store: Store): Promise<string | null> => {
+    // Priority 1: Use existing logoUrl if available
+    if (store.logoUrl && store.logoUrl.trim() !== '') {
+      return store.logoUrl;
+    }
+
+    // Priority 2: Try to extract from trackingLink
+    if (store.trackingLink && store.trackingLink.trim() !== '') {
+      try {
+        const response = await fetch('/api/stores/extract-metadata', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: store.trackingLink }),
+        });
+        const data = await response.json();
+        if (data.success && data.logoUrl) {
+          return data.logoUrl;
+        }
+      } catch (error) {
+        console.warn('Failed to extract logo from trackingLink:', error);
+      }
+      // Fallback to favicon if extraction fails
+      const favicon = getLogoFromWebsite(store.trackingLink);
+      if (favicon) return favicon;
+    }
+
+    // Priority 3: Try to extract from trackingUrl
+    if (store.trackingUrl && store.trackingUrl.trim() !== '') {
+      try {
+        const response = await fetch('/api/stores/extract-metadata', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: store.trackingUrl }),
+        });
+        const data = await response.json();
+        if (data.success && data.logoUrl) {
+          return data.logoUrl;
+        }
+      } catch (error) {
+        console.warn('Failed to extract logo from trackingUrl:', error);
+      }
+      // Fallback to favicon if extraction fails
+      const favicon = getLogoFromWebsite(store.trackingUrl);
+      if (favicon) return favicon;
+    }
+
+    // Priority 4: Try to extract from websiteUrl
+    if (store.websiteUrl && store.websiteUrl.trim() !== '') {
+      try {
+        const response = await fetch('/api/stores/extract-metadata', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: store.websiteUrl }),
+        });
+        const data = await response.json();
+        if (data.success && data.logoUrl) {
+          return data.logoUrl;
+        }
+      } catch (error) {
+        console.warn('Failed to extract logo from websiteUrl:', error);
+      }
+      // Fallback to favicon if extraction fails
+      const favicon = getLogoFromWebsite(store.websiteUrl);
+      if (favicon) return favicon;
+    }
+
+    return null;
   };
 
   const handleDelete = async (id: string | undefined) => {
@@ -988,6 +1046,63 @@ export default function CouponsPage() {
         );
         alert(`Failed to update coupon: ${error.message || 'Unknown error'}`);
       }
+    }
+  };
+
+  // Handle select all checkbox
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allIds = filteredCoupons.map(coupon => coupon.id).filter(Boolean) as string[];
+      setSelectedCouponIds(allIds);
+      setIsSelectAll(true);
+    } else {
+      setSelectedCouponIds([]);
+      setIsSelectAll(false);
+    }
+  };
+
+  // Handle individual coupon checkbox
+  const handleCouponSelect = (couponId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedCouponIds([...selectedCouponIds, couponId]);
+    } else {
+      setSelectedCouponIds(selectedCouponIds.filter(id => id !== couponId));
+      setIsSelectAll(false);
+    }
+  };
+
+  // Bulk enable/disable coupons
+  const handleBulkStatusUpdate = async (isActive: boolean) => {
+    if (selectedCouponIds.length === 0) {
+      alert('Please select at least one coupon.');
+      return;
+    }
+    
+    if (!confirm(`Are you sure you want to ${isActive ? 'enable' : 'disable'} ${selectedCouponIds.length} coupon(s)?`)) {
+      return;
+    }
+    
+    setBulkUpdating(true);
+    try {
+      const updatePromises = selectedCouponIds.map(couponId => 
+        updateCoupon(couponId, { isActive })
+      );
+      
+      await Promise.all(updatePromises);
+      
+      // Refresh coupons
+      await fetchCoupons(true);
+      
+      // Clear selection
+      setSelectedCouponIds([]);
+      setIsSelectAll(false);
+      
+      alert(`Successfully ${isActive ? 'enabled' : 'disabled'} ${selectedCouponIds.length} coupon(s).`);
+    } catch (error) {
+      console.error('Error updating coupons:', error);
+      alert('Failed to update coupons. Please try again.');
+    } finally {
+      setBulkUpdating(false);
     }
   };
 
@@ -1135,13 +1250,42 @@ export default function CouponsPage() {
     }
   };
 
-  // Filter coupons based on search query
-  const filteredCoupons = searchQuery.trim() === '' 
-    ? coupons 
-    : coupons.filter(coupon => 
-        coupon.storeName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        coupon.code?.toLowerCase().includes(searchQuery.toLowerCase())
+  // Filter coupons based on search query and status
+  const filteredCoupons = useMemo(() => {
+    let filtered = coupons;
+    
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(coupon => {
+        const isActive = coupon.isActive !== false; // Default to true if not set
+        return statusFilter === 'enable' ? isActive : !isActive;
+      });
+    }
+    
+    // Apply search query filter
+    if (searchQuery.trim() !== '') {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(coupon => 
+        coupon.storeName?.toLowerCase().includes(query) ||
+        coupon.code?.toLowerCase().includes(query) ||
+        coupon.title?.toLowerCase().includes(query)
       );
+    }
+    
+    return filtered;
+  }, [coupons, searchQuery, statusFilter]);
+
+  // Update select all state when individual selections change
+  useEffect(() => {
+    if (filteredCoupons.length > 0) {
+      const allSelected = filteredCoupons.every(coupon => 
+        coupon.id && selectedCouponIds.includes(coupon.id)
+      );
+      setIsSelectAll(allSelected);
+    } else {
+      setIsSelectAll(false);
+    }
+  }, [selectedCouponIds, filteredCoupons]);
 
   return (
     <div>
@@ -1272,94 +1416,17 @@ export default function CouponsPage() {
         </div>
       </div>
 
-      {/* Search Bar - Always Visible */}
-      <div className="mb-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-          <label htmlFor="searchStore" className="block text-sm font-semibold text-gray-700 mb-2">
-            Search by Store Name or Coupon Code
-          </label>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <div className="flex-1 relative">
-              <input
-                id="searchStore"
-                type="text"
-                placeholder="Enter store name or coupon code..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900"
-              />
-              <svg
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-            </div>
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium whitespace-nowrap"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-          {searchQuery && (
-            <p className="mt-2 text-sm text-gray-600">
-              Showing <span className="font-semibold">{filteredCoupons.length}</span> of{' '}
-              <span className="font-semibold">{coupons.length}</span> coupons
-            </p>
-          )}
-        </div>
-      </div>
-
       {showForm && (
         <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
           <h2 className="text-xl font-bold text-gray-800 mb-4">
             Create New Coupon
           </h2>
-          
-          {/* URL Extraction Section */}
-          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <label htmlFor="couponUrl" className="block text-gray-700 text-sm font-semibold mb-2">
-              Extract Coupon Info from URL (e.g., nike.com, amazon.com)
-            </label>
-            <div className="flex gap-2">
-              <input
-                id="couponUrl"
-                name="couponUrl"
-                type="text"
-                value={couponUrl || ''}
-                onChange={(e) => setCouponUrl(e.target.value)}
-                placeholder="Enter website URL (e.g., nike.com or https://nike.com)"
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-              />
-              <button
-                type="button"
-                onClick={handleExtractFromUrl}
-                disabled={extracting || !couponUrl.trim()}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {extracting ? 'Extracting...' : 'Extract Info'}
-              </button>
-            </div>
-            <p className="mt-2 text-xs text-gray-600">
-              This will automatically extract description and logo from the website.
-            </p>
-          </div>
 
           <form onSubmit={handleCreate} className="space-y-4">
             {/* Add this new section for store selection */}
             <div>
               {/* Title */}
-              <h3 className="text-center font-bold text-gray-700 mb-3">Select Stores (Optional)</h3>
+              <h3 className="text-center font-bold text-gray-700 mb-3">Select Store (Optional)</h3>
               
               {stores.length > 0 ? (
                 <div className="relative" ref={storeDropdownRef}>
@@ -1368,9 +1435,7 @@ export default function CouponsPage() {
                     <input
                       type="text"
                       readOnly
-                      value={selectedStoreIds.length > 0 
-                        ? `${selectedStoreIds.length} store${selectedStoreIds.length > 1 ? 's' : ''} selected`
-                        : 'Select stores...'}
+                      value={selectedStoreDisplay}
                       onClick={() => setIsStoreDropdownOpen(!isStoreDropdownOpen)}
                       className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg bg-gray-50 text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
                     />
@@ -1436,17 +1501,17 @@ export default function CouponsPage() {
                             return nameMatch || storeIdMatch || uuidMatch || indexMatch;
                           })
                           .map((store, index) => {
-                            // Find original index for display
-                            const originalIndex = stores.findIndex(s => s.id === store.id);
-                            const displayIndex = originalIndex + 1;
-                            const isSelected = selectedStoreIds.includes(String(store.id || ''));
+                            // Get the actual store ID from the table (numeric storeId or UUID id)
+                            const actualStoreId = (store as any).storeId || store.id || '-';
+                            const isSelected = selectedStoreId === String(store.id || '');
                             return (
                               <label
                                 key={store.id}
                                 className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
                               >
                                 <input
-                                  type="checkbox"
+                                  type="radio"
+                                  name="selectedStore"
                                   checked={isSelected}
                                   onChange={(e) => {
                                     if (!store.id) {
@@ -1454,52 +1519,39 @@ export default function CouponsPage() {
                                       return;
                                     }
                                     
-                                    let newSelected: string[];
                                     const storeIdStr = String(store.id);
-                                    if (e.target.checked) {
-                                      // Only add if not already selected
-                                      if (!selectedStoreIds.includes(storeIdStr)) {
-                                        newSelected = [...selectedStoreIds, storeIdStr];
+                                    
+                                    // Single selection - set the selected store
+                                    setSelectedStoreId(storeIdStr);
+                                    
+                                    // Auto-populate storeName and logoUrl from selected store
+                                    const updates: Partial<Coupon> = { storeName: store.name };
+                                    
+                                    // Fetch logo from store (logoUrl, trackingLink, trackingUrl, or websiteUrl)
+                                    const fetchLogo = async () => {
+                                      const logo = await fetchLogoFromStoreUrls(store);
+                                      if (logo) {
+                                        updates.logoUrl = logo;
+                                        setLogoUrl(logo);
+                                        handleLogoUrlChange(logo);
+                                        // Switch to URL method if logo is set
+                                        setLogoUploadMethod('url');
+                                        // Set logo preview to show the logo
+                                        setLogoPreview(logo);
                                       } else {
-                                        newSelected = selectedStoreIds;
+                                        // Clear logo if store doesn't have one
+                                        setLogoPreview(null);
+                                        setLogoUrl('');
                                       }
-                                    } else {
-                                      newSelected = selectedStoreIds.filter(id => id !== storeIdStr);
-                                    }
+                                      setFormData({ ...formData, ...updates } as any);
+                                    };
                                     
-                                    setSelectedStoreIds(newSelected);
-                                    
-                                    // Auto-populate storeName and logoUrl from first selected store
-                                    if (newSelected.length > 0) {
-                                      const firstStore = stores.find(s => s.id === newSelected[0]);
-                                      if (firstStore) {
-                                        const updates: Partial<Coupon> = { storeName: firstStore.name };
-                                        // Auto-set logo from store if store has a logo
-                                        if (firstStore.logoUrl && firstStore.logoUrl.trim() !== '') {
-                                          updates.logoUrl = firstStore.logoUrl;
-                                          setLogoUrl(firstStore.logoUrl);
-                                          handleLogoUrlChange(firstStore.logoUrl);
-                                          // Switch to URL method if logo is set
-                                          setLogoUploadMethod('url');
-                                          // Set logo preview to show the logo
-                                          setLogoPreview(firstStore.logoUrl);
-                                        } else {
-                                          // Clear logo if store doesn't have one
-                                          setLogoPreview(null);
-                                          setLogoUrl('');
-                                        }
-                                        setFormData({ ...formData, ...updates } as any);
-                                      }
-                                    } else {
-                                      setFormData({ ...formData, storeName: '' });
-                                      setLogoPreview(null);
-                                      setLogoUrl('');
-                                    }
+                                    fetchLogo();
                                   }}
-                                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                                 />
                                 <span className="ml-3 text-sm text-gray-700">
-                                  #{displayIndex} {store.name}
+                                  #{actualStoreId} {store.name}
                                 </span>
                               </label>
                             );
@@ -1593,27 +1645,6 @@ export default function CouponsPage() {
                 />
                 <p className="mt-1 text-xs text-gray-500">
                   Optional: Title for this coupon (will be displayed on coupon card)
-                </p>
-              </div>
-              
-              <div>
-                <label htmlFor="storeName" className="block text-gray-700 text-sm font-semibold mb-2">
-                  Store Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="storeName"
-                  name="storeName"
-                  type="text"
-                  placeholder="Store/Brand Name (e.g., Nike)"
-                  value={formData.storeName || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, storeName: e.target.value })
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                  required
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Store name for this coupon (required)
                 </p>
               </div>
             </div>
@@ -1867,152 +1898,58 @@ export default function CouponsPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center">
-                <input
-                  id="isActive"
-                  name="isActive"
-                  type="checkbox"
-                  checked={formData.isActive || false}
-                  onChange={(e) =>
-                    setFormData({ ...formData, isActive: e.target.checked })
-                  }
-                  className="mr-2"
-                />
-                <label htmlFor="isActive" className="text-gray-700">Active</label>
-              </div>
-
-              <div className="flex items-center">
-                <input
-                  id="isLatest"
-                  name="isLatest"
-                  type="checkbox"
-                  checked={formData.isLatest || false}
-                  onChange={(e) => {
-                    const isLatest = e.target.checked;
-                    setFormData({ 
-                      ...formData, 
-                      isLatest,
-                      // Clear layout position if latest is disabled
-                      latestLayoutPosition: isLatest ? formData.latestLayoutPosition : null
-                    });
-                  }}
-                  className="mr-2"
-                />
-                <label htmlFor="isLatest" className="text-gray-700">Mark as Latest</label>
-              </div>
-
-              <div className="flex items-center">
-                <input
-                  id="isPopular"
-                  name="isPopular"
-                  type="checkbox"
-                  checked={formData.isPopular || false}
-                  onChange={(e) => {
-                    const isPopular = e.target.checked;
-                    setFormData({ 
-                      ...formData, 
-                      isPopular,
-                      // Clear layout position if popular is disabled
-                      layoutPosition: isPopular ? formData.layoutPosition : null
-                    });
-                  }}
-                  className="mr-2"
-                />
-                <label htmlFor="isPopular" className="text-gray-700">Mark as Popular</label>
-              </div>
+            <div>
+              <label htmlFor="imageAlt" className="block text-gray-700 text-sm font-semibold mb-2">
+                Coupon Image Alt
+              </label>
+              <input
+                id="imageAlt"
+                name="imageAlt"
+                type="text"
+                placeholder="Alt text for coupon image (for accessibility and SEO)"
+                value={formData.imageAlt || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, imageAlt: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Optional: Alt text for the coupon image/logo (improves accessibility and SEO)
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="latestLayoutPosition" className="block text-gray-700 text-sm font-semibold mb-2">
-                  Assign to Latest Coupons Layout Position (1-8)
-                </label>
-                <select
-                  id="latestLayoutPosition"
-                  name="latestLayoutPosition"
-                  value={formData.latestLayoutPosition || ''}
-                  onChange={(e) => {
-                    const position = e.target.value ? parseInt(e.target.value) : null;
-                    setFormData({ 
-                      ...formData, 
-                      latestLayoutPosition: position,
-                      // Auto-enable latest if layout position is assigned
-                      isLatest: position !== null ? true : formData.isLatest
-                    });
-                  }}
-                  disabled={!formData.isLatest && !formData.latestLayoutPosition}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                >
-                  <option value="">Not Assigned</option>
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map((pos) => {
-                    const isTaken = coupons.some(
-                      c => c.latestLayoutPosition === pos && c.isLatest && c.id
-                    );
-                    const takenBy = coupons.find(
-                      c => c.latestLayoutPosition === pos && c.isLatest && c.id
-                    );
-                    return (
-                      <option key={pos} value={pos}>
-                        Layout {pos} {isTaken ? `(Currently: ${takenBy?.code})` : ''}
-                      </option>
-                    );
-                  })}
-                </select>
-                {!formData.isLatest && !formData.latestLayoutPosition && (
-                  <p className="mt-1 text-xs text-gray-400">Enable "Mark as Latest" or select a layout position</p>
-                )}
-                {formData.latestLayoutPosition && (
-                  <p className="mt-1 text-xs text-blue-600">
-                    Coupon will be placed at Layout {formData.latestLayoutPosition} in Latest Coupons section
-                  </p>
-                )}
-              </div>
+            <div>
+              <label htmlFor="priority" className="block text-gray-700 text-sm font-semibold mb-2">
+                Coupon Priority
+              </label>
+              <input
+                id="priority"
+                name="priority"
+                type="number"
+                placeholder="Priority (higher number = higher priority)"
+                value={formData.priority || 0}
+                onChange={(e) =>
+                  setFormData({ ...formData, priority: parseInt(e.target.value) || 0 })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Optional: Priority number (higher = shown first). Default is 0.
+              </p>
+            </div>
 
-              <div>
-                <label htmlFor="layoutPosition" className="block text-gray-700 text-sm font-semibold mb-2">
-                  Assign to Popular Coupons Layout Position (1-8)
-                </label>
-                <select
-                  id="layoutPosition"
-                  name="layoutPosition"
-                  value={formData.layoutPosition || ''}
-                  onChange={(e) => {
-                    const position = e.target.value ? parseInt(e.target.value) : null;
-                    setFormData({ 
-                      ...formData, 
-                      layoutPosition: position,
-                      // Auto-enable popular if layout position is assigned
-                      isPopular: position !== null ? true : formData.isPopular
-                    });
-                  }}
-                  disabled={!formData.isPopular && !formData.layoutPosition}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                >
-                  <option value="">Not Assigned</option>
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map((pos) => {
-                    const isTaken = coupons.some(
-                      c => c.layoutPosition === pos && c.isPopular && c.id
-                    );
-                    const takenBy = coupons.find(
-                      c => c.layoutPosition === pos && c.isPopular && c.id
-                    );
-                    return (
-                      <option key={pos} value={pos}>
-                        Layout {pos} {isTaken ? `(Currently: ${takenBy?.code})` : ''}
-                      </option>
-                    );
-                  })}
-                </select>
-                {!formData.isPopular && !formData.layoutPosition && (
-                  <p className="mt-1 text-xs text-gray-400">Enable "Mark as Popular" or select a layout position</p>
-                )}
-                {formData.layoutPosition && (
-                  <p className="mt-1 text-xs text-blue-600">
-                    Coupon will be placed at Layout {formData.layoutPosition} in Popular Coupons section
-                  </p>
-                )}
-              </div>
+            <div className="flex items-center">
+              <input
+                id="isActive"
+                name="isActive"
+                type="checkbox"
+                checked={formData.isActive || false}
+                onChange={(e) =>
+                  setFormData({ ...formData, isActive: e.target.checked })
+                }
+                className="mr-2"
+              />
+              <label htmlFor="isActive" className="text-gray-700">Active</label>
             </div>
 
             <button
@@ -2044,20 +1981,114 @@ export default function CouponsPage() {
         </div>
       ) : filteredCoupons.length === 0 ? (
         <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-          <p className="text-gray-500">No coupons found matching "{searchQuery}"</p>
-          <button
-            onClick={() => setSearchQuery('')}
-            className="mt-4 text-blue-600 hover:text-blue-800 underline"
-          >
-            Clear search
-          </button>
+          <p className="text-gray-500">
+            {searchQuery || statusFilter !== 'all' 
+              ? `No coupons found${searchQuery ? ` matching "${searchQuery}"` : ''}${statusFilter !== 'all' ? ` with status "${statusFilter}"` : ''}`
+              : 'No coupons found'}
+          </p>
+          {(searchQuery || statusFilter !== 'all') && (
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setStatusFilter('all');
+              }}
+              className="mt-4 text-blue-600 hover:text-blue-800 underline"
+            >
+              Clear filters
+            </button>
+          )}
         </div>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          {/* Status Filter and Bulk Actions */}
+          <div className="p-4 border-b border-gray-200 bg-gray-50">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              {/* Status Filter */}
+              <div className="flex items-center gap-4">
+                <label className="text-sm font-semibold text-gray-700">Status Filter:</label>
+                <div className="flex gap-3">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="statusFilter"
+                      value="all"
+                      checked={statusFilter === 'all'}
+                      onChange={() => setStatusFilter('all')}
+                      className="mr-2"
+                    />
+                    <span className="text-sm text-gray-700">All</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="statusFilter"
+                      value="enable"
+                      checked={statusFilter === 'enable'}
+                      onChange={() => setStatusFilter('enable')}
+                      className="mr-2"
+                    />
+                    <span className="text-sm text-gray-700">Enable</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="statusFilter"
+                      value="disable"
+                      checked={statusFilter === 'disable'}
+                      onChange={() => setStatusFilter('disable')}
+                      className="mr-2"
+                    />
+                    <span className="text-sm text-gray-700">Disable</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Bulk Actions */}
+              {selectedCouponIds.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-700 font-medium">
+                    {selectedCouponIds.length} coupon(s) selected
+                  </span>
+                  <button
+                    onClick={() => handleBulkStatusUpdate(true)}
+                    disabled={bulkUpdating}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {bulkUpdating ? 'Updating...' : 'Enable All'}
+                  </button>
+                  <button
+                    onClick={() => handleBulkStatusUpdate(false)}
+                    disabled={bulkUpdating}
+                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {bulkUpdating ? 'Updating...' : 'Disable All'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedCouponIds([]);
+                      setIsSelectAll(false);
+                    }}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm font-medium"
+                  >
+                    Clear
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b">
                 <tr>
+                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-900">
+                    <input
+                      type="checkbox"
+                      checked={isSelectAll}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                  </th>
                   <th className="px-3 py-3 text-left text-xs font-semibold text-gray-900">
                     Coupon ID
                   </th>
@@ -2092,81 +2123,92 @@ export default function CouponsPage() {
                   const endIndex = startIndex + itemsPerPage;
                   const paginatedCoupons = filteredCoupons.slice(startIndex, endIndex);
                   
-                  return paginatedCoupons.map((coupon, index) => (
-                  <tr key={`coupon-${coupon.id}-${index}`} className="border-b hover:bg-gray-50">
-                    <td className="px-3 py-4">
-                      <div className="font-mono text-xs text-gray-800 font-medium max-w-[120px] truncate" title={coupon.id}>
-                        {startIndex + index + 1}
-                      </div>
-                    </td>
-                    <td className="px-4 sm:px-6 py-4 text-sm font-semibold text-gray-900">
-                      {coupon.storeName || 'N/A'}
-                    </td>
-                    <td className="px-4 sm:px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title={coupon.title || ''}>
-                      {coupon.title || 'N/A'}
-                    </td>
-                    <td className="px-4 sm:px-6 py-4 font-mono font-semibold text-xs sm:text-sm text-gray-900">
-                      {coupon.code || (coupon.couponType === 'deal' ? 'deal' : 'N/A')}
-                    </td>
-                    <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-800 max-w-xs truncate" title={coupon.description}>
-                      {coupon.description || 'No description'}
-                    </td>
-                    <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-700">
-                      {coupon.expiryDate 
-                        ? (() => {
-                            try {
-                              let date: Date;
-                              if (coupon.expiryDate instanceof Date) {
-                                date = coupon.expiryDate;
-                              } else if (coupon.expiryDate && typeof (coupon.expiryDate as any).toDate === 'function') {
-                                // Firestore Timestamp
-                                date = (coupon.expiryDate as any).toDate();
-                              } else if (typeof coupon.expiryDate === 'string') {
-                                date = new Date(coupon.expiryDate);
-                              } else {
-                                date = new Date(coupon.expiryDate as any);
-                              }
-                              return date.toLocaleDateString('en-US', { 
-                                year: 'numeric', 
-                                month: 'short', 
-                                day: 'numeric' 
-                              });
-                            } catch {
-                              return 'Invalid Date';
-                            }
-                          })()
-                        : 'N/A'}
-                    </td>
-                    <td className="px-4 sm:px-6 py-4">
-                      <button
-                        onClick={() => handleToggleActive(coupon)}
-                        className={`px-2 py-1 rounded text-xs font-semibold cursor-pointer whitespace-nowrap ${
-                          coupon.isActive
-                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        {coupon.isActive ? 'Active' : 'Inactive'}
-                      </button>
-                    </td>
-                    <td className="px-4 sm:px-6 py-4">
-                      <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
-                        <Link
-                          href={`/admin/coupons/${coupon.id}`}
-                          className="inline-block bg-blue-100 text-blue-700 px-2 sm:px-3 py-1 rounded text-xs sm:text-sm hover:bg-blue-200 text-center"
-                        >
-                          Edit
-                        </Link>
-                        <button
-                          onClick={() => handleDelete(coupon.id)}
-                          className="bg-red-100 text-red-700 px-2 sm:px-3 py-1 rounded text-xs sm:text-sm hover:bg-red-200"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  ));
+                  return paginatedCoupons.map((coupon, index) => {
+                    const isSelected = coupon.id && selectedCouponIds.includes(coupon.id);
+                    return (
+                      <tr key={`coupon-${coupon.id}-${index}`} className={`border-b hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}`}>
+                        <td className="px-3 py-4">
+                          <input
+                            type="checkbox"
+                            checked={isSelected || false}
+                            onChange={(e) => coupon.id && handleCouponSelect(coupon.id, e.target.checked)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                        </td>
+                        <td className="px-3 py-4">
+                          <div className="font-mono text-xs text-gray-800 font-medium max-w-[120px] truncate" title={coupon.id}>
+                            {startIndex + index + 1}
+                          </div>
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 text-sm font-semibold text-gray-900">
+                          {coupon.storeName || 'N/A'}
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title={coupon.title || ''}>
+                          {coupon.title || 'N/A'}
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 font-mono font-semibold text-xs sm:text-sm text-gray-900">
+                          {coupon.code || (coupon.couponType === 'deal' ? 'deal' : 'N/A')}
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-800 max-w-xs truncate" title={coupon.description}>
+                          {coupon.description || 'No description'}
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-700">
+                          {coupon.expiryDate 
+                            ? (() => {
+                                try {
+                                  let date: Date;
+                                  if (coupon.expiryDate instanceof Date) {
+                                    date = coupon.expiryDate;
+                                  } else if (coupon.expiryDate && typeof (coupon.expiryDate as any).toDate === 'function') {
+                                    // Firestore Timestamp
+                                    date = (coupon.expiryDate as any).toDate();
+                                  } else if (typeof coupon.expiryDate === 'string') {
+                                    date = new Date(coupon.expiryDate);
+                                  } else {
+                                    date = new Date(coupon.expiryDate as any);
+                                  }
+                                  return date.toLocaleDateString('en-US', { 
+                                    year: 'numeric', 
+                                    month: 'short', 
+                                    day: 'numeric' 
+                                  });
+                                } catch {
+                                  return 'Invalid Date';
+                                }
+                              })()
+                            : 'N/A'}
+                        </td>
+                        <td className="px-4 sm:px-6 py-4">
+                          <button
+                            onClick={() => handleToggleActive(coupon)}
+                            className={`px-2 py-1 rounded text-xs font-semibold cursor-pointer whitespace-nowrap ${
+                              coupon.isActive
+                                ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                          >
+                            {coupon.isActive ? 'Active' : 'Inactive'}
+                          </button>
+                        </td>
+                        <td className="px-4 sm:px-6 py-4">
+                          <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
+                            <Link
+                              href={`/admin/coupons/${coupon.id}`}
+                              className="inline-block bg-blue-100 text-blue-700 px-2 sm:px-3 py-1 rounded text-xs sm:text-sm hover:bg-blue-200 text-center"
+                            >
+                              Edit
+                            </Link>
+                            <button
+                              onClick={() => handleDelete(coupon.id)}
+                              className="bg-red-100 text-red-700 px-2 sm:px-3 py-1 rounded text-xs sm:text-sm hover:bg-red-200"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  });
                 })()}
               </tbody>
             </table>

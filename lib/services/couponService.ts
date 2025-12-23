@@ -28,6 +28,8 @@ export interface Coupon {
   currentUses: number;
   expiryDate: Timestamp | null;
   logoUrl?: string;
+  imageAlt?: string; // Alt text for coupon image/logo (for accessibility and SEO)
+  priority?: number; // Priority/order of coupon (higher number = higher priority, shown first)
   url?: string; // Coupon URL where user should be redirected
   affiliateLink?: string; // Fallback affiliate link when url is not available
   couponType?: 'code' | 'deal'; // Type of coupon: 'code' for coupon codes, 'deal' for deals

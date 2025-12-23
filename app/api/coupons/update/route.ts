@@ -56,6 +56,9 @@ export async function POST(req: NextRequest) {
     }
     if (updates.dealUrl !== undefined) updateData.deal_url = updates.dealUrl;
     if (updates.categoryId !== undefined) updateData.category_id = updates.categoryId;
+    if (updates.imageAlt !== undefined) updateData['image_alt'] = updates.imageAlt || null;
+    if (updates.priority !== undefined) updateData['priority'] = updates.priority || 0;
+    if (updates.logoUrl !== undefined) updateData['logo_url'] = updates.logoUrl || null;
 
     console.log('📦 Prepared update data:', updateData);
     console.log('🔍 Checking for Coupon URL in updateData:', updateData['Coupon URL']);

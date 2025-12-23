@@ -135,6 +135,8 @@ const convertToAPIFormat = (couponData: any, docId: string, storeData?: any) => 
     currentUses: data.current_uses || data.currentUses || 0,
     expiryDate: expiryDate,
     logoUrl: data.logo_url || data.logoUrl || null,
+    imageAlt: data.image_alt || data.imageAlt || null,
+    priority: data.priority !== undefined ? (typeof data.priority === 'number' ? data.priority : parseInt(String(data.priority)) || 0) : 0,
     url: couponUrl, // This should be from "Coupon URL" column if set
     affiliateLink: data.affiliate_link || data.affiliateLink || null,
     couponType: couponType,

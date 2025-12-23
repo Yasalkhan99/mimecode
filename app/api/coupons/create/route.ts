@@ -138,6 +138,8 @@ export async function POST(req: NextRequest) {
     }
     if (coupon.affiliateLink) supabaseCoupon['affiliate_link'] = coupon.affiliateLink;
     if (coupon.logoUrl) supabaseCoupon['logo_url'] = coupon.logoUrl;
+    if (coupon.imageAlt !== undefined) supabaseCoupon['image_alt'] = coupon.imageAlt || null;
+    if (coupon.priority !== undefined) supabaseCoupon['priority'] = coupon.priority || 0;
     if (coupon.expiryDate) supabaseCoupon['Coupon Expiry'] = coupon.expiryDate;
     if (coupon.categoryId) supabaseCoupon['category_id'] = coupon.categoryId;
     if (coupon.layoutPosition !== null && coupon.layoutPosition !== undefined) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   getCouponById,
@@ -24,7 +24,7 @@ export default function EditCouponPage() {
   const [logoUrl, setLogoUrl] = useState('');
   const [extractedLogoUrl, setExtractedLogoUrl] = useState<string | null>(null);
   const [stores, setStores] = useState<Store[]>([]);
-  const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
+  const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   const [isStoreDropdownOpen, setIsStoreDropdownOpen] = useState(false);
   const [manualStoreId, setManualStoreId] = useState<string>('');
   const storeDropdownRef = useRef<HTMLDivElement>(null);
@@ -76,7 +76,9 @@ export default function EditCouponPage() {
           couponType: couponData.couponType || 'code', // Default to 'code' if not set
           expiryDate: expiryDateString,
         });
-        setSelectedStoreIds(couponData.storeIds || []);
+        // Set the first store ID if storeIds array exists
+        const storeIds = couponData.storeIds || [];
+        setSelectedStoreId(storeIds.length > 0 ? String(storeIds[0]) : null);
         if (couponData.logoUrl) {
           setLogoUrl(couponData.logoUrl);
           if (isCloudinaryUrl(couponData.logoUrl)) {
@@ -138,9 +140,9 @@ export default function EditCouponPage() {
       delete updates.code;
     }
     
-    // Only include storeIds if there are selected stores
-    if (selectedStoreIds.length > 0) {
-      updates.storeIds = selectedStoreIds;
+    // Only include storeIds if there is a selected store
+    if (selectedStoreId) {
+      updates.storeIds = [selectedStoreId];
     }
     
     const result = await updateCoupon(couponId, updates);
@@ -162,6 +164,87 @@ export default function EditCouponPage() {
     }
   };
 
+  // Helper function to get logo from website URL (favicon)
+  const getLogoFromWebsite = (url: string | null | undefined): string | null => {
+    if (!url) return null;
+    try {
+      const domain = new URL(url.startsWith('http') ? url : `https://${url}`).hostname.replace('www.', '');
+      return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+    } catch {
+      return null;
+    }
+  };
+
+  // Function to fetch logo from store URLs (trackingLink, trackingUrl, websiteUrl)
+  const fetchLogoFromStoreUrls = async (store: Store): Promise<string | null> => {
+    // Priority 1: Use existing logoUrl if available
+    if (store.logoUrl && store.logoUrl.trim() !== '') {
+      return store.logoUrl;
+    }
+
+    // Priority 2: Try to extract from trackingLink
+    if (store.trackingLink && store.trackingLink.trim() !== '') {
+      try {
+        const response = await fetch('/api/stores/extract-metadata', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: store.trackingLink }),
+        });
+        const data = await response.json();
+        if (data.success && data.logoUrl) {
+          return data.logoUrl;
+        }
+      } catch (error) {
+        console.warn('Failed to extract logo from trackingLink:', error);
+      }
+      // Fallback to favicon if extraction fails
+      const favicon = getLogoFromWebsite(store.trackingLink);
+      if (favicon) return favicon;
+    }
+
+    // Priority 3: Try to extract from trackingUrl
+    if (store.trackingUrl && store.trackingUrl.trim() !== '') {
+      try {
+        const response = await fetch('/api/stores/extract-metadata', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: store.trackingUrl }),
+        });
+        const data = await response.json();
+        if (data.success && data.logoUrl) {
+          return data.logoUrl;
+        }
+      } catch (error) {
+        console.warn('Failed to extract logo from trackingUrl:', error);
+      }
+      // Fallback to favicon if extraction fails
+      const favicon = getLogoFromWebsite(store.trackingUrl);
+      if (favicon) return favicon;
+    }
+
+    // Priority 4: Try to extract from websiteUrl
+    if (store.websiteUrl && store.websiteUrl.trim() !== '') {
+      try {
+        const response = await fetch('/api/stores/extract-metadata', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: store.websiteUrl }),
+        });
+        const data = await response.json();
+        if (data.success && data.logoUrl) {
+          return data.logoUrl;
+        }
+      } catch (error) {
+        console.warn('Failed to extract logo from websiteUrl:', error);
+      }
+      // Fallback to favicon if extraction fails
+      const favicon = getLogoFromWebsite(store.websiteUrl);
+      if (favicon) return favicon;
+    }
+
+    return null;
+  };
+
   if (loading) {
     return <div className="text-center py-12">Loading coupon...</div>;
   }
@@ -169,6 +252,15 @@ export default function EditCouponPage() {
   if (!coupon) {
     return <div className="text-center py-12">Coupon not found</div>;
   }
+
+  // Compute selected store display text
+  const selectedStoreDisplay = useMemo(() => {
+    if (selectedStoreId) {
+      const selectedStore = stores.find(s => String(s.id) === String(selectedStoreId));
+      return selectedStore ? `Selected: ${selectedStore.name}` : '';
+    }
+    return '';
+  }, [selectedStoreId, stores]);
 
   return (
     <div>
@@ -188,7 +280,7 @@ export default function EditCouponPage() {
           {/* Add the same store selection section as in create form */}
           <div>
             <label className="block text-gray-700 text-sm font-semibold mb-2">
-              Add to Stores (Select one or more existing stores)
+              Select Store (Optional)
             </label>
             
             {stores.length > 0 ? (
@@ -197,13 +289,19 @@ export default function EditCouponPage() {
                 <div className="relative">
                   <input
                     type="text"
-                    value={manualStoreId}
+                    value={manualStoreId || selectedStoresDisplay}
                     onChange={(e) => {
                       setManualStoreId(e.target.value);
                       // Open dropdown when user types to show filtered results
                       setIsStoreDropdownOpen(true);
                     }}
-                    onFocus={() => setIsStoreDropdownOpen(true)}
+                    onFocus={() => {
+                      setIsStoreDropdownOpen(true);
+                      // Clear the input when focused to allow new search
+                      if (selectedStoreId) {
+                        setManualStoreId('');
+                      }
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
@@ -218,26 +316,29 @@ export default function EditCouponPage() {
                           });
                           
                           if (foundStore && foundStore.id) {
-                            if (!selectedStoreIds.includes(foundStore.id)) {
-                              const newSelected = [...selectedStoreIds, foundStore.id];
-                              setSelectedStoreIds(newSelected);
-                              
-                              // Auto-populate storeName and logoUrl
-                              const updates: Partial<Coupon> = { storeName: foundStore.name };
-                              if (foundStore.logoUrl && foundStore.logoUrl.trim() !== '') {
-                                updates.logoUrl = foundStore.logoUrl;
-                                setLogoUrl(foundStore.logoUrl);
-                                handleLogoUrlChange(foundStore.logoUrl);
+                            // Single selection - set the selected store
+                            setSelectedStoreId(String(foundStore.id));
+                            
+                            // Auto-populate storeName and logoUrl
+                            const updates: Partial<Coupon> = { storeName: foundStore.name };
+                            
+                            // Fetch logo from store (logoUrl, trackingLink, trackingUrl, or websiteUrl)
+                            const fetchLogo = async () => {
+                              const logo = await fetchLogoFromStoreUrls(foundStore);
+                              if (logo) {
+                                updates.logoUrl = logo;
+                                setLogoUrl(logo);
+                                handleLogoUrlChange(logo);
+                              } else {
+                                setLogoUrl('');
                               }
                               setFormData({ ...formData, ...updates } as any);
-                              setManualStoreId('');
-                              // Keep dropdown open so user can see the selected store
-                              setIsStoreDropdownOpen(true);
-                            } else {
-                              // Store already selected
-                              setManualStoreId('');
-                              setIsStoreDropdownOpen(true);
-                            }
+                            };
+                            
+                            fetchLogo();
+                            setManualStoreId('');
+                            // Keep dropdown open so user can see the selected store
+                            setIsStoreDropdownOpen(true);
                           } else {
                             alert(`Store with ID "${storeId}" not found. Please check the ID and try again.`);
                           }
@@ -259,23 +360,28 @@ export default function EditCouponPage() {
                                    (storeIdNum > 0 && storeIdNum === inputIdNum && inputIdNum <= 100000);
                           });
                           
-                          if (foundStore && foundStore.id && !selectedStoreIds.includes(foundStore.id)) {
-                            const newSelected = [...selectedStoreIds, foundStore.id];
-                            setSelectedStoreIds(newSelected);
+                          if (foundStore && foundStore.id) {
+                            // Single selection - set the selected store
+                            setSelectedStoreId(String(foundStore.id));
                             
                             const updates: Partial<Coupon> = { storeName: foundStore.name };
-                            if (foundStore.logoUrl && foundStore.logoUrl.trim() !== '') {
-                              updates.logoUrl = foundStore.logoUrl;
-                              setLogoUrl(foundStore.logoUrl);
-                              handleLogoUrlChange(foundStore.logoUrl);
-                            }
-                            setFormData({ ...formData, ...updates } as any);
+                            
+                            // Fetch logo from store (logoUrl, trackingLink, trackingUrl, or websiteUrl)
+                            const fetchLogo = async () => {
+                              const logo = await fetchLogoFromStoreUrls(foundStore);
+                              if (logo) {
+                                updates.logoUrl = logo;
+                                setLogoUrl(logo);
+                                handleLogoUrlChange(logo);
+                              } else {
+                                setLogoUrl('');
+                              }
+                              setFormData({ ...formData, ...updates } as any);
+                            };
+                            
+                            fetchLogo();
                             setManualStoreId('');
                             // Keep dropdown open so user can see the selected store
-                            setIsStoreDropdownOpen(true);
-                          } else if (foundStore && foundStore.id && selectedStoreIds.includes(foundStore.id)) {
-                            // Store already selected
-                            setManualStoreId('');
                             setIsStoreDropdownOpen(true);
                           } else {
                             setManualStoreId('');
@@ -286,9 +392,9 @@ export default function EditCouponPage() {
                         }
                       }, 200);
                     }}
-                    placeholder={selectedStoreIds.length > 0 
-                      ? `${selectedStoreIds.length} store${selectedStoreIds.length > 1 ? 's' : ''} selected (or type ID)`
-                      : 'Select stores... (or type Store ID)'}
+                    placeholder={selectedStoreId 
+                      ? `${selectedStoreDisplay} (or type ID)`
+                      : 'Select store... (or type Store ID)'}
                     className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg bg-white text-left focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <button
@@ -327,48 +433,52 @@ export default function EditCouponPage() {
                                  (storeIdNum > 0 && storeIdNum === inputNum && inputNum <= 100000);
                         })
                         .map((store) => {
-                          // Find original index for display
-                          const originalIndex = stores.findIndex(s => s.id === store.id);
-                          const isSelected = selectedStoreIds.includes(store.id || '');
-                          return (
-                            <label
-                              key={store.id}
-                              className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer rounded"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={(e) => {
-                                  let newSelected: string[];
-                                  if (e.target.checked) {
-                                    newSelected = [...selectedStoreIds, store.id!];
-                                  } else {
-                                    newSelected = selectedStoreIds.filter(id => id !== store.id);
-                                  }
-                                  setSelectedStoreIds(newSelected);
-                                  
-                                  // Auto-populate storeName and logoUrl from first selected store
-                                  if (newSelected.length > 0) {
-                                    const firstStore = stores.find(s => s.id === newSelected[0]);
-                                    if (firstStore) {
-                                      const updates: Partial<Coupon> = { storeName: firstStore.name };
-                                      // Auto-set logo from store if store has a logo
-                                      if (firstStore.logoUrl && firstStore.logoUrl.trim() !== '') {
-                                        updates.logoUrl = firstStore.logoUrl;
-                                        setLogoUrl(firstStore.logoUrl);
-                                        handleLogoUrlChange(firstStore.logoUrl);
+                            // Get the actual store ID from the table (numeric storeId or UUID id)
+                            const actualStoreId = (store as any).storeId || store.id || '-';
+                            const isSelected = selectedStoreId === String(store.id || '');
+                            return (
+                              <label
+                                key={store.id}
+                                className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer rounded"
+                              >
+                                <input
+                                  type="radio"
+                                  name="selectedStore"
+                                  checked={isSelected}
+                                  onChange={(e) => {
+                                    if (!store.id) {
+                                      console.warn('⚠️ Store has no ID:', store);
+                                      return;
+                                    }
+                                    
+                                    const storeIdStr = String(store.id);
+                                    
+                                    // Single selection - set the selected store
+                                    setSelectedStoreId(storeIdStr);
+                                    
+                                    // Auto-populate storeName and logoUrl from selected store
+                                    const updates: Partial<Coupon> = { storeName: store.name };
+                                    
+                                    // Fetch logo from store (logoUrl, trackingLink, trackingUrl, or websiteUrl)
+                                    const fetchLogo = async () => {
+                                      const logo = await fetchLogoFromStoreUrls(store);
+                                      if (logo) {
+                                        updates.logoUrl = logo;
+                                        setLogoUrl(logo);
+                                        handleLogoUrlChange(logo);
+                                      } else {
+                                        setLogoUrl('');
                                       }
                                       setFormData({ ...formData, ...updates } as any);
-                                    }
-                                  } else {
-                                    setFormData({ ...formData, storeName: '' } as any);
-                                  }
-                                }}
-                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                              />
-                              <span className="ml-3 text-sm text-gray-700">
-                                {(store as any).storeId || store.id || (originalIndex + 1)} - {store.name}
-                              </span>
+                                    };
+                                    
+                                    fetchLogo();
+                                  }}
+                                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                />
+                                <span className="ml-3 text-sm text-gray-700">
+                                  #{actualStoreId} {store.name}
+                                </span>
                           </label>
                         );
                       })}
@@ -383,48 +493,8 @@ export default function EditCouponPage() {
             )}
             
             {/* Selected Stores Tags */}
-            {selectedStoreIds.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {selectedStoreIds.map((storeId) => {
-                  const store = stores.find(s => s.id === storeId);
-                  return store ? (
-                    <span
-                      key={storeId}
-                      className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs"
-                    >
-                      {store.name}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const newSelected = selectedStoreIds.filter(id => id !== storeId);
-                          setSelectedStoreIds(newSelected);
-                          if (newSelected.length > 0) {
-                            const firstStore = stores.find(s => s.id === newSelected[0]);
-                            if (firstStore) {
-                              const updates: Partial<Coupon> = { storeName: firstStore.name };
-                              // Auto-set logo from store if store has a logo
-                              if (firstStore.logoUrl && firstStore.logoUrl.trim() !== '') {
-                                updates.logoUrl = firstStore.logoUrl;
-                                setLogoUrl(firstStore.logoUrl);
-                                handleLogoUrlChange(firstStore.logoUrl);
-                              }
-                              setFormData({ ...formData, ...updates } as any);
-                            }
-                          } else {
-                            setFormData({ ...formData, storeName: '' });
-                          }
-                        }}
-                        className="text-blue-700 hover:text-blue-900 font-bold"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ) : null;
-                })}
-              </div>
-            )}
             <p className="mt-1 text-xs text-gray-500">
-              Click to open dropdown and select stores. Store name will auto-populate from first selection.
+              Click to open dropdown and select a store. Store name and logo will auto-populate from selection.
             </p>
           </div>
 
@@ -509,26 +579,6 @@ export default function EditCouponPage() {
               </p>
             </div>
             
-            <div>
-              <label htmlFor="storeName" className="block text-sm font-semibold text-gray-700 mb-1">
-                Store Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="storeName"
-                name="storeName"
-                type="text"
-                placeholder="Store/Brand Name (e.g., Nike)"
-                value={formData.storeName || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, storeName: e.target.value } as any)
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                required
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Store name for this coupon (required)
-              </p>
-            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -650,6 +700,46 @@ export default function EditCouponPage() {
             />
             <p className="mt-1 text-xs text-gray-500">
               Optional: Set when this coupon expires. Leave empty if no expiry date.
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="imageAlt" className="block text-sm font-semibold text-gray-700 mb-1">
+              Coupon Image Alt
+            </label>
+            <input
+              id="imageAlt"
+              name="imageAlt"
+              type="text"
+              placeholder="Alt text for coupon image (for accessibility and SEO)"
+              value={formData.imageAlt || ''}
+              onChange={(e) =>
+                setFormData({ ...formData, imageAlt: e.target.value })
+              }
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Optional: Alt text for the coupon image/logo (improves accessibility and SEO)
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="priority" className="block text-sm font-semibold text-gray-700 mb-1">
+              Coupon Priority
+            </label>
+            <input
+              id="priority"
+              name="priority"
+              type="number"
+              placeholder="Priority (higher number = higher priority)"
+              value={formData.priority || 0}
+              onChange={(e) =>
+                setFormData({ ...formData, priority: parseInt(e.target.value) || 0 })
+              }
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Optional: Priority number (higher = shown first). Default is 0.
             </p>
           </div>
 
