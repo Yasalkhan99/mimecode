@@ -134,7 +134,7 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="flex h-screen bg-gray-100 relative">
+    <div className="flex h-screen bg-gray-100 relative" style={{ transform: 'scale(0.85)', transformOrigin: 'top left', width: '117.65%', height: '117.65%', overflow: 'auto' }}>
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
