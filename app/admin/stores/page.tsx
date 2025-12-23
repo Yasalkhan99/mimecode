@@ -1506,13 +1506,33 @@ export default function StoresPage() {
                     <input
                       type="text"
                       readOnly
-                      value={`${typeof window !== 'undefined' ? window.location.origin : ''}/stores/${formData.slug}`}
+                      value={(() => {
+                        const baseUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/stores/${formData.slug}`;
+                        const countryCodes = formData.countryCodes?.trim();
+                        if (countryCodes) {
+                          // Get first country code from comma-separated list
+                          const firstCountryCode = countryCodes.split(',')[0].trim().toLowerCase();
+                          if (firstCountryCode) {
+                            return `${baseUrl}/${firstCountryCode}`;
+                          }
+                        }
+                        return baseUrl;
+                      })()}
                       className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm"
                     />
                     <button
                       type="button"
                       onClick={() => {
-                        const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/stores/${formData.slug}`;
+                        const baseUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/stores/${formData.slug}`;
+                        const countryCodes = formData.countryCodes?.trim();
+                        let url = baseUrl;
+                        if (countryCodes) {
+                          // Get first country code from comma-separated list
+                          const firstCountryCode = countryCodes.split(',')[0].trim().toLowerCase();
+                          if (firstCountryCode) {
+                            url = `${baseUrl}/${firstCountryCode}`;
+                          }
+                        }
                         navigator.clipboard.writeText(url).then(() => {
                           alert('Store page URL copied to clipboard!');
                         }).catch(() => {
