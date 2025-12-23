@@ -289,7 +289,7 @@ export default function EditCouponPage() {
                 <div className="relative">
                   <input
                     type="text"
-                    value={manualStoreId || selectedStoresDisplay}
+                    value={manualStoreId || selectedStoreDisplay}
                     onChange={(e) => {
                       setManualStoreId(e.target.value);
                       // Open dropdown when user types to show filtered results
