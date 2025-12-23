@@ -2312,9 +2312,9 @@ export default function CouponsPage() {
             </div>
           </div>
         </div>
+      </div>
       )}
     </div>
   );
 }
-
 
