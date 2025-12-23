@@ -48,53 +48,59 @@ export default function EditCouponPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [couponData, categoriesData, storesData] = await Promise.all([
-        getCouponById(couponId),
-        getCategories(),
-        getStores()
-      ]);
-      if (couponData) {
-        setCoupon(couponData);
-        // Convert expiryDate to string if it's a Timestamp or Date
-        let expiryDateString: string | null = null;
-        if (couponData.expiryDate) {
-          try {
-            if (couponData.expiryDate instanceof Date) {
-              expiryDateString = couponData.expiryDate.toISOString();
-            } else if (typeof (couponData.expiryDate as any).toDate === 'function') {
-              // Firestore Timestamp
-              expiryDateString = (couponData.expiryDate as any).toDate().toISOString();
-            } else if (typeof couponData.expiryDate === 'string') {
-              expiryDateString = couponData.expiryDate;
+      try {
+        const [couponData, categoriesData, storesData] = await Promise.all([
+          getCouponById(couponId),
+          getCategories(),
+          getStores()
+        ]);
+        if (couponData) {
+          setCoupon(couponData);
+          // Convert expiryDate to string if it's a Timestamp or Date
+          let expiryDateString: string | null = null;
+          if (couponData.expiryDate) {
+            try {
+              if (couponData.expiryDate instanceof Date) {
+                expiryDateString = couponData.expiryDate.toISOString();
+              } else if (typeof (couponData.expiryDate as any).toDate === 'function') {
+                // Firestore Timestamp
+                expiryDateString = (couponData.expiryDate as any).toDate().toISOString();
+              } else if (typeof couponData.expiryDate === 'string') {
+                expiryDateString = couponData.expiryDate;
+              }
+            } catch (e) {
+              console.error('Error converting expiryDate:', e);
             }
-          } catch (e) {
-            console.error('Error converting expiryDate:', e);
+          }
+          setFormData({
+            ...couponData,
+            couponType: couponData.couponType || 'code', // Default to 'code' if not set
+            expiryDate: expiryDateString,
+          });
+          // Set the first store ID if storeIds array exists
+          const storeIds = couponData.storeIds || [];
+          setSelectedStoreId(storeIds.length > 0 ? String(storeIds[0]) : null);
+          if (couponData.logoUrl) {
+            setLogoUrl(couponData.logoUrl);
+            if (isCloudinaryUrl(couponData.logoUrl)) {
+              setExtractedLogoUrl(extractOriginalCloudinaryUrl(couponData.logoUrl));
+            }
           }
         }
-        setFormData({
-          ...couponData,
-          couponType: couponData.couponType || 'code', // Default to 'code' if not set
-          expiryDate: expiryDateString,
+        setCategories(categoriesData || []);
+        // Sort stores by numeric ID (1, 2, 3...)
+        const sortedStores = (storesData || []).sort((a, b) => {
+          const idA = parseInt(String(a.id || '0'), 10) || 0;
+          const idB = parseInt(String(b.id || '0'), 10) || 0;
+          return idA - idB;
         });
-        // Set the first store ID if storeIds array exists
-        const storeIds = couponData.storeIds || [];
-        setSelectedStoreId(storeIds.length > 0 ? String(storeIds[0]) : null);
-        if (couponData.logoUrl) {
-          setLogoUrl(couponData.logoUrl);
-          if (isCloudinaryUrl(couponData.logoUrl)) {
-            setExtractedLogoUrl(extractOriginalCloudinaryUrl(couponData.logoUrl));
-          }
-        }
+        setStores(sortedStores);
+      } catch (error) {
+        console.error('Error fetching coupon data:', error);
+        alert('Failed to load coupon. Please try again.');
+      } finally {
+        setLoading(false);
       }
-      setCategories(categoriesData);
-      // Sort stores by numeric ID (1, 2, 3...)
-      const sortedStores = storesData.sort((a, b) => {
-        const idA = parseInt(String(a.id || '0'), 10) || 0;
-        const idB = parseInt(String(b.id || '0'), 10) || 0;
-        return idA - idB;
-      });
-      setStores(sortedStores);
-      setLoading(false);
     };
     fetchData();
   }, [couponId]);
@@ -245,15 +251,7 @@ export default function EditCouponPage() {
     return null;
   };
 
-  if (loading) {
-    return <div className="text-center py-12">Loading coupon...</div>;
-  }
-
-  if (!coupon) {
-    return <div className="text-center py-12">Coupon not found</div>;
-  }
-
-  // Compute selected store display text
+  // Compute selected store display text (must be before early returns)
   const selectedStoreDisplay = useMemo(() => {
     if (selectedStoreId) {
       const selectedStore = stores.find(s => String(s.id) === String(selectedStoreId));
@@ -261,6 +259,14 @@ export default function EditCouponPage() {
     }
     return '';
   }, [selectedStoreId, stores]);
+
+  if (loading) {
+    return <div className="text-center py-12">Loading coupon...</div>;
+  }
+
+  if (!coupon) {
+    return <div className="text-center py-12">Coupon not found</div>;
+  }
 
   return (
     <div>

@@ -255,24 +255,40 @@ export async function getActiveCoupons(): Promise<Coupon[]> {
 // Get coupon by ID
 export async function getCouponById(id: string): Promise<Coupon | null> {
   try {
+    if (!id || id.trim() === '') {
+      console.warn('getCouponById: Empty ID provided');
+      return null;
+    }
+    
     // Try server-side API first (bypasses security rules)
     try {
-      const res = await fetch(`/api/coupons/get?collection=${encodeURIComponent(coupons)}&id=${encodeURIComponent(id)}`);
+      const url = `/api/coupons/get?id=${encodeURIComponent(id)}`;
+      console.log('🔍 Fetching coupon by ID:', url);
+      const res = await fetch(url, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+        },
+      });
+      
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.coupon) {
+          console.log('✅ Coupon found:', data.coupon.id);
           return data.coupon as Coupon;
         }
+        console.warn('⚠️ Coupon not found or data.success is false');
+        return null;
+      } else {
+        console.error('❌ API request failed:', res.status, res.statusText);
         return null;
       }
     } catch (apiError) {
-      console.warn('Server API failed:', apiError);
+      console.error('❌ Server API failed:', apiError);
+      return null;
     }
-
-    // Removed client-side fallback to avoid permission errors
-    return null;
   } catch (error) {
-    console.error('Error getting coupon:', error);
+    console.error('❌ Error getting coupon:', error);
     return null;
   }
 }
