@@ -35,6 +35,43 @@ export async function POST(req: NextRequest) {
     if (updates.code !== undefined) updateData['Coupon Code'] = updates.code;
     if (updates.storeName !== undefined) updateData['Store Name'] = updates.storeName;
     if (updates.storeId !== undefined) updateData.store_id = updates.storeId;
+    
+    // Handle storeIds array - convert UUID to numeric Store Id if needed
+    if (updates.storeIds !== undefined && Array.isArray(updates.storeIds)) {
+      updateData['store_ids'] = updates.storeIds;
+      // Also set Store  Id (with two spaces) for backward compatibility
+      if (updates.storeIds.length > 0) {
+        let storeIdForField = updates.storeIds[0];
+        
+        // If storeId is a UUID, fetch the store to get its numeric Store Id
+        if (storeIdForField && storeIdForField.includes('-')) {
+          try {
+            const { data: storeData, error: storeError } = await supabaseAdmin
+              .from('stores')
+              .select('"Store Id"')
+              .eq('id', storeIdForField)
+              .single();
+            
+            if (storeError) {
+              console.warn('⚠️ Could not fetch store to convert UUID to numeric Store Id:', storeError);
+            }
+            
+            if (storeData && storeData['Store Id']) {
+              storeIdForField = String(storeData['Store Id']);
+              console.log(`✅ Converted UUID ${updates.storeIds[0]} to numeric Store Id: ${storeIdForField}`);
+            } else {
+              console.error(`❌ Store with UUID ${storeIdForField} not found or has no numeric Store Id`);
+            }
+          } catch (error) {
+            console.error('❌ Error converting UUID to numeric Store Id:', error);
+          }
+        }
+        
+        updateData['Store  Id'] = storeIdForField;
+        console.log(`💾 Updating coupon with Store  Id: ${storeIdForField}`);
+      }
+    }
+    
     if (updates.discount !== undefined) updateData.discount = updates.discount;
     if (updates.discountType !== undefined) updateData.discount_type = updates.discountType;
     if (updates.description !== undefined) updateData['Coupon Desc'] = updates.description;

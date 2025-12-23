@@ -37,37 +37,100 @@ export async function POST(req: NextRequest) {
       // Use provided ID
       couponId = coupon.id;
     } else {
-      // Generate sequential numeric ID
-      // First, get all existing coupons to find the maximum numeric ID
-      const { data: existingCoupons, error: fetchError } = await supabaseAdmin
-        .from('coupons')
-        .select('"Coupon Id"');
+      // Generate sequential numeric ID - always set to highest ID + 1
+      // Use database query to get maximum numeric ID more reliably
+      const MAX_REASONABLE_ID = 100000;
+      let maxId = 0;
+      
+      try {
+        // Fetch all coupons and find the maximum numeric ID
+        const { data: existingCoupons, error: fetchError } = await supabaseAdmin
+          .from('coupons')
+          .select('"Coupon Id"');
 
-      if (fetchError) {
-        console.error('❌ Error fetching existing coupons:', fetchError);
-        // Start from 1 if fetch fails
-        couponId = '1';
-      } else {
-        // Find the maximum numeric ID, but only consider IDs that are reasonable (not timestamps)
-        // Timestamp-based IDs are typically > 100000, so we ignore those
-        const MAX_REASONABLE_ID = 100000;
-        let maxId = 0;
-        
-        if (existingCoupons && existingCoupons.length > 0) {
-          for (const couponRow of existingCoupons) {
-            const id = couponRow['Coupon Id'];
-            if (id) {
-              // Try to parse as number
-              const numericId = parseInt(String(id), 10);
-              // Only consider IDs that are reasonable (not timestamp-based)
-              if (!isNaN(numericId) && numericId <= MAX_REASONABLE_ID && numericId > maxId) {
-                maxId = numericId;
+        if (fetchError) {
+          console.error('❌ Error fetching existing coupons:', fetchError);
+          // Start from 1 if fetch fails
+          couponId = '1';
+        } else {
+          // Find the maximum numeric ID, but only consider IDs that are reasonable (not timestamps)
+          if (existingCoupons && existingCoupons.length > 0) {
+            const numericIds: number[] = [];
+            
+            for (const couponRow of existingCoupons) {
+              const id = couponRow['Coupon Id'];
+              if (id) {
+                // Try to parse as number
+                const numericId = parseInt(String(id), 10);
+                // Only consider IDs that are reasonable (not timestamp-based)
+                if (!isNaN(numericId) && numericId > 0 && numericId <= MAX_REASONABLE_ID) {
+                  numericIds.push(numericId);
+                }
               }
+            }
+            
+            // Find the maximum ID
+            if (numericIds.length > 0) {
+              maxId = Math.max(...numericIds);
+              console.log(`📊 Found maximum coupon ID: ${maxId} (from ${numericIds.length} valid IDs)`);
+            }
+          }
+          
+          // Generate next sequential ID (always highest + 1, even if there are gaps)
+          couponId = String(maxId + 1);
+          console.log(`🆔 Generated new coupon ID: ${couponId}`);
+          
+          // Double-check that this ID doesn't already exist (race condition protection)
+          const { data: existingWithId } = await supabaseAdmin
+            .from('coupons')
+            .select('"Coupon Id"')
+            .eq('Coupon Id', couponId)
+            .limit(1);
+          
+          if (existingWithId && existingWithId.length > 0) {
+            // ID already exists, increment and try again
+            console.warn(`⚠️ ID ${couponId} already exists, incrementing...`);
+            let newId = maxId + 2;
+            // Keep incrementing until we find an available ID
+            while (newId <= MAX_REASONABLE_ID) {
+              const { data: checkId } = await supabaseAdmin
+                .from('coupons')
+                .select('"Coupon Id"')
+                .eq('Coupon Id', String(newId))
+                .limit(1);
+              
+              if (!checkId || checkId.length === 0) {
+                couponId = String(newId);
+                console.log(`🆔 Found available ID: ${couponId}`);
+                break;
+              }
+              newId++;
+            }
+            
+            if (newId > MAX_REASONABLE_ID) {
+              // Fallback to count-based
+              const { count } = await supabaseAdmin
+                .from('coupons')
+                .select('*', { count: 'exact', head: true });
+              couponId = String((count || 0) + 1000); // Add 1000 to avoid conflicts
+              console.log(`🆔 Using fallback ID: ${couponId}`);
             }
           }
         }
-        // Generate next sequential ID starting from 1
-        couponId = String(maxId + 1);
+      } catch (error) {
+        console.error('❌ Error generating coupon ID:', error);
+        // Fallback: try to get count and use that + 1
+        try {
+          const { count } = await supabaseAdmin
+            .from('coupons')
+            .select('*', { count: 'exact', head: true });
+          couponId = String((count || 0) + 1);
+          console.log(`🆔 Fallback: Using count-based ID: ${couponId}`);
+        } catch (countError) {
+          // Last resort: start from 1
+          couponId = '1';
+          console.log('🆔 Last resort: Starting from ID 1');
+        }
       }
     }
 

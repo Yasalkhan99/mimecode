@@ -428,6 +428,31 @@ export default function ImportPage() {
         }
       } else {
         // Coupons import (supports both create and update by Coupon ID)
+        // First, fetch all stores to validate store IDs
+        const allStoresRes = await fetch('/api/stores/get');
+        let allStores: Store[] = [];
+        if (allStoresRes.ok) {
+          const storesData = await allStoresRes.json();
+          if (storesData.success && storesData.stores) {
+            allStores = storesData.stores;
+            console.log(`📊 Loaded ${allStores.length} stores for validation`);
+          }
+        }
+        
+        // Create a map of store IDs (both UUID and numeric Store Id) for quick lookup
+        const storeIdMap = new Map<string, { id: string; name: string }>();
+        allStores.forEach(store => {
+          if (store.id) {
+            // Map UUID
+            storeIdMap.set(store.id, { id: store.id, name: store.name });
+            // Map numeric Store Id if available
+            if (store.storeId) {
+              storeIdMap.set(String(store.storeId), { id: store.id, name: store.name });
+            }
+          }
+        });
+        console.log(`✅ Created store ID map with ${storeIdMap.size} entries`);
+        
         for (const row of excelData as ExcelCoupon[]) {
           try {
             const title = row['Title'];
@@ -441,10 +466,36 @@ export default function ImportPage() {
             
             // Parse Store IDs - can be single ID or comma-separated
             let storeIds: string[] = [];
+            let storeName = '';
+            
             if (row['Store IDs']) {
-              storeIds = String(row['Store IDs']).split(',').map(id => id.trim()).filter(id => id);
+              const rawIds = String(row['Store IDs']).split(',').map(id => id.trim()).filter(id => id);
+              // Validate each store ID
+              for (const rawId of rawIds) {
+                const storeInfo = storeIdMap.get(rawId);
+                if (storeInfo) {
+                  storeIds.push(storeInfo.id); // Use UUID
+                  if (!storeName) storeName = storeInfo.name; // Use first store's name
+                  console.log(`✅ Validated store ID: ${rawId} -> ${storeInfo.id} (${storeInfo.name})`);
+                } else {
+                  throw new Error(`Store ID "${rawId}" not found in database`);
+                }
+              }
             } else if (row['Store ID']) {
-              storeIds = [String(row['Store ID']).trim()];
+              const rawId = String(row['Store ID']).trim();
+              const storeInfo = storeIdMap.get(rawId);
+              if (storeInfo) {
+                storeIds.push(storeInfo.id); // Use UUID
+                storeName = storeInfo.name;
+                console.log(`✅ Validated store ID: ${rawId} -> ${storeInfo.id} (${storeInfo.name})`);
+              } else {
+                throw new Error(`Store ID "${rawId}" not found in database`);
+              }
+            }
+            
+            // If no store IDs provided, throw error (required for proper linking)
+            if (storeIds.length === 0) {
+              throw new Error('Store ID or Store IDs is required. Please provide at least one valid store ID.');
             }
 
             // Parse expiry date
@@ -474,7 +525,8 @@ export default function ImportPage() {
               // Bulk update existing coupon by Coupon ID
               const updates: any = {
                 code: row['Code'] || '',
-                storeName: title.trim(),
+                storeName: storeName || title.trim(), // Use validated store name
+                storeIds: storeIds, // Add validated store IDs
                 discount: Number(row['Discount']) || 0,
                 discountType: (row['Discount Type'] || 'percentage') as 'percentage' | 'fixed',
                 description: row['Description'] || title,
@@ -506,8 +558,8 @@ export default function ImportPage() {
               // Create new coupon when no Coupon ID is provided
               await createCouponFromUrl({
                 code: row['Code'] || '',
-                storeName: title.trim(),
-                storeIds: storeIds.length > 0 ? storeIds : undefined,
+                storeName: storeName || title.trim(), // Use validated store name
+                storeIds: storeIds, // Use validated store IDs (required)
                 discount: Number(row['Discount']) || 0,
                 discountType: (row['Discount Type'] || 'percentage') as 'percentage' | 'fixed',
                 description: row['Description'] || title,

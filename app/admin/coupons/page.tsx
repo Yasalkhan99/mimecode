@@ -2096,6 +2096,9 @@ export default function CouponsPage() {
                     Store Name
                   </th>
                   <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold text-gray-900">
+                    Store ID
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold text-gray-900">
                     Title
                   </th>
                   <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold text-gray-900">
@@ -2142,6 +2145,9 @@ export default function CouponsPage() {
                         </td>
                         <td className="px-4 sm:px-6 py-4 text-sm font-semibold text-gray-900">
                           {coupon.storeName || 'N/A'}
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 text-xs font-mono text-gray-600 max-w-[150px] truncate" title={coupon.storeIds && coupon.storeIds.length > 0 ? coupon.storeIds.join(', ') : 'N/A'}>
+                          {coupon.storeIds && coupon.storeIds.length > 0 ? coupon.storeIds[0] : 'N/A'}
                         </td>
                         <td className="px-4 sm:px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title={coupon.title || ''}>
                           {coupon.title || 'N/A'}
