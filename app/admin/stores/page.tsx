@@ -23,6 +23,10 @@ export default function StoresPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'enable' | 'disable'>('all');
+  const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
+  const [isSelectAll, setIsSelectAll] = useState(false);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
   const [formData, setFormData] = useState<Partial<Store>>({
     name: '',
     subStoreName: '',
@@ -243,10 +247,8 @@ export default function StoresPage() {
       const active = storeCoupons.filter(c => c.isActive !== false).length;
       const inactive = total - active;
       
-      // Only set stats if there are coupons (don't show dash for stores with 0 coupons)
-      if (total > 0) {
-        stats[storeId] = { total, active, inactive };
-      }
+      // Always set stats, even if total is 0
+      stats[storeId] = { total, active, inactive };
     });
     
     setStoreCouponStats(stats);
@@ -301,26 +303,110 @@ export default function StoresPage() {
     }
   };
 
-  // Filter stores based on search query
+  // Filter stores based on search query and status
   useEffect(() => {
     if (stores.length === 0) return;
     
-    if (searchQuery.trim() === '') {
-      setFilteredStores(stores);
-      setTotalItems(stores.length);
-    } else {
+    let filtered = stores;
+    
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(store => {
+        const isActive = (store as any).isActive !== false; // Default to true if not set
+        return statusFilter === 'enable' ? isActive : !isActive;
+      });
+    }
+    
+    // Apply search query filter
+    if (searchQuery.trim() !== '') {
       const query = searchQuery.toLowerCase();
-      const filtered = stores.filter(store => 
+      filtered = filtered.filter(store => 
         store.name?.toLowerCase().startsWith(query.toLowerCase()) ||
         String(store.merchantId || '').toLowerCase().includes(query) ||
         String(store.networkId || '').toLowerCase().includes(query) ||
         String((store as any).storeId || '').toLowerCase().includes(query)
       );
-      setFilteredStores(filtered);
-      setTotalItems(filtered.length);
     }
-    setCurrentPage(1); // Reset to first page when search changes
-  }, [searchQuery, stores]);
+    
+    setFilteredStores(filtered);
+    setTotalItems(filtered.length);
+    setCurrentPage(1); // Reset to first page when search or filter changes
+  }, [searchQuery, statusFilter, stores]);
+  
+  // Handle select all checkbox
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allIds = filteredStores.map(store => store.id).filter(Boolean) as string[];
+      setSelectedStoreIds(allIds);
+      setIsSelectAll(true);
+    } else {
+      setSelectedStoreIds([]);
+      setIsSelectAll(false);
+    }
+  };
+  
+  // Handle individual store checkbox
+  const handleStoreSelect = (storeId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedStoreIds([...selectedStoreIds, storeId]);
+    } else {
+      setSelectedStoreIds(selectedStoreIds.filter(id => id !== storeId));
+      setIsSelectAll(false);
+    }
+  };
+  
+  // Update select all state when individual selections change
+  useEffect(() => {
+    if (filteredStores.length > 0) {
+      const allSelected = filteredStores.every(store => 
+        store.id && selectedStoreIds.includes(store.id)
+      );
+      setIsSelectAll(allSelected);
+    } else {
+      setIsSelectAll(false);
+    }
+  }, [selectedStoreIds, filteredStores]);
+  
+  // Bulk enable/disable stores
+  const handleBulkStatusUpdate = async (isActive: boolean) => {
+    if (selectedStoreIds.length === 0) {
+      alert('Please select at least one store.');
+      return;
+    }
+    
+    if (!confirm(`Are you sure you want to ${isActive ? 'enable' : 'disable'} ${selectedStoreIds.length} store(s)?`)) {
+      return;
+    }
+    
+    setBulkUpdating(true);
+    try {
+      const updatePromises = selectedStoreIds.map(storeId => 
+        updateStore(storeId, { isActive } as Partial<Store>)
+      );
+      
+      await Promise.all(updatePromises);
+      
+      // Refresh stores
+      const storesData = await getStores();
+      const sortedStores = storesData.sort((a, b) => {
+        const idA = parseInt(String(a.id || '0'), 10) || 0;
+        const idB = parseInt(String(b.id || '0'), 10) || 0;
+        return idA - idB;
+      });
+      setStores(sortedStores);
+      
+      // Clear selection
+      setSelectedStoreIds([]);
+      setIsSelectAll(false);
+      
+      alert(`Successfully ${isActive ? 'enabled' : 'disabled'} ${selectedStoreIds.length} store(s).`);
+    } catch (error) {
+      console.error('Error updating stores:', error);
+      alert('Failed to update stores. Please try again.');
+    } finally {
+      setBulkUpdating(false);
+    }
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -776,6 +862,50 @@ export default function StoresPage() {
           >
             {showForm ? 'Cancel' : 'Create New Store'}
           </button>
+        </div>
+      </div>
+
+      {/* Status Filter */}
+      <div className="mb-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          <div className="flex items-center gap-6 pb-4 border-b border-gray-200">
+            <label className="block text-gray-700 text-sm font-semibold">Status</label>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="statusFilter"
+                  value="all"
+                  checked={statusFilter === 'all'}
+                  onChange={(e) => setStatusFilter('all')}
+                  className="mr-2"
+                />
+                <span className="text-sm text-gray-700">All</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="statusFilter"
+                  value="enable"
+                  checked={statusFilter === 'enable'}
+                  onChange={(e) => setStatusFilter('enable')}
+                  className="mr-2"
+                />
+                <span className="text-sm text-gray-700">Enable</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="statusFilter"
+                  value="disable"
+                  checked={statusFilter === 'disable'}
+                  onChange={(e) => setStatusFilter('disable')}
+                  className="mr-2"
+                />
+                <span className="text-sm text-gray-700">Disable</span>
+              </label>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1514,10 +1644,51 @@ export default function StoresPage() {
         </div>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          {/* Bulk Actions */}
+          {selectedStoreIds.length > 0 && (
+            <div className="bg-blue-50 border-b border-blue-200 px-6 py-3 flex items-center justify-between">
+              <span className="text-sm font-semibold text-blue-900">
+                {selectedStoreIds.length} store(s) selected
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleBulkStatusUpdate(true)}
+                  disabled={bulkUpdating}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {bulkUpdating ? 'Updating...' : 'Enable All'}
+                </button>
+                <button
+                  onClick={() => handleBulkStatusUpdate(false)}
+                  disabled={bulkUpdating}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {bulkUpdating ? 'Updating...' : 'Disable All'}
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedStoreIds([]);
+                    setIsSelectAll(false);
+                  }}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition text-sm font-semibold"
+                >
+                  Clear Selection
+                </button>
+              </div>
+            </div>
+          )}
           <div className="overflow-x-auto">
             <table className="w-full table-fixed">
               <thead className="bg-gray-50 border-b">
                 <tr>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-12">
+                    <input
+                      type="checkbox"
+                      checked={isSelectAll}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                  </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 w-28">
                     Store ID
                   </th>
@@ -1561,13 +1732,23 @@ export default function StoresPage() {
                   const endIndex = startIndex + itemsPerPage;
                   const paginatedStores = filteredStores.slice(startIndex, endIndex);
                   
-                  return paginatedStores.map((store, index) => (
-                  <tr key={store.id} className="border-b hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div className="font-mono text-sm text-gray-800 font-medium truncate" title={store.id}>
-                        {(store as any).storeId || store.id || '-'}
-                      </div>
-                    </td>
+                  return paginatedStores.map((store, index) => {
+                    const isSelected = store.id && selectedStoreIds.includes(store.id);
+                    return (
+                      <tr key={store.id} className={`border-b hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}`}>
+                      <td className="px-6 py-4">
+                        <input
+                          type="checkbox"
+                          checked={isSelected || false}
+                          onChange={(e) => store.id && handleStoreSelect(store.id, e.target.checked)}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-mono text-sm text-gray-800 font-medium truncate" title={store.id}>
+                          {(store as any).storeId || store.id || '-'}
+                        </div>
+                      </td>
                     <td className="px-6 py-4">
                       <div className="font-mono text-sm text-gray-800 font-medium truncate" title={store.merchantId}>
                         {store.merchantId || '-'}
@@ -1636,10 +1817,7 @@ export default function StoresPage() {
                     </td>
                     <td className="px-6 py-4">
                       {(() => {
-                        const stats = storeCouponStats[store.id || ''];
-                        if (!stats) {
-                          return <span className="text-gray-400 text-sm">-</span>;
-                        }
+                        const stats = storeCouponStats[store.id || ''] || { total: 0, active: 0, inactive: 0 };
                         return (
                           <div className="text-sm text-gray-700 space-y-1">
                             <div>Total: <span className="font-semibold">{stats.total}</span></div>
@@ -1664,7 +1842,8 @@ export default function StoresPage() {
                       </button>
                     </td>
                   </tr>
-                  ));
+                    );
+                  });
                 })()}
               </tbody>
             </table>
