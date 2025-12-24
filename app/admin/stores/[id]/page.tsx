@@ -859,30 +859,30 @@ export default function EditStorePage() {
                       type="text"
                       readOnly
                       value={(() => {
-                        const baseUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/stores/${formData.slug}`;
+                        const baseUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}`;
                         const countryCodes = formData.countryCodes?.trim();
                         if (countryCodes) {
                           // Get first country code from comma-separated list
                           const firstCountryCode = countryCodes.split(',')[0].trim().toLowerCase();
                           if (firstCountryCode) {
-                            return `${baseUrl}/${firstCountryCode}`;
+                            return `${baseUrl}/${firstCountryCode}/stores/${formData.slug}`;
                           }
                         }
-                        return baseUrl;
+                        return `${baseUrl}/stores/${formData.slug}`;
                       })()}
                       className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm"
                     />
                     <button
                       type="button"
                       onClick={() => {
-                        const baseUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/stores/${formData.slug}`;
+                        const baseUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}`;
                         const countryCodes = formData.countryCodes?.trim();
-                        let url = baseUrl;
+                        let url = `${baseUrl}/stores/${formData.slug}`;
                         if (countryCodes) {
                           // Get first country code from comma-separated list
                           const firstCountryCode = countryCodes.split(',')[0].trim().toLowerCase();
                           if (firstCountryCode) {
-                            url = `${baseUrl}/${firstCountryCode}`;
+                            url = `${baseUrl}/${firstCountryCode}/stores/${formData.slug}`;
                           }
                         }
                         navigator.clipboard.writeText(url).then(() => {

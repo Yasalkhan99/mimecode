@@ -201,7 +201,7 @@ export default function StoresPage() {
     });
     
     setStores(sortedStores);
-    
+
     // Calculate coupon statistics for each store
     const stats: Record<string, { total: number; active: number; inactive: number }> = {};
     sortedStores.forEach(store => {
@@ -328,8 +328,8 @@ export default function StoresPage() {
       );
     }
     
-    setFilteredStores(filtered);
-    setTotalItems(filtered.length);
+      setFilteredStores(filtered);
+      setTotalItems(filtered.length);
     setCurrentPage(1); // Reset to first page when search or filter changes
   }, [searchQuery, statusFilter, stores]);
   
@@ -881,16 +881,16 @@ export default function StoresPage() {
                   className="mr-2"
                 />
                 <span className="text-sm text-gray-700">All</span>
-              </label>
+            </label>
               <label className="flex items-center">
-                <input
+            <input
                   type="radio"
                   name="statusFilter"
                   value="enable"
                   checked={statusFilter === 'enable'}
                   onChange={(e) => setStatusFilter('enable')}
                   className="mr-2"
-                />
+            />
                 <span className="text-sm text-gray-700">Enable</span>
               </label>
               <label className="flex items-center">
@@ -904,7 +904,7 @@ export default function StoresPage() {
                 />
                 <span className="text-sm text-gray-700">Disable</span>
               </label>
-            </div>
+          </div>
           </div>
         </div>
       </div>
@@ -962,7 +962,7 @@ export default function StoresPage() {
           <h2 className="text-xl font-bold text-gray-800 mb-4">
             Create New Store
           </h2>
-          
+
           <form onSubmit={handleCreate} className="space-y-6">
             {/* Two Column Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1369,10 +1369,10 @@ export default function StoresPage() {
                 <label htmlFor="isTrending" className="text-gray-700">Mark as Trending</label>
               </div>
             </div>
-              </div>
+            </div>
 
-              {/* Right Column: Technical & Affiliate Info */}
-              <div className="space-y-4">
+            {/* Right Column: Technical & Affiliate Info */}
+            <div className="space-y-4">
               <h3 className="text-lg font-bold text-gray-800 border-b pb-2">Technical & Affiliate Information</h3>
               
               <div>
@@ -1507,30 +1507,30 @@ export default function StoresPage() {
                       type="text"
                       readOnly
                       value={(() => {
-                        const baseUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/stores/${formData.slug}`;
+                        const baseUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}`;
                         const countryCodes = formData.countryCodes?.trim();
                         if (countryCodes) {
                           // Get first country code from comma-separated list
                           const firstCountryCode = countryCodes.split(',')[0].trim().toLowerCase();
                           if (firstCountryCode) {
-                            return `${baseUrl}/${firstCountryCode}`;
+                            return `${baseUrl}/${firstCountryCode}/stores/${formData.slug}`;
                           }
                         }
-                        return baseUrl;
+                        return `${baseUrl}/stores/${formData.slug}`;
                       })()}
                       className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm"
                     />
                     <button
                       type="button"
                       onClick={() => {
-                        const baseUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/stores/${formData.slug}`;
+                        const baseUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}`;
                         const countryCodes = formData.countryCodes?.trim();
-                        let url = baseUrl;
+                        let url = `${baseUrl}/stores/${formData.slug}`;
                         if (countryCodes) {
                           // Get first country code from comma-separated list
                           const firstCountryCode = countryCodes.split(',')[0].trim().toLowerCase();
                           if (firstCountryCode) {
-                            url = `${baseUrl}/${firstCountryCode}`;
+                            url = `${baseUrl}/${firstCountryCode}/stores/${formData.slug}`;
                           }
                         }
                         navigator.clipboard.writeText(url).then(() => {
@@ -1764,11 +1764,11 @@ export default function StoresPage() {
                           className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         />
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="font-mono text-sm text-gray-800 font-medium truncate" title={store.id}>
-                          {(store as any).storeId || store.id || '-'}
-                        </div>
-                      </td>
+                    <td className="px-6 py-4">
+                      <div className="font-mono text-sm text-gray-800 font-medium truncate" title={store.id}>
+                        {(store as any).storeId || store.id || '-'}
+                      </div>
+                    </td>
                     <td className="px-6 py-4">
                       <div className="font-mono text-sm text-gray-800 font-medium truncate" title={store.merchantId}>
                         {store.merchantId || '-'}
