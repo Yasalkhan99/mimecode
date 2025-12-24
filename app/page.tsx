@@ -1029,34 +1029,72 @@ export default function Home() {
 
   // Memoize stores with logos to avoid re-filtering on every render
   const storesWithLogos = useMemo(() => {
-    return allStores.filter(store => store && store.logoUrl);
+    // Filter stores with logos and remove duplicates by ID
+    const seenStoreIds = new Set<string>();
+    const uniqueStores: Store[] = [];
+    
+    for (const store of allStores) {
+      if (!store || !store.logoUrl) continue;
+      
+      const storeId = store.id ? String(store.id) : null;
+      if (storeId && !seenStoreIds.has(storeId)) {
+        seenStoreIds.add(storeId);
+        uniqueStores.push(store);
+      } else if (!storeId) {
+        // If no ID, check by name to avoid duplicates
+        const storeName = store.name ? store.name.toLowerCase().trim() : '';
+        if (storeName && !Array.from(seenStoreIds).some(id => id.toLowerCase() === storeName)) {
+          seenStoreIds.add(storeName);
+          uniqueStores.push(store);
+        }
+      }
+    }
+    
+    return uniqueStores;
   }, [allStores]);
 
   // Memoize filtered stores by category
   const filteredStoresByCategory = useMemo(() => {
-    if (!selectedCategoryId) return storesWithLogos;
+    let storesToFilter = storesWithLogos;
+    
+    if (selectedCategoryId) {
+      // Handle both string and UUID comparisons
+      const filtered = storesWithLogos.filter(store => {
+        if (!store.categoryId) return false;
+        
+        // Convert both to strings for comparison
+        const storeCategoryId = String(store.categoryId).trim();
+        const selectedId = String(selectedCategoryId).trim();
+        
+        return storeCategoryId === selectedId;
+      });
 
-    // Detailed debugging
-    console.log('🔍 CATEGORY FILTER DEBUG:', {
-      selectedCategoryId,
-      totalStores: storesWithLogos.length,
-      // Show first 10 stores with their categoryId
-      sampleStores: storesWithLogos.slice(0, 10).map(s => ({
-        name: s.name,
-        categoryId: s.categoryId,
-        matches: s.categoryId === selectedCategoryId ? '✅ MATCH' : '❌ NO MATCH'
-      }))
-    });
-
-    const filtered = storesWithLogos.filter(store => store.categoryId === selectedCategoryId);
-
-    console.log('✅ FILTERED RESULT:', {
-      filteredCount: filtered.length,
-      filteredStores: filtered.slice(0, 5).map(s => ({ name: s.name, categoryId: s.categoryId }))
-    });
-
-    // If no stores match, show all stores instead of empty
-    return filtered.length > 0 ? filtered : storesWithLogos;
+      // If no stores match, show all stores instead of empty
+      storesToFilter = filtered.length > 0 ? filtered : storesWithLogos;
+    }
+    
+    // Remove duplicates by ID to ensure each store appears only once
+    const seenStoreIds = new Set<string>();
+    const uniqueStores: Store[] = [];
+    
+    for (const store of storesToFilter) {
+      if (!store) continue;
+      
+      const storeId = store.id ? String(store.id) : null;
+      if (storeId && !seenStoreIds.has(storeId)) {
+        seenStoreIds.add(storeId);
+        uniqueStores.push(store);
+      } else if (!storeId) {
+        // If no ID, check by name to avoid duplicates
+        const storeName = store.name ? store.name.toLowerCase().trim() : '';
+        if (storeName && !Array.from(seenStoreIds).some(id => id.toLowerCase() === storeName)) {
+          seenStoreIds.add(storeName);
+          uniqueStores.push(store);
+        }
+      }
+    }
+    
+    return uniqueStores;
   }, [storesWithLogos, selectedCategoryId]);
 
   const handlePopupContinue = () => {
@@ -1104,6 +1142,15 @@ export default function Home() {
     const firstSegment = pathSegments[0];
     const hasLanguageRoute = firstSegment && ['de', 'es', 'fr', 'it', 'pt', 'nl', 'ru', 'zh', 'ja'].includes(firstSegment);
     
+    // Valid country codes (2-letter ISO codes)
+    const validCountryCodes = [
+      'US', 'GB', 'UK', 'CA', 'AU', 'DE', 'FR', 'IT', 'ES', 'NL', 'PT', 'BE', 'CH', 'AT', 
+      'SE', 'NO', 'DK', 'FI', 'IE', 'PL', 'IN', 'TH', 'SA', 'AE', 'NZ', 'HK', 'TW', 'KR', 
+      'CO', 'PE', 'CL', 'EG', 'GR', 'RU', 'IL', 'BR', 'MX', 'JP', 'CN', 'SG', 'MY', 'ID', 
+      'PH', 'VN', 'TR', 'ZA', 'AR'
+    ];
+    const hasCountryCodeRoute = firstSegment && validCountryCodes.includes(firstSegment.toUpperCase());
+    
     if (typeof window !== 'undefined') {
       const hostname = window.location.hostname;
       const isDotComDomain = hostname && (
@@ -1114,6 +1161,9 @@ export default function Home() {
       
       if (hasLanguageRoute) {
         return countryCode ? [countryCode.toUpperCase()] : [];
+      } else if (hasCountryCodeRoute) {
+        // If first segment is a country code, use it
+        return [firstSegment.toUpperCase()];
       } else if (isDotComDomain) {
         return ['US', 'GB'];
       } else {
@@ -1349,7 +1399,7 @@ export default function Home() {
         })));
       }
     }
-    
+
     return result;
   }, [allCoupons, allStores, getStoreForCoupon, extractDomainForLogo, getCurrentCountryCodes]);
 
@@ -2061,7 +2111,7 @@ export default function Home() {
                   style={{
                     width: 'fit-content',
                     animationName: 'scrollLeft',
-                    animationDuration: displayLatestCoupons.length > 0 ? `${Math.max(10, displayLatestCoupons.length * 1.5)}s` : '15s',
+                    animationDuration: '40s',
                     animationTimingFunction: 'linear',
                     animationIterationCount: 'infinite',
                     animationPlayState: isMimecodeCouponsPaused ? 'paused' : 'running',
@@ -2694,60 +2744,66 @@ export default function Home() {
                   onMouseLeave={handleStoresOfSeasonMouseLeave}
                 >
                   <div
+                    key={`stores-slider-${selectedCategoryId || 'all'}`}
                     ref={storesOfSeasonSliderRef}
                     className="flex gap-4 md:gap-6 pb-4"
                     style={{
                       width: 'fit-content',
                       animationName: 'scrollLeft',
-                      animationDuration: '1900s',
+                      animationDuration: '80s',
                       animationTimingFunction: 'linear',
                       animationIterationCount: 'infinite',
                       animationPlayState: isStoresOfSeasonPaused ? 'paused' : 'running',
                       willChange: 'transform'
                     }}
                   >
-                    {/* Duplicate stores 3 times for seamless infinite scroll */}
-                    {[...filteredStoresByCategory, ...filteredStoresByCategory, ...filteredStoresByCategory].map((store, index) => {
-                      const copyNumber = Math.floor(index / filteredStoresByCategory.length);
-                      const originalIndex = index % filteredStoresByCategory.length;
+                    {/* Show stores once - no duplication */}
+                    {filteredStoresByCategory.length > 0 ? (
+                      filteredStoresByCategory.map((store, index) => {
+                        const originalIndex = index;
 
-                      return (
-                        <Link
-                          key={`store-${store.id || originalIndex}-copy-${copyNumber}-idx-${index}`}
-                          href={`/stores/${store.slug || store.id}`}
-                          className="flex flex-col items-center flex-shrink-0 group"
-                        >
-                          {/* Circular Logo Container */}
-                          <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full bg-white shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center p-3 mb-3 group-hover:scale-105">
-                            {store.logoUrl ? (
-                              <img
-                                src={store.logoUrl}
-                                alt={store.logoAlt || store.name || 'Store logo'}
-                                className="max-w-full max-h-full object-contain rounded-full"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.style.display = 'none';
-                                  const parent = target.parentElement;
-                                  if (parent) {
-                                    parent.innerHTML = `<div class="w-full h-full flex items-center justify-center rounded-full bg-gray-100"><span class="text-sm font-semibold text-gray-500">${(store.name || 'S').charAt(0)}</span></div>`;
-                                  }
-                                }}
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center rounded-full bg-gray-100">
-                                <span className="text-sm font-semibold text-gray-500">
-                                  {(store.name || 'S').charAt(0)}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                          {/* Store Name */}
-                          <p className="text-sm md:text-base font-medium text-gray-900 text-center max-w-[100px] sm:max-w-[120px] truncate">
-                            {store.name || 'Store'}
-                          </p>
-                        </Link>
-                      );
-                    })}
+                        return (
+                          <Link
+                            key={`store-${store.id || originalIndex}-idx-${index}`}
+                            href={`/stores/${store.slug || store.id}`}
+                            className="flex flex-col items-center flex-shrink-0 group"
+                          >
+                            {/* Circular Logo Container */}
+                            <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full bg-white shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center p-3 mb-3 group-hover:scale-105">
+                              {store.logoUrl ? (
+                                <img
+                                  src={store.logoUrl}
+                                  alt={store.logoAlt || store.name || 'Store logo'}
+                                  className="max-w-full max-h-full object-contain rounded-full"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    const parent = target.parentElement;
+                                    if (parent) {
+                                      parent.innerHTML = `<div class="w-full h-full flex items-center justify-center rounded-full bg-gray-100"><span class="text-sm font-semibold text-gray-500">${(store.name || 'S').charAt(0)}</span></div>`;
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center rounded-full bg-gray-100">
+                                  <span className="text-sm font-semibold text-gray-500">
+                                    {(store.name || 'S').charAt(0)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            {/* Store Name */}
+                            <p className="text-sm md:text-base font-medium text-gray-900 text-center max-w-[100px] sm:max-w-[120px] truncate">
+                              {store.name || 'Store'}
+                            </p>
+                          </Link>
+                        );
+                      })
+                    ) : (
+                      <div className="flex items-center justify-center w-full py-8">
+                        <p className="text-gray-500 text-sm">No stores found in this category</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -2771,14 +2827,18 @@ export default function Home() {
                                 willToggle: categoryId === selectedCategoryId
                               });
 
-                              setSelectedCategoryId(categoryId === selectedCategoryId ? null : categoryId);
+                              // Handle both string and UUID comparisons
+                              const currentSelectedId = selectedCategoryId ? String(selectedCategoryId).trim() : null;
+                              const clickedId = categoryId ? String(categoryId).trim() : null;
+                              
+                              setSelectedCategoryId(currentSelectedId === clickedId ? null : categoryId);
                               // Scroll to Stores of the Season section
                               const storesSection = document.querySelector('section.bg-gray-50');
                               if (storesSection) {
                                 storesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                               }
                             }}
-                            className={`px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap ${selectedCategoryId === category.id
+                            className={`px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap ${selectedCategoryId && category.id && String(selectedCategoryId).trim() === String(category.id).trim()
                                 ? 'bg-[#FFE019] text-black hover:bg-[#f5d600]'
                                 : 'bg-gray-800 text-white hover:bg-gray-700'
                               }`}

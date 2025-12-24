@@ -82,7 +82,7 @@ export default function TrustedPartners() {
             <div 
               className="flex gap-2 sm:gap-3 md:gap-4"
               style={{
-                animation: 'slideLeft 25s linear infinite',
+                animation: 'slideLeft 80s linear infinite',
                 width: 'fit-content'
               }}
             >

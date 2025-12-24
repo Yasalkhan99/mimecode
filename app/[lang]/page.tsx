@@ -12,6 +12,14 @@ import EventsPage from '../events/page';
 
 const languageSlugs = ['en', 'es', 'fr', 'de', 'it', 'pt', 'nl', 'ru', 'zh', 'ja'];
 
+// Valid country codes (2-letter ISO codes)
+const countryCodes = [
+  'US', 'GB', 'UK', 'CA', 'AU', 'DE', 'FR', 'IT', 'ES', 'NL', 'PT', 'BE', 'CH', 'AT', 
+  'SE', 'NO', 'DK', 'FI', 'IE', 'PL', 'IN', 'TH', 'SA', 'AE', 'NZ', 'HK', 'TW', 'KR', 
+  'CO', 'PE', 'CL', 'EG', 'GR', 'RU', 'IL', 'BR', 'MX', 'JP', 'CN', 'SG', 'MY', 'ID', 
+  'PH', 'VN', 'TR', 'ZA', 'AR'
+].map(code => code.toLowerCase());
+
 export default function LangHomePage() {
   const params = useParams();
   const router = useRouter();
@@ -22,6 +30,14 @@ export default function LangHomePage() {
     const checkPageType = async () => {
       // Check if it's a language code
       if (languageSlugs.includes(lang)) {
+        setPageType('home');
+        return;
+      }
+
+      // Check if it's a country code (2-letter, uppercase)
+      const langUpper = lang.toUpperCase();
+      const langLower = lang.toLowerCase();
+      if (countryCodes.includes(langLower) || countryCodes.includes(langUpper.toLowerCase())) {
         setPageType('home');
         return;
       }
