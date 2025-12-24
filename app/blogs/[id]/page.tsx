@@ -24,6 +24,17 @@ export default function BlogDetailPage() {
         if (data) {
           setArticle(data);
           document.title = `${data.title} - MimeCode`;
+          
+          // Add canonical tag
+          const slug = data.slug || id;
+          const canonicalUrl = `https://mimecode.com/blogs/${slug}`;
+          let canonicalLink = document.querySelector('link[rel="canonical"]');
+          if (!canonicalLink) {
+            canonicalLink = document.createElement('link');
+            canonicalLink.setAttribute('rel', 'canonical');
+            document.head.appendChild(canonicalLink);
+          }
+          canonicalLink.setAttribute('href', canonicalUrl);
         } else {
           document.title = 'Blog Not Found - MimeCode';
         }

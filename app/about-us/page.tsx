@@ -16,7 +16,17 @@ export default function AboutUsPage() {
   useEffect(() => {
     // Set page title
     document.title = 'About Us - MimeCode';
- 
+
+    // Add canonical tag
+    const canonicalUrl = 'https://mimecode.com/about-us';
+    let canonicalLink = document.querySelector('link[rel="canonical"]');
+    if (!canonicalLink) {
+      canonicalLink = document.createElement('link');
+      canonicalLink.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonicalLink);
+    }
+    canonicalLink.setAttribute('href', canonicalUrl);
+
     const fetchBanners = async () => {
       setLoading(true);
       try {

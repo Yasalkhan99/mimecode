@@ -1,0 +1,30 @@
+User-agent: Googlebot
+Allow: /
+
+User-agent: Mediapartners-Google
+Allow: /
+
+User-agent: Bingbot
+Crawl-delay: 5
+
+# User Agent Disallows
+User-agent: dotbot
+Disallow: /
+User-agent: MJ12bot
+Disallow: /
+User-agent: 008
+Disallow: /
+User-agent: Yahoo Pipes 1.0
+Disallow: /
+User-agent: Yahoo Pipes 2.0
+Disallow: /
+User-agent: Fasterfox
+Disallow: /
+User-agent: SemrushBot
+Disallow: /
+User-agent: GPTBot
+Disallow: /
+
+#XML Sitemaps
+Sitemap: https://www.mimecode.com/sitemap.xml
+

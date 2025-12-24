@@ -24,6 +24,16 @@ export default function FAQsPage() {
     // Set page title
     document.title = `${t('faqs')} - MimeCode`;
 
+    // Add canonical tag
+    const canonicalUrl = 'https://mimecode.com/faqs';
+    let canonicalLink = document.querySelector('link[rel="canonical"]');
+    if (!canonicalLink) {
+      canonicalLink = document.createElement('link');
+      canonicalLink.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonicalLink);
+    }
+    canonicalLink.setAttribute('href', canonicalUrl);
+
     const fetchData = async () => {
       setLoading(true);
       try {

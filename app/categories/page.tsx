@@ -21,6 +21,16 @@ export default function CategoriesPage() {
     // Set page title
     document.title = 'Categories - MimeCode';
     
+    // Add canonical tag
+    const canonicalUrl = 'https://mimecode.com/categories';
+    let canonicalLink = document.querySelector('link[rel="canonical"]');
+    if (!canonicalLink) {
+      canonicalLink = document.createElement('link');
+      canonicalLink.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonicalLink);
+    }
+    canonicalLink.setAttribute('href', canonicalUrl);
+    
     const fetchData = async () => {
       setLoading(true);
       try {

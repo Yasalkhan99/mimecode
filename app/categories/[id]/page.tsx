@@ -37,6 +37,18 @@ export default function CategoryDetailPage() {
         setCategory(categoryData);
         setStores(storesData);
         setCoupons(couponsData);
+
+        // Add canonical tag
+        if (categoryData?.slug) {
+          const canonicalUrl = `https://mimecode.com/categories/${categoryData.slug}`;
+          let canonicalLink = document.querySelector('link[rel="canonical"]');
+          if (!canonicalLink) {
+            canonicalLink = document.createElement('link');
+            canonicalLink.setAttribute('rel', 'canonical');
+            document.head.appendChild(canonicalLink);
+          }
+          canonicalLink.setAttribute('href', canonicalUrl);
+        }
       } catch (error) {
         console.error('Error fetching category data:', error);
       } finally {

@@ -136,8 +136,18 @@ export default function StoreDetailPage() {
         }
         metaDescription.setAttribute('content', store.seoDescription);
       }
+
+      // Add canonical tag
+      const canonicalUrl = `https://mimecode.com/stores/${store.slug || idOrSlug}`;
+      let canonicalLink = document.querySelector('link[rel="canonical"]');
+      if (!canonicalLink) {
+        canonicalLink = document.createElement('link');
+        canonicalLink.setAttribute('rel', 'canonical');
+        document.head.appendChild(canonicalLink);
+      }
+      canonicalLink.setAttribute('href', canonicalUrl);
     }
-  }, [store, coupons]);
+  }, [store, coupons, idOrSlug]);
 
   // CRITICAL: Handle popup from query parameters (for code type coupons opened in new tab)
   useEffect(() => {

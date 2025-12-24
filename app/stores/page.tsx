@@ -94,6 +94,16 @@ export default function StoresPage() {
     // Set page title
     document.title = 'Stores - MimeCode';
     
+    // Add canonical tag
+    const canonicalUrl = 'https://mimecode.com/stores';
+    let canonicalLink = document.querySelector('link[rel="canonical"]');
+    if (!canonicalLink) {
+      canonicalLink = document.createElement('link');
+      canonicalLink.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonicalLink);
+    }
+    canonicalLink.setAttribute('href', canonicalUrl);
+    
     // Check if mobile on mount and resize
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 640);
@@ -886,22 +896,22 @@ export default function StoresPage() {
                               
                               if (finalLogoUrl) {
                                 return (
-                                  <div className="w-full h-full flex items-center justify-center transform group-hover:scale-110 transition-transform duration-500">
-                                    <img
+                              <div className="w-full h-full flex items-center justify-center transform group-hover:scale-110 transition-transform duration-500">
+                                <img
                                       src={finalLogoUrl}
                                       alt={store.logoAlt || store.name || 'Store logo'}
-                                      className="max-w-full max-h-full object-contain drop-shadow-lg group-hover:drop-shadow-xl transition-all duration-500"
-                                      onError={(e) => {
-                                        const target = e.target as HTMLImageElement;
-                                        target.style.display = 'none';
-                                        const parent = target.parentElement;
-                                        if (parent) {
+                                  className="max-w-full max-h-full object-contain drop-shadow-lg group-hover:drop-shadow-xl transition-all duration-500"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    const parent = target.parentElement;
+                                    if (parent) {
                                           // Show fallback letter only if both logoUrl and favicon fail
                                           parent.innerHTML = `<div class="w-16 h-16 rounded-full bg-gradient-to-br from-[#ABC443] to-[#41361A] flex items-center justify-center"><span class="text-white font-bold text-xl">${store.name.charAt(0).toUpperCase()}</span></div>`;
-                                        }
-                                      }}
-                                    />
-                                  </div>
+                                    }
+                                  }}
+                                />
+                              </div>
                                 );
                               }
                               
@@ -910,7 +920,7 @@ export default function StoresPage() {
                                   <span className="text-white font-bold text-xl">
                                     {store.name.charAt(0).toUpperCase()}
                                   </span>
-                                </div>
+                              </div>
                               );
                             })()}
                           </div>
