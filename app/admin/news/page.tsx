@@ -25,6 +25,7 @@ export default function NewsPage() {
   });
   const [articleUrl, setArticleUrl] = useState('');
   const [extracting, setExtracting] = useState(false);
+  const [editingArticle, setEditingArticle] = useState<NewsArticle | null>(null);
 
   const fetchNews = async () => {
     setLoading(true);
@@ -84,10 +85,10 @@ export default function NewsPage() {
       return;
     }
     
-    // Check if layout position is already taken
+    // Check if layout position is already taken (only if not editing the same article)
     if (formData.layoutPosition !== null) {
       const newsAtPosition = news.filter(
-        n => n.id && n.layoutPosition === formData.layoutPosition
+        n => n.id && n.layoutPosition === formData.layoutPosition && n.id !== editingArticle?.id
       );
       if (newsAtPosition.length > 0) {
         if (!confirm(`Layout ${formData.layoutPosition} is already assigned to "${newsAtPosition[0].title}". Replace it?`)) {
@@ -98,29 +99,59 @@ export default function NewsPage() {
       }
     }
     
-    const result = await createNewsFromUrl(
-      formData.title || '',
-      formData.articleUrl || articleUrl || '',
-      formData.imageUrl || '',
-      formData.description || '',
-      formData.content || '',
-      formData.layoutPosition !== undefined ? formData.layoutPosition : null,
-      formData.date || undefined
-    );
-    
-    if (result.success) {
-      fetchNews();
-      setShowForm(false);
-      setFormData({
-        title: '',
-        description: '',
-        content: '',
-        imageUrl: '',
-        articleUrl: '',
-        date: '',
-        layoutPosition: null,
+    if (editingArticle && editingArticle.id) {
+      // Update existing article
+      const result = await updateNews(editingArticle.id, {
+        title: formData.title || '',
+        articleUrl: formData.articleUrl || articleUrl || '',
+        imageUrl: formData.imageUrl || '',
+        description: formData.description || '',
+        content: formData.content || '',
+        layoutPosition: formData.layoutPosition !== undefined ? formData.layoutPosition : null,
+        date: formData.date || undefined,
       });
-      setArticleUrl('');
+      
+      if (result.success) {
+        fetchNews();
+        setShowForm(false);
+        setEditingArticle(null);
+        setFormData({
+          title: '',
+          description: '',
+          content: '',
+          imageUrl: '',
+          articleUrl: '',
+          date: '',
+          layoutPosition: null,
+        });
+        setArticleUrl('');
+      }
+    } else {
+      // Create new article
+      const result = await createNewsFromUrl(
+        formData.title || '',
+        formData.articleUrl || articleUrl || '',
+        formData.imageUrl || '',
+        formData.description || '',
+        formData.content || '',
+        formData.layoutPosition !== undefined ? formData.layoutPosition : null,
+        formData.date || undefined
+      );
+      
+      if (result.success) {
+        fetchNews();
+        setShowForm(false);
+        setFormData({
+          title: '',
+          description: '',
+          content: '',
+          imageUrl: '',
+          articleUrl: '',
+          date: '',
+          layoutPosition: null,
+        });
+        setArticleUrl('');
+      }
     }
   };
 
@@ -130,6 +161,36 @@ export default function NewsPage() {
       await deleteNews(id);
       fetchNews();
     }
+  };
+
+  const handleEdit = (article: NewsArticle) => {
+    setEditingArticle(article);
+    setFormData({
+      title: article.title || '',
+      description: article.description || '',
+      content: article.content || '',
+      imageUrl: article.imageUrl || '',
+      articleUrl: article.articleUrl || '',
+      date: article.date || '',
+      layoutPosition: article.layoutPosition !== undefined ? article.layoutPosition : null,
+    });
+    setArticleUrl(article.articleUrl || '');
+    setShowForm(true);
+  };
+
+  const handleCancel = () => {
+    setShowForm(false);
+    setEditingArticle(null);
+    setFormData({
+      title: '',
+      description: '',
+      content: '',
+      imageUrl: '',
+      articleUrl: '',
+      date: '',
+      layoutPosition: null,
+    });
+    setArticleUrl('');
   };
 
   const handleAssignLayoutPosition = async (article: NewsArticle, position: number | null) => {
@@ -158,7 +219,14 @@ export default function NewsPage() {
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-800">Manage News & Articles</h1>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            if (showForm) {
+              handleCancel();
+            } else {
+              setShowForm(true);
+              setEditingArticle(null);
+            }
+          }}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
         >
           {showForm ? 'Cancel' : 'Create New Article'}
@@ -168,7 +236,7 @@ export default function NewsPage() {
       {showForm && (
         <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
           <h2 className="text-xl font-bold text-gray-800 mb-4">
-            Create New Article
+            {editingArticle ? 'Edit Article' : 'Create New Article'}
           </h2>
           
           {/* URL Extraction Section */}
@@ -184,7 +252,7 @@ export default function NewsPage() {
                 value={articleUrl}
                 onChange={(e) => setArticleUrl(e.target.value)}
                 placeholder="Enter article URL (e.g., https://example.com/article)"
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
               />
               <button
                 type="button"
@@ -214,7 +282,7 @@ export default function NewsPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, title: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
                 required
               />
             </div>
@@ -231,7 +299,7 @@ export default function NewsPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
                 rows={3}
               />
             </div>
@@ -248,7 +316,7 @@ export default function NewsPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, content: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
                 rows={10}
               />
               <p className="mt-1 text-xs text-gray-500">
@@ -269,7 +337,7 @@ export default function NewsPage() {
                   const url = e.target.value;
                   setFormData({ ...formData, imageUrl: url });
                 }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
                 placeholder="https://res.cloudinary.com/... or https://example.com/image.jpg"
                 required
               />
@@ -301,7 +369,7 @@ export default function NewsPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, date: e.target.value })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
                 />
               </div>
 
@@ -317,7 +385,7 @@ export default function NewsPage() {
                     const position = e.target.value ? parseInt(e.target.value) : null;
                     setFormData({ ...formData, layoutPosition: position });
                   }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
                 >
                   <option value="">Not Assigned</option>
                   {[1, 2, 3, 4].map((pos) => {
@@ -344,7 +412,7 @@ export default function NewsPage() {
               type="submit"
               className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold"
             >
-              Create Article
+              {editingArticle ? 'Update Article' : 'Create Article'}
             </button>
           </form>
         </div>
@@ -408,6 +476,12 @@ export default function NewsPage() {
                       </select>
                     </td>
                     <td className="px-6 py-4 space-x-2">
+                      <button
+                        onClick={() => handleEdit(article)}
+                        className="bg-blue-100 text-blue-700 px-3 py-1 rounded text-sm hover:bg-blue-200 mr-2"
+                      >
+                        Edit
+                      </button>
                       <button
                         onClick={() => handleDelete(article.id)}
                         className="bg-red-100 text-red-700 px-3 py-1 rounded text-sm hover:bg-red-200"

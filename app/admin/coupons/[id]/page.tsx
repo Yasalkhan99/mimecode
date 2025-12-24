@@ -401,7 +401,7 @@ export default function EditCouponPage() {
                     placeholder={selectedStoreId 
                       ? `${selectedStoreDisplay} (or type ID)`
                       : 'Select store... (or type Store ID)'}
-                    className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg bg-white text-left focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg bg-white text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
                   />
                   <button
                     type="button"
@@ -556,7 +556,7 @@ export default function EditCouponPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, code: e.target.value })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
                   required
                 />
                 <p className="mt-1 text-xs text-gray-500">
@@ -603,7 +603,7 @@ export default function EditCouponPage() {
                     maxUses: parseInt(e.target.value),
                   })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
               />
             </div>
           </div>
@@ -623,7 +623,7 @@ export default function EditCouponPage() {
                   currentUses: parseInt(e.target.value),
                 })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
             />
           </div>
 
@@ -638,7 +638,7 @@ export default function EditCouponPage() {
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
               rows={4}
             />
           </div>
@@ -656,7 +656,7 @@ export default function EditCouponPage() {
               onChange={(e) =>
                 setFormData({ ...formData, url: e.target.value })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
             />
             <p className="mt-1 text-xs text-gray-500">
               When user clicks "Get Deal", they will be redirected to this URL and the coupon code will be revealed.
@@ -702,7 +702,7 @@ export default function EditCouponPage() {
                   setFormData({ ...formData, expiryDate: null });
                 }
               }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
             />
             <p className="mt-1 text-xs text-gray-500">
               Optional: Set when this coupon expires. Leave empty if no expiry date.
@@ -722,7 +722,7 @@ export default function EditCouponPage() {
               onChange={(e) =>
                 setFormData({ ...formData, imageAlt: e.target.value })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
             />
             <p className="mt-1 text-xs text-gray-500">
               Optional: Alt text for the coupon image/logo (improves accessibility and SEO)
@@ -742,59 +742,10 @@ export default function EditCouponPage() {
               onChange={(e) =>
                 setFormData({ ...formData, priority: parseInt(e.target.value) || 0 })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
             />
             <p className="mt-1 text-xs text-gray-500">
               Optional: Priority number (higher = shown first). Default is 0.
-            </p>
-          </div>
-
-          <div>
-            <label htmlFor="categoryId" className="block text-sm font-semibold text-gray-700 mb-1">
-              Category
-            </label>
-            <select
-              id="categoryId"
-              name="categoryId"
-              value={formData.categoryId || ''}
-              onChange={(e) => {
-                const categoryId = e.target.value || null;
-                setFormData({ ...formData, categoryId });
-              }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">No Category</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-xs text-gray-500">
-              Assign this coupon to a category
-            </p>
-          </div>
-
-          <div>
-            <label htmlFor="dealScope" className="block text-sm font-semibold text-gray-700 mb-1">
-              Deal Scope (For Featured Deals Badge)
-            </label>
-            <select
-              id="dealScope"
-              name="dealScope"
-              value={formData.dealScope || ''}
-              onChange={(e) => {
-                const dealScope = e.target.value || undefined;
-                setFormData({ ...formData, dealScope: dealScope as 'sitewide' | 'online-only' | undefined });
-              }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Default (SITEWIDE)</option>
-              <option value="sitewide">SITEWIDE</option>
-              <option value="online-only">ONLINE ONLY</option>
-            </select>
-            <p className="mt-1 text-xs text-gray-500">
-              Select the scope of this deal. This will show as a badge on the Featured Deals section.
             </p>
           </div>
 
@@ -808,7 +759,7 @@ export default function EditCouponPage() {
               type="url"
               value={logoUrl}
               onChange={(e) => handleLogoUrlChange(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
               placeholder="https://res.cloudinary.com/..."
             />
             {extractedLogoUrl && extractedLogoUrl !== logoUrl && (
@@ -822,134 +773,6 @@ export default function EditCouponPage() {
                 <img src={extractedLogoUrl || logoUrl} alt="Logo preview" className="h-16 object-contain" />
               </div>
             )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-center">
-              <input
-                id="isActive"
-                name="isActive"
-                type="checkbox"
-                checked={formData.isActive || false}
-                onChange={(e) =>
-                  setFormData({ ...formData, isActive: e.target.checked })
-                }
-                className="w-4 h-4 rounded mr-2"
-              />
-              <label htmlFor="isActive" className="text-gray-700">
-                Active
-              </label>
-            </div>
-
-            <div className="flex items-center">
-              <input
-                id="isLatest"
-                name="isLatest"
-                type="checkbox"
-                checked={formData.isLatest || false}
-                onChange={(e) => {
-                  const isLatest = e.target.checked;
-                  setFormData({ 
-                    ...formData, 
-                    isLatest,
-                    // Clear layout position if latest is disabled
-                    latestLayoutPosition: isLatest ? formData.latestLayoutPosition : null
-                  });
-                }}
-                className="w-4 h-4 rounded mr-2"
-              />
-              <label htmlFor="isLatest" className="text-gray-700">
-                Mark as Latest
-              </label>
-            </div>
-
-            <div className="flex items-center">
-              <input
-                id="isPopular"
-                name="isPopular"
-                type="checkbox"
-                checked={formData.isPopular || false}
-                onChange={(e) => {
-                  const isPopular = e.target.checked;
-                  setFormData({ 
-                    ...formData, 
-                    isPopular,
-                    // Clear layout position if popular is disabled
-                    layoutPosition: isPopular ? formData.layoutPosition : null
-                  });
-                }}
-                className="w-4 h-4 rounded mr-2"
-              />
-              <label htmlFor="isPopular" className="text-gray-700">
-                Mark as Popular
-              </label>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="latestLayoutPosition" className="block text-sm font-semibold text-gray-700 mb-1">
-                Latest Coupons Layout Position (1-8)
-              </label>
-              <select
-                id="latestLayoutPosition"
-                name="latestLayoutPosition"
-                value={formData.latestLayoutPosition || ''}
-                onChange={(e) => {
-                  const position = e.target.value ? parseInt(e.target.value) : null;
-                  setFormData({ 
-                    ...formData, 
-                    latestLayoutPosition: position,
-                    // Auto-enable latest if layout position is assigned
-                    isLatest: position !== null ? true : formData.isLatest
-                  });
-                }}
-                disabled={!formData.isLatest && !formData.latestLayoutPosition}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Not Assigned</option>
-                {[1, 2, 3, 4, 5, 6, 7, 8].map((pos) => (
-                  <option key={pos} value={pos}>
-                    Layout {pos}
-                  </option>
-                ))}
-              </select>
-              {!formData.isLatest && !formData.latestLayoutPosition && (
-                <p className="mt-1 text-xs text-gray-400">Enable "Mark as Latest" or select a layout position</p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="layoutPosition" className="block text-sm font-semibold text-gray-700 mb-1">
-                Popular Coupons Layout Position (1-8)
-              </label>
-              <select
-                id="layoutPosition"
-                name="layoutPosition"
-                value={formData.layoutPosition || ''}
-                onChange={(e) => {
-                  const position = e.target.value ? parseInt(e.target.value) : null;
-                  setFormData({ 
-                    ...formData, 
-                    layoutPosition: position,
-                    // Auto-enable popular if layout position is assigned
-                    isPopular: position !== null ? true : formData.isPopular
-                  });
-                }}
-                disabled={!formData.isPopular && !formData.layoutPosition}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Not Assigned</option>
-                {[1, 2, 3, 4, 5, 6, 7, 8].map((pos) => (
-                  <option key={pos} value={pos}>
-                    Layout {pos}
-                  </option>
-                ))}
-              </select>
-              {!formData.isPopular && !formData.layoutPosition && (
-                <p className="mt-1 text-xs text-gray-400">Enable "Mark as Popular" or select a layout position</p>
-              )}
-            </div>
           </div>
 
           <div className="flex gap-4 pt-4">
