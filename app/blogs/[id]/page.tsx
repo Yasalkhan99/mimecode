@@ -26,8 +26,7 @@ export default function BlogDetailPage() {
           document.title = `${data.title} - MimeCode`;
           
           // Add canonical tag
-          const slug = data.slug || id;
-          const canonicalUrl = `https://mimecode.com/blogs/${slug}`;
+          const canonicalUrl = `https://mimecode.com/blogs/${id}`;
           let canonicalLink = document.querySelector('link[rel="canonical"]');
           if (!canonicalLink) {
             canonicalLink = document.createElement('link');
