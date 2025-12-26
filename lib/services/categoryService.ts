@@ -8,9 +8,8 @@ import {
   getDoc,
   Timestamp,
 } from 'firebase/firestore';
-import { db, storage } from '@/lib/firebase';
-// @ts-ignore - firebase/storage types issue
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db } from '@/lib/firebase';
+
 
 export interface Category {
   id?: string;
@@ -32,11 +31,11 @@ function dataURItoBlob(dataURI: string): Blob {
   if (parts.length < 2) {
     throw new Error('Invalid data URI format');
   }
-  
+
   const header = parts[0];
   const data = parts[1];
   const mimeString = header.split(':')[1].split(';')[0];
-  
+
   // Check if it's base64 encoded or URL encoded
   if (header.includes('base64')) {
     // Base64 encoded
@@ -74,25 +73,70 @@ export async function createCategory(
 ) {
   try {
     let finalLogoUrl = logoUrl;
-    
-    // If logo file is provided, upload it to Firebase Storage (client-side)
+
+    // If logo file is provided, upload it to Supabase Storage via server API
     if (logoFile) {
-      const ref = storageRef(storage, `category_logos/${Date.now()}_${logoFile.name}`);
-      await uploadBytes(ref, logoFile);
-      finalLogoUrl = await getDownloadURL(ref);
-    } 
-    // If logoUrl is a data URI (auto-extracted SVG), convert and upload to Firebase Storage (client-side)
+      const toBase64 = (file: File) =>
+        new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const dataUrl = reader.result as string;
+            // strip data:<mime>;base64,
+            const base64 = dataUrl.split(',')[1];
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+      const base64 = await toBase64(logoFile);
+      const uploadRes = await fetch('/api/categories/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: logoFile.name,
+          contentType: logoFile.type,
+          base64,
+        }),
+      });
+
+      if (uploadRes.ok) {
+        const uploadData = await uploadRes.json();
+        finalLogoUrl = uploadData.imageUrl;
+        console.log('Uploaded category logo to Supabase Storage:', finalLogoUrl);
+      } else {
+        const errorText = await uploadRes.text();
+        console.error('Failed to upload category logo:', errorText);
+        throw new Error('Failed to upload category logo');
+      }
+    }
+    // If logoUrl is a data URI (auto-extracted SVG), convert and upload to Supabase Storage via server API
     else if (logoUrl && logoUrl.startsWith('data:image')) {
-      try {
-        const blob = dataURItoBlob(logoUrl);
-        const fileName = `category_${Date.now()}_${name.replace(/[^a-zA-Z0-9]/g, '_')}.svg`;
-        const ref = storageRef(storage, `category_logos/${fileName}`);
-        await uploadBytes(ref, blob, { contentType: 'image/svg+xml' });
-        finalLogoUrl = await getDownloadURL(ref);
-        console.log('Uploaded data URI logo to Firebase Storage:', finalLogoUrl);
-      } catch (uploadError) {
-        console.error('Error uploading data URI logo to Firebase Storage:', uploadError);
+      const parts = logoUrl.split(',');
+      const header = parts[0];
+      const data = parts[1];
+      const mimeString = header.split(':')[1].split(';')[0];
+      const base64 = header.includes('base64') ? data : btoa(decodeURIComponent(data));
+      const extension = mimeString.includes('svg') ? 'svg' : 'png';
+      const fileName = `category_${Date.now()}.${extension}`;
+
+      const uploadRes = await fetch('/api/categories/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName,
+          contentType: mimeString,
+          base64,
+        }),
+      });
+
+      if (uploadRes.ok) {
+        const uploadData = await uploadRes.json();
+        finalLogoUrl = uploadData.imageUrl;
+        console.log('Uploaded data URI logo to Supabase Storage:', finalLogoUrl);
+      } else {
         // Fallback: use data URI directly if upload fails
+        console.warn('Failed to upload data URI logo, using directly');
         finalLogoUrl = logoUrl;
       }
     }
@@ -201,26 +245,64 @@ export async function updateCategory(
 ) {
   try {
     let logoUrl = updates.logoUrl;
-    
-    // If new logo file is provided, upload it (client-side)
+
+    // If new logo file is provided, upload it to Supabase Storage via server API
     if (logoFile) {
-      const ref = storageRef(storage, `category_logos/${Date.now()}_${logoFile.name}`);
-      await uploadBytes(ref, logoFile);
-      logoUrl = await getDownloadURL(ref);
+      const toBase64 = (file: File) =>
+        new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const dataUrl = reader.result as string;
+            const base64 = dataUrl.split(',')[1];
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+      const base64 = await toBase64(logoFile);
+      const uploadRes = await fetch('/api/categories/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: logoFile.name,
+          contentType: logoFile.type,
+          base64,
+        }),
+      });
+
+      if (uploadRes.ok) {
+        const uploadData = await uploadRes.json();
+        logoUrl = uploadData.imageUrl;
+      }
     }
-    // If logoUrl is a data URI (auto-extracted SVG), convert and upload to Firebase Storage (client-side)
+    // If logoUrl is a data URI (auto-extracted SVG), convert and upload to Supabase Storage via server API
     else if (logoUrl && logoUrl.startsWith('data:image')) {
       try {
-        const blob = dataURItoBlob(logoUrl);
-        const categoryName = updates.name || 'category';
-        const fileName = `category_${Date.now()}_${categoryName.replace(/[^a-zA-Z0-9]/g, '_')}.svg`;
-        const ref = storageRef(storage, `category_logos/${fileName}`);
-        await uploadBytes(ref, blob, { contentType: 'image/svg+xml' });
-        logoUrl = await getDownloadURL(ref);
-        console.log('Uploaded data URI logo to Firebase Storage:', logoUrl);
+        const parts = logoUrl.split(',');
+        const header = parts[0];
+        const data = parts[1];
+        const mimeString = header.split(':')[1].split(';')[0];
+        const base64 = header.includes('base64') ? data : btoa(decodeURIComponent(data));
+        const extension = mimeString.includes('svg') ? 'svg' : 'png';
+        const fileName = `category_${Date.now()}.${extension}`;
+
+        const uploadRes = await fetch('/api/categories/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileName,
+            contentType: mimeString,
+            base64,
+          }),
+        });
+
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          logoUrl = uploadData.imageUrl;
+        }
       } catch (uploadError) {
-        console.error('Error uploading data URI logo to Firebase Storage:', uploadError);
-        // Fallback: use data URI directly if upload fails
+        console.error('Error uploading data URI logo to Supabase Storage:', uploadError);
       }
     }
 

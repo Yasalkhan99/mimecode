@@ -84,6 +84,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://storage.googleapis.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
         <link rel="dns-prefetch" href="https://storage.googleapis.com" />
+        <meta name="google-site-verification" content="xp7New3NqZ9bIo7wjdSmsBo9V3D1U2pa4TfyRwRls4A" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${barlow.variable} ${pacifico.variable} ${dancingScript.variable} antialiased`}
